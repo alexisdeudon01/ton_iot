@@ -17,9 +17,18 @@ import pickle
 from datetime import datetime
 
 try:
-    from system_monitor import SystemMonitor
+    from ..system_monitor import SystemMonitor
 except ImportError:
-    SystemMonitor = None
+    # Try absolute import
+    import sys
+    from pathlib import Path
+    _parent = Path(__file__).parent.parent.parent
+    if str(_parent) not in sys.path:
+        sys.path.insert(0, str(_parent))
+    try:
+        from src.system_monitor import SystemMonitor
+    except ImportError:
+        SystemMonitor = None
 
 warnings.filterwarnings('ignore')
 

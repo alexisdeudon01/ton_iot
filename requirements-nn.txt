@@ -1,8 +1,5 @@
-# Neural Network and Explainability requirements (optional)
-# Install with: pip install -r requirements-nn.txt
-# Note: For GPU support, install PyTorch CUDA from https://pytorch.org/
-
-torch>=2.0.0
+# Neural Network and Explainability dependencies (optional)
+torch>=1.10.0
 pytorch-tabnet>=4.0
-shap>=0.42.0
-lime>=0.2.0.1
+shap>=0.40.0
+lime>=0.2.0

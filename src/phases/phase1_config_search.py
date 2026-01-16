@@ -21,13 +21,14 @@ from src.config import PipelineConfig, generate_108_configs
 
 logger = logging.getLogger(__name__)
 
-# Import modules (temporairement depuis src/, à déplacer dans core/ plus tard)
+# Import core modules
 import sys
 from pathlib import Path as PathLib
-sys.path.insert(0, str(PathLib(__file__).parent.parent))
-from dataset_loader import DatasetLoader
-from data_harmonization import DataHarmonizer
-from preprocessing_pipeline import PreprocessingPipeline
+_parent_dir = PathLib(__file__).parent.parent.parent
+if str(_parent_dir) not in sys.path:
+    sys.path.insert(0, str(_parent_dir))
+
+from src.core import DatasetLoader, DataHarmonizer, PreprocessingPipeline
 
 
 class Phase1ConfigSearch:
