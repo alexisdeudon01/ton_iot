@@ -257,7 +257,20 @@ class DataHarmonizer:
         
         self.common_features_found = list(feature_mapping.keys())
         
+        # Log IRP requirements
+        try:
+            from irp_features_requirements import IRPFeaturesRequirements
+            irp_req = IRPFeaturesRequirements()
+            logger.info("[IRP FEATURES] Exigences selon IRP_EXACT_FORMULAS.md:")
+            logger.info("  • Dimension 1: Toutes features numériques + label (pour entraîner modèles)")
+            logger.info("  • Dimension 2: Aucune feature dataset (métriques runtime uniquement)")
+            logger.info("  • Dimension 3: Toutes features numériques + feature names (pour SHAP/LIME)")
+            logger.info("  → Conclusion: Toutes les features numériques communes harmonisées + label")
+        except Exception as e:
+            logger.debug(f"IRP features requirements not available: {e}")
+        
         # Extract numeric features that can be harmonized
+        # According to IRP_EXACT_FORMULAS.md: We need ALL numeric features harmonized
         harmonized_cols = []
         cic_data = {}
         ton_data = {}
@@ -266,15 +279,19 @@ class DataHarmonizer:
             cic_col = mapping_info['cic']
             ton_col = mapping_info['ton']
             
-            # Convert to numeric
+            # Convert to numeric (IRP requires numeric features for model training)
             cic_values = pd.to_numeric(df_cic[cic_col], errors='coerce')
             ton_values = pd.to_numeric(df_ton[ton_col], errors='coerce')
             
+            # Keep features with at least 80% valid numeric values
+            # These are necessary for IRP calculations (Dimension 1 & 3 require trained models)
             if cic_values.notna().sum() > 0.8 * len(df_cic) and \
                ton_values.notna().sum() > 0.8 * len(df_ton):
                 harmonized_cols.append(unified_name)
                 cic_data[unified_name] = cic_values.fillna(cic_values.median())
                 ton_data[unified_name] = ton_values.fillna(ton_values.median())
+        
+        logger.info(f"[IRP FEATURES] {len(harmonized_cols)} features numériques harmonisées (nécessaires pour calculs IRP)")
         
         # Create harmonized dataframes
         df_cic_harmonized = pd.DataFrame(cic_data)

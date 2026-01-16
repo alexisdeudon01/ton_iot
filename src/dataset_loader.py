@@ -200,7 +200,23 @@ class DatasetLoader:
                 from feature_analyzer import FeatureAnalyzer
                 analyzer = FeatureAnalyzer()
                 common_features = analyzer.extract_common_features(result['sample_ton'], result['sample_cic'])
+                
+                # Filter to only features necessary for IRP calculations (all numeric features)
+                try:
+                    from irp_features_requirements import IRPFeaturesRequirements
+                    irp_req = IRPFeaturesRequirements()
+                    filtered_features = irp_req.filter_features_for_irp(
+                        common_features,
+                        result['ton_columns'],
+                        result['cic_columns']
+                    )
+                    logger.info(f"[IRP] Features nécessaires: {len(filtered_features)} features numériques + label")
+                except Exception as e:
+                    logger.debug(f"IRP features filtering not available: {e}")
+                    filtered_features = None
+                
                 result['common_features'] = common_features
+                result['irp_required_features'] = filtered_features
                 logger.info(f"[OUTPUT] {len(common_features)} features communes déterminées AVANT chargement complet")
             except Exception as e:
                 logger.warning(f"[WARNING] FeatureAnalyzer failed: {e}, using basic matching")
@@ -469,15 +485,41 @@ class DatasetLoader:
         """
         Load CIC-DDoS2019 dataset with memory-efficient sampling and new file detection
         
+        The CIC-DDoS2019 dataset contains:
+        - **80 network traffic features** extracted using CICFlowMeter software 
+          (publicly available from Canadian Institute for Cybersecurity - CIC)
+        - **11 types of DDoS attacks**: reflective DDoS attacks (DNS, LDAP, MSSQL, TFTP), 
+          UDP, UDP-Lag, SYN, and others
+        - Both benign and attack traffic flows
+        
+        **Reference Paper**: "Developing Realistic Distributed Denial of Service (DDoS) Attack 
+        Dataset and Taxonomy" by Sharafaldin et al. (2019), Canadian Institute for Cybersecurity (CIC).
+        
+        **Download**: https://www.unb.ca/cic/datasets/ddos-2019.html
+        
+        The dataset loader automatically:
+        - Detects CSV files in all subdirectories recursively
+        - Filters out example/template files (containing "example", "sample", "template", "structure")
+        - Combines all CSV files into a single DataFrame
+        - Validates feature count (warns if significantly different from 80 features)
+        - Detects and documents attack types present in the dataset
+        
         Args:
-            dataset_path: Path to CIC-DDoS2019 directory. If None, looks in data/raw/CIC-DDoS2019/
-            sample_ratio: Ratio of data to sample from each file (1.0 = 100%, 0.1 = 10% for testing). Default: 1.0
+            dataset_path: Path to CIC-DDoS2019 directory. If None, looks in datasets/cic_ddos2019/
+            sample_ratio: Ratio of data to sample from each file (1.0 = 100%, 0.001 = 0.1% for testing). Default: 1.0
             random_state: Random seed for sampling. Default: 42
-            incremental: If True, skip already loaded files. Default: True
+            incremental: If True, skip already loaded files (uses cache). Default: True
             detect_new_files: If True, detect and load new CSV files. Default: True
+            max_files_in_test: Maximum number of files to load in test mode (when sample_ratio < 1.0). Default: 10
             
         Returns:
             DataFrame containing CIC-DDoS2019 data (sampled if sample_ratio < 1.0)
+            - Expected columns: ~80 CICFlowMeter features + label column (Label/Attack/Class)
+            - Label column: Contains 11 attack types + benign traffic
+            
+        See also:
+            get_dataset_info(): Get detailed information about the loaded dataset
+            get_attack_types(): Get list of unique attack types found in the dataset
         """
         if dataset_path is None:
             dataset_path = self.data_dir / 'cic_ddos2019'
@@ -713,7 +755,22 @@ class DatasetLoader:
             raise
     
     def get_attack_types(self, df: pd.DataFrame, label_col: Optional[str] = None) -> List[str]:
-        """Get unique attack types from CIC-DDoS2019 dataset"""
+        """
+        Get unique attack types from CIC-DDoS2019 dataset
+        
+        The CIC-DDoS2019 dataset contains 11 types of DDoS attacks:
+        - Reflective DDoS: DNS, LDAP, MSSQL, TFTP, NetBIOS, Portmap
+        - Direct DDoS: UDP, UDP-Lag, SYN
+        - Other attack types as defined in the dataset
+        - Benign traffic (normal/legitimate network flows)
+        
+        Args:
+            df: DataFrame containing CIC-DDoS2019 data
+            label_col: Name of label column. If None, auto-detects (Label, label, Attack, attack, Class, class)
+            
+        Returns:
+            List of unique attack type names found in the dataset (sorted alphabetically)
+        """
         if label_col is None:
             label_candidates = ['Label', 'label', 'Attack', 'attack', 'Class', 'class']
             for col in label_candidates:
