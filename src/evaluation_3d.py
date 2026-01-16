@@ -227,12 +227,31 @@ class Evaluation3D:
         Returns:
             Dictionary with all evaluation metrics
         """
-        # Dimension 1: Detection Performance
-        y_pred = model.predict(X_test)
+        # Dimension 2: Resource Efficiency - Train model first and measure resources
+        monitor = ResourceMonitor()
+        monitor.start()
         
-        # Use predict_proba if available for F1
-        if hasattr(model, 'predict_proba'):
-            y_pred_proba = model.predict_proba(X_test)[:, 1] if len(np.unique(y_test)) == 2 else model.predict_proba(X_test)
+        # Create a clone/fresh instance of the model to avoid state issues across folds
+        # For sklearn models, we can use clone; for custom models, we need to reinitialize
+        try:
+            from sklearn.base import clone
+            model_clone = clone(model)
+        except Exception:
+            # For custom models that can't be cloned, use the model directly
+            # But this might cause issues if model state persists across folds
+            model_clone = model
+        
+        # Train the model
+        model_clone.fit(X_train, y_train)
+        monitor.update()
+        resource_metrics = monitor.stop()
+        
+        # Dimension 1: Detection Performance - Now that model is trained
+        y_pred = model_clone.predict(X_test)
+        
+        # Use predict_proba if available
+        if hasattr(model_clone, 'predict_proba'):
+            y_pred_proba = model_clone.predict_proba(X_test)[:, 1] if len(np.unique(y_test)) == 2 else model_clone.predict_proba(X_test)
         else:
             y_pred_proba = y_pred
         
@@ -276,34 +295,25 @@ class Evaluation3D:
                 'class_wise_fn': fn.tolist() if hasattr(fn, 'tolist') else list(fn),
             }
         
-        # Dimension 2: Resource Efficiency
-        monitor = ResourceMonitor()
-        monitor.start()
-        
-        # Retrain to measure time (or use pre-trained model if timing already done)
-        model.fit(X_train, y_train)
-        monitor.update()
-        resource_metrics = monitor.stop()
-        
         # Dimension 3: Explainability
         explainability_metrics = {}
         if compute_explainability:
-            # SHAP score
+            # SHAP score (use trained model_clone)
             if SHAP_AVAILABLE:
                 shap_score = self.explainability_evaluator.compute_shap_score(
-                    model, X_test, max_samples=shap_samples
+                    model_clone, X_test, max_samples=shap_samples
                 )
                 explainability_metrics['shap_score'] = shap_score
             
-            # LIME score
+            # LIME score (use trained model_clone)
             if LIME_AVAILABLE:
                 lime_score = self.explainability_evaluator.compute_lime_score(
-                    model, X_test[:lime_samples], X_train, max_samples=lime_samples
+                    model_clone, X_test[:lime_samples], X_train, max_samples=lime_samples
                 )
                 explainability_metrics['lime_score'] = lime_score
         
-        # Native interpretability (for tree-based models)
-        native_interpretability = 1.0 if hasattr(model, 'feature_importances_') else 0.0
+        # Native interpretability (for tree-based models - use trained model_clone)
+        native_interpretability = 1.0 if hasattr(model_clone, 'feature_importances_') else 0.0
         
         # Compile results with detailed confusion matrix information
         results = {

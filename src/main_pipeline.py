@@ -211,7 +211,7 @@ class IRPPipeline:
         
         all_results = []
         
-        for model_name, model in tqdm(models.items(), desc="Evaluating algorithms"):
+        for model_name, model_template in tqdm(models.items(), desc="Evaluating algorithms"):
             logger.info(f"\n   Evaluating {model_name}...")
             
             fold_results = []
@@ -220,6 +220,14 @@ class IRPPipeline:
                 y_train_fold, y_test_fold = y[train_idx], y[test_idx]
                 
                 try:
+                    # Create a fresh model instance for each fold to avoid state contamination
+                    from sklearn.base import clone
+                    try:
+                        model = clone(model_template)
+                    except Exception:
+                        # For custom models, use the template directly (they should handle their own state)
+                        model = model_template
+                    
                     results = evaluator.evaluate_model(
                         model, f"{model_name}_fold{fold_idx+1}",
                         X_train_fold, y_train_fold, X_test_fold, y_test_fold,
