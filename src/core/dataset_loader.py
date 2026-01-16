@@ -34,6 +34,10 @@ logger = logging.getLogger(__name__)
 # Default chunk size (will be adjusted based on available RAM)
 DEFAULT_CHUNK_SIZE = 5_000_000
 
+# Chunk size caps (anti-OOM protection)
+DEFAULT_CHUNK_CAP_PROD = 250_000  # Production cap
+DEFAULT_CHUNK_CAP_TEST = 100_000  # Test mode cap (< 1.0 sample_ratio)
+
 
 class DatasetLoader:
     """Loader for CIC-DDoS2019 and TON_IoT datasets with system monitoring"""
@@ -86,16 +90,34 @@ class DatasetLoader:
         except Exception as e:
             logger.warning(f"Could not save file cache: {e}")
     
-    def _get_adaptive_chunk_size(self) -> int:
-        """Get adaptive chunk size based on available RAM"""
-        if self.monitor is None:
-            return DEFAULT_CHUNK_SIZE
+    def _get_adaptive_chunk_size(self, sample_ratio: float = 1.0) -> int:
+        """
+        Get adaptive chunk size based on available RAM, with cap protection
         
-        try:
-            return self.monitor.calculate_optimal_chunk_size(estimated_row_size_bytes=500)
-        except Exception as e:
-            logger.warning(f"Could not calculate adaptive chunk size: {e}. Using default.")
-            return DEFAULT_CHUNK_SIZE
+        Args:
+            sample_ratio: Sampling ratio (used to determine test vs prod cap)
+        
+        Returns:
+            Chunk size (capped to prevent OOM)
+        """
+        # Determine cap based on mode
+        cap = DEFAULT_CHUNK_CAP_TEST if sample_ratio < 1.0 else DEFAULT_CHUNK_CAP_PROD
+        
+        if self.monitor is None:
+            adaptive_size = DEFAULT_CHUNK_SIZE
+        else:
+            try:
+                adaptive_size = self.monitor.calculate_optimal_chunk_size(estimated_row_size_bytes=500)
+            except Exception as e:
+                logger.warning(f"Could not calculate adaptive chunk size: {e}. Using default.")
+                adaptive_size = DEFAULT_CHUNK_SIZE
+        
+        # Apply cap
+        chunk_size_final = min(adaptive_size, cap)
+        if chunk_size_final < adaptive_size:
+            logger.info(f"[INFO] Chunk size capped to {chunk_size_final:,} rows (adaptive was {adaptive_size:,})")
+        
+        return chunk_size_final
     
     def _analyze_csv_headers(self, file_path: Path, n_rows: int = 1000) -> Tuple[List[str], pd.DataFrame]:
         """
@@ -260,6 +282,46 @@ class DatasetLoader:
             logger.debug(f"Memory check error: {e}")
             if force:
                 gc.collect()
+    
+    def _optimize_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Optimize DataFrame dtypes to reduce memory usage
+        
+        Args:
+            df: Input DataFrame
+            
+        Returns:
+            DataFrame with optimized dtypes
+        """
+        df = df.copy()
+        
+        for col in df.columns:
+            dtype = df[col].dtype
+            
+            # Float -> float32
+            if dtype == 'float64':
+                try:
+                    df[col] = pd.to_numeric(df[col], downcast='float')
+                except:
+                    pass
+            
+            # Int -> int32
+            elif dtype == 'int64':
+                try:
+                    df[col] = pd.to_numeric(df[col], downcast='integer')
+                except:
+                    pass
+            
+            # Object -> category (if few unique values)
+            elif dtype == 'object':
+                unique_ratio = df[col].nunique() / len(df) if len(df) > 0 else 1.0
+                if unique_ratio < 0.5:  # Less than 50% unique values
+                    try:
+                        df[col] = df[col].astype('category')
+                    except:
+                        pass
+        
+        return df
     
     def _sample_rows_efficient(self, total_rows: int, sample_ratio: float, random_state: int) -> np.ndarray:
         """
@@ -488,7 +550,8 @@ class DatasetLoader:
     
     def load_cic_ddos2019(self, dataset_path: Optional[str] = None, sample_ratio: float = 1.0, 
                           random_state: int = 42, incremental: bool = True, 
-                          detect_new_files: bool = True, max_files_in_test: int = 10) -> pd.DataFrame:
+                          detect_new_files: bool = True, max_files_in_test: int = 10,
+                          max_files: Optional[int] = None, max_rows_per_file: Optional[int] = None) -> pd.DataFrame:
         """
         Load CIC-DDoS2019 dataset with memory-efficient sampling and new file detection
         
@@ -518,6 +581,8 @@ class DatasetLoader:
             incremental: If True, skip already loaded files (uses cache). Default: True
             detect_new_files: If True, detect and load new CSV files. Default: True
             max_files_in_test: Maximum number of files to load in test mode (when sample_ratio < 1.0). Default: 10
+            max_files: Maximum number of files to load (overrides max_files_in_test). Default: None
+            max_rows_per_file: Maximum rows to load per file (safety limit). Default: None
             
         Returns:
             DataFrame containing CIC-DDoS2019 data (sampled if sample_ratio < 1.0)
@@ -600,15 +665,21 @@ class DatasetLoader:
                 logger.info(f"[INFO] All files already loaded. Use incremental=False to reload all.")
                 return pd.DataFrame()
         
-        # Limit files in test mode
+        # Limit files in test mode or if max_files specified
         original_count = len(csv_files)
-        if sample_ratio < 1.0 and max_files_in_test > 0 and len(csv_files) > max_files_in_test:
-            # Randomly sample files for testing
+        max_files_limit = max_files if max_files is not None else (max_files_in_test if sample_ratio < 1.0 else None)
+        
+        # Auto-limit in test mode if not specified
+        if sample_ratio < 1.0 and max_files_limit is None:
+            max_files_limit = 3
+            logger.info(f"[MODE TEST] Auto-limiting to {max_files_limit} files (sample_ratio < 1.0)")
+        
+        if max_files_limit is not None and len(csv_files) > max_files_limit:
             import random
             random.seed(random_state)
-            csv_files = random.sample(csv_files, min(max_files_in_test, len(csv_files)))
+            csv_files = random.sample(csv_files, min(max_files_limit, len(csv_files)))
             csv_files.sort(key=lambda x: x.name)  # Sort for reproducibility
-            logger.info(f"[MODE TEST] Limited to {len(csv_files)} files (from {original_count} total) for testing")
+            logger.info(f"[MODE TEST] Limited to {len(csv_files)} files (from {original_count} total)")
         
         logger.info(f"Found {len(csv_files)} CSV file(s) to process in CIC-DDoS2019 dataset")
         
@@ -616,12 +687,14 @@ class DatasetLoader:
         if self.monitor:
             self.monitor.start_progress_tracking()
         
-        # Get adaptive chunk size
-        chunk_size = self._get_adaptive_chunk_size()
+        # Get adaptive chunk size (with cap)
+        chunk_size = self._get_adaptive_chunk_size(sample_ratio=sample_ratio)
         logger.info(f"[INFO] Using adaptive chunk size: {chunk_size:,} rows")
         
-        all_chunks = []
+        # Use streaming concat: accumulate file DFs, concat in batches
+        dfs_files = []  # One DF per file (will be smaller than all_chunks)
         total_rows_loaded = 0
+        CONCAT_BATCH_SIZE = 4  # Concat every N files to avoid memory spike
         
         # Progress bar with ETA
         progress_bar = tqdm(csv_files, desc="Loading CIC-DDoS2019 CSV files")
@@ -669,19 +742,31 @@ class DatasetLoader:
                         if total_rows > 0:
                             sample_indices = self._sample_rows_efficient(total_rows, sample_ratio, random_state)
                 
+                # Stream chunks with controlled concat and sampling on-the-fly
                 file_chunks = []
                 chunk_count = 0
+                rows_in_file = 0
                 next_sample_idx = 0 if sample_indices is not None else None
                 
                 try:
-                    chunk_iterator = pd.read_csv(csv_file, low_memory=False, chunksize=chunk_size)
+                    chunk_iterator = pd.read_csv(csv_file, low_memory=True, chunksize=chunk_size)
                     
                     for chunk in chunk_iterator:
+                        # Apply max_rows_per_file limit early
+                        if max_rows_per_file is not None and rows_in_file >= max_rows_per_file:
+                            logger.info(f"[INFO] Reached max_rows_per_file limit ({max_rows_per_file:,}) for {csv_file.name}")
+                            break
+                        
                         chunk_start_row = chunk_count * chunk_size
                         chunk_end_row = chunk_start_row + len(chunk)
                         
-                        # Filter sampled rows if needed
-                        if sample_indices is not None and next_sample_idx is not None:
+                        # Apply sampling on-the-fly (if needed)
+                        if sample_ratio < 1.0 and sample_indices is None:
+                            # Direct sampling per chunk (more memory-efficient than pre-computed indices)
+                            chunk_sample_size = max(1, int(len(chunk) * sample_ratio))
+                            chunk = chunk.sample(n=chunk_sample_size, random_state=random_state).reset_index(drop=True)
+                        elif sample_indices is not None and next_sample_idx is not None:
+                            # Use pre-computed indices (for larger ratios)
                             chunk_sample_mask = (sample_indices >= chunk_start_row) & (sample_indices < chunk_end_row)
                             chunk_sample_indices = sample_indices[chunk_sample_mask]
                             
@@ -690,12 +775,29 @@ class DatasetLoader:
                                 chunk = chunk.iloc[local_indices].reset_index(drop=True)
                             else:
                                 chunk_count += 1
+                                del chunk
                                 gc.collect()
                                 continue
                         
+                        # Optimize dtypes on chunk (reduce memory)
+                        chunk = self._optimize_dtypes(chunk)
+                        
+                        # Apply max_rows_per_file limit per chunk
+                        if max_rows_per_file is not None:
+                            remaining = max_rows_per_file - rows_in_file
+                            if len(chunk) > remaining:
+                                chunk = chunk.head(remaining)
+                        
                         file_chunks.append(chunk)
                         chunk_count += 1
-                        total_rows_loaded += len(chunk)
+                        rows_in_file += len(chunk)
+                        
+                        # Controlled concat: concat every 5 chunks to avoid list explosion
+                        if len(file_chunks) >= 5:
+                            df_partial = pd.concat(file_chunks, ignore_index=True)
+                            file_chunks = [df_partial]  # Replace list with single DF
+                            del df_partial
+                            gc.collect()
                         
                         # Memory check
                         if chunk_count % 5 == 0:
@@ -715,12 +817,21 @@ class DatasetLoader:
                     
                     # Combine chunks from this file
                     if file_chunks:
-                        df_file = pd.concat(file_chunks, ignore_index=True)
-                        all_chunks.append(df_file)
+                        df_file = pd.concat(file_chunks, ignore_index=True) if len(file_chunks) > 1 else file_chunks[0]
+                        dfs_files.append(df_file)
+                        total_rows_loaded += len(df_file)
                         logger.info(f"[OUTPUT] Loaded {csv_file.name}: {df_file.shape[0]:,} rows, {df_file.shape[1]} columns")
                         
                         del file_chunks, df_file
                         self._check_memory_and_gc(force=True)
+                        
+                        # Batch concat: concat every N files to avoid memory spike
+                        if len(dfs_files) >= CONCAT_BATCH_SIZE:
+                            logger.info(f"[ACTION] Batch concat: combining {len(dfs_files)} files...")
+                            df_batch = pd.concat(dfs_files, ignore_index=True)
+                            dfs_files = [df_batch]  # Replace with single batched DF
+                            del df_batch
+                            gc.collect()
                         
                         # Mark file as loaded
                         if incremental:
@@ -745,19 +856,29 @@ class DatasetLoader:
         if incremental:
             self._save_file_cache()
         
-        if not all_chunks:
+        if not dfs_files:
             error_msg = "[ERROR] No valid CSV files could be loaded from CIC-DDoS2019"
             logger.error(error_msg)
             raise ValueError(error_msg)
         
-        # Concatenate all dataframes
-        logger.info(f"[STEP] Concatenating {len(all_chunks)} loaded dataframes")
+        # Final concatenation (safe: dfs_files is already batched, so typically 1-4 DFs)
+        logger.info(f"[STEP] Final concatenation of {len(dfs_files)} dataframe(s)")
         logger.info(f"[INPUT] Total rows accumulated: {total_rows_loaded:,}")
         
         try:
-            combined_df = pd.concat(all_chunks, ignore_index=True)
+            # Progressive concat to avoid large intermediate objects
+            combined_df = None
+            for i, df_file in enumerate(dfs_files):
+                if combined_df is None:
+                    combined_df = df_file.copy()
+                else:
+                    combined_df = pd.concat([combined_df, df_file], ignore_index=True)
+                    # Aggressive cleanup
+                    del df_file
+                    if i % 2 == 0:  # GC every 2 files
+                        gc.collect()
             
-            del all_chunks
+            del dfs_files
             self._check_memory_and_gc(force=True)
             
             logger.info(f"[OUTPUT] CIC-DDoS2019 loaded successfully: {combined_df.shape[0]:,} rows, {combined_df.shape[1]} columns")

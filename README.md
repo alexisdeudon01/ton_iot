@@ -54,7 +54,14 @@ python main.py --phase 1          # Run only Phase 1 (preprocessing)
 python main.py --phase 3          # Run only Phase 3 (evaluation)
 python main.py --phase 5          # Run only Phase 5 (ranking)
 python main.py --output-dir custom_output  # Custom output directory
+python main.py --test-mode        # Run with minimal data (0.1% sampling)
+python main.py --sample-ratio 0.001  # Use 0.1% of data (for testing)
 ```
+
+**Memory-Safe Loading**:
+- The CIC-DDoS2019 dataset is large (~4M+ rows). For testing, use `--sample-ratio` or `--test-mode`
+- Chunk sizes are automatically capped (250k prod, 100k test) to prevent OOM
+- In test mode (sample_ratio < 1.0), only 3 files are loaded by default
 
 This will execute three phases:
 1. **Phase 1: Preprocessing Configuration Selection** - Complete preprocessing pipeline with all sub-steps
