@@ -41,3 +41,4 @@
 2026-01-16 19:40:12,160 - INFO - main_pipeline -       Random Forest - F1 Score: 0.9991, Time: 28.41s, Explainability: 1.0000
 2026-01-16 19:40:12,161 - INFO - main_pipeline - 
    Evaluating CNN...
+2026-01-16 19:43:48,661 - WARNING - __main__ - Pipeline interrupted by user (Ctrl+C)
