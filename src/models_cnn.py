@@ -2,24 +2,41 @@
 """
 CNN model for tabular data (DDoS detection)
 Adapted for tabular network flow data according to IRP methodology
+
+CNN is optional: requires torch (installed via requirements-nn.txt)
 """
 import numpy as np
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
 from typing import Optional
 import warnings
+import logging
 
 warnings.filterwarnings('ignore')
+logger = logging.getLogger(__name__)
+
+# Try to import torch - CNN is optional
+try:
+    import torch
+    import torch.nn as nn
+    import torch.optim as optim
+    from torch.utils.data import Dataset, DataLoader
+    TORCH_AVAILABLE = True
+except ImportError:
+    TORCH_AVAILABLE = False
+    torch = None
+    nn = None
+    optim = None
+    Dataset = None
+    DataLoader = None
+    logger.warning("torch not available - CNN will be skipped. Install via: pip install -r requirements-nn.txt")
 
 
-class TabularDataset(Dataset):
-    """PyTorch Dataset for tabular data"""
-    
-    def __init__(self, X: np.ndarray, y: Optional[np.ndarray] = None):
+if TORCH_AVAILABLE:
+    class TabularDataset(Dataset):
+        """PyTorch Dataset for tabular data"""
+        
+        def __init__(self, X: np.ndarray, y: Optional[np.ndarray] = None):
         """
         Initialize tabular dataset
         
@@ -27,28 +44,28 @@ class TabularDataset(Dataset):
             X: Feature array
             y: Target array (optional for inference)
         """
-        self.X = torch.FloatTensor(X)
-        if y is not None:
-            self.y = torch.LongTensor(y)
-        else:
-            self.y = None
-    
-    def __len__(self):
-        return len(self.X)
-    
-    def __getitem__(self, idx):
-        if self.y is not None:
-            return self.X[idx], self.y[idx]
-        return self.X[idx]
+            self.X = torch.FloatTensor(X)
+            if y is not None:
+                self.y = torch.LongTensor(y)
+            else:
+                self.y = None
+        
+        def __len__(self):
+            return len(self.X)
+        
+        def __getitem__(self, idx):
+            if self.y is not None:
+                return self.X[idx], self.y[idx]
+            return self.X[idx]
 
 
-class TabularCNN(nn.Module):
-    """
-    Convolutional Neural Network adapted for tabular data
-    Uses 1D convolutions on flattened feature vectors
-    """
-    
-    def __init__(self, input_dim: int, num_classes: int = 2, hidden_dims: list = [64, 32, 16]):
+    class TabularCNN(nn.Module):
+        """
+        Convolutional Neural Network adapted for tabular data
+        Uses 1D convolutions on flattened feature vectors
+        """
+        
+        def __init__(self, input_dim: int, num_classes: int = 2, hidden_dims: list = [64, 32, 16]):
         """
         Initialize CNN model
         
@@ -57,44 +74,44 @@ class TabularCNN(nn.Module):
             num_classes: Number of output classes (default: 2 for binary classification)
             hidden_dims: List of hidden layer dimensions
         """
-        super(TabularCNN, self).__init__()
-        
-        self.input_dim = input_dim
-        self.num_classes = num_classes
-        
-        # Reshape input for 1D convolution (batch, channels, length)
-        # We treat features as a sequence
-        layers = []
-        in_channels = 1
-        
-        # First conv layer
-        layers.append(nn.Conv1d(in_channels, hidden_dims[0], kernel_size=3, padding=1))
-        layers.append(nn.BatchNorm1d(hidden_dims[0]))
-        layers.append(nn.ReLU())
-        layers.append(nn.MaxPool1d(kernel_size=2))
-        
-        # Additional conv layers
-        for i in range(len(hidden_dims) - 1):
-            layers.append(nn.Conv1d(hidden_dims[i], hidden_dims[i+1], kernel_size=3, padding=1))
-            layers.append(nn.BatchNorm1d(hidden_dims[i+1]))
+            super(TabularCNN, self).__init__()
+            
+            self.input_dim = input_dim
+            self.num_classes = num_classes
+            
+            # Reshape input for 1D convolution (batch, channels, length)
+            # We treat features as a sequence
+            layers = []
+            in_channels = 1
+            
+            # First conv layer
+            layers.append(nn.Conv1d(in_channels, hidden_dims[0], kernel_size=3, padding=1))
+            layers.append(nn.BatchNorm1d(hidden_dims[0]))
             layers.append(nn.ReLU())
             layers.append(nn.MaxPool1d(kernel_size=2))
+            
+            # Additional conv layers
+            for i in range(len(hidden_dims) - 1):
+                layers.append(nn.Conv1d(hidden_dims[i], hidden_dims[i+1], kernel_size=3, padding=1))
+                layers.append(nn.BatchNorm1d(hidden_dims[i+1]))
+                layers.append(nn.ReLU())
+                layers.append(nn.MaxPool1d(kernel_size=2))
+            
+            self.conv_layers = nn.Sequential(*layers)
+            
+            # Calculate flattened size after convolutions
+            # Simplified calculation - may need adjustment based on input_dim
+            flattened_size = hidden_dims[-1] * (input_dim // (2 ** len(hidden_dims)))
+            
+            # Fully connected layers
+            self.fc_layers = nn.Sequential(
+                nn.Linear(flattened_size, 32),
+                nn.ReLU(),
+                nn.Dropout(0.3),
+                nn.Linear(32, num_classes)
+            )
         
-        self.conv_layers = nn.Sequential(*layers)
-        
-        # Calculate flattened size after convolutions
-        # Simplified calculation - may need adjustment based on input_dim
-        flattened_size = hidden_dims[-1] * (input_dim // (2 ** len(hidden_dims)))
-        
-        # Fully connected layers
-        self.fc_layers = nn.Sequential(
-            nn.Linear(flattened_size, 32),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(32, num_classes)
-        )
-    
-    def forward(self, x):
+        def forward(self, x):
         """
         Forward pass
         
@@ -104,51 +121,81 @@ class TabularCNN(nn.Module):
         Returns:
             Output logits of shape (batch_size, num_classes)
         """
-        # Reshape for 1D convolution: (batch, 1, features)
-        x = x.unsqueeze(1)
-        
-        # Convolutional layers
-        x = self.conv_layers(x)
-        
-        # Flatten
-        x = x.view(x.size(0), -1)
-        
-        # Fully connected layers
-        x = self.fc_layers(x)
-        
-        return x
+            # Reshape for 1D convolution: (batch, 1, features)
+            x = x.unsqueeze(1)
+            
+            # Convolutional layers
+            x = self.conv_layers(x)
+            
+            # Flatten
+            x = x.view(x.size(0), -1)
+            
+            # Fully connected layers
+            x = self.fc_layers(x)
+            
+            return x
 
 
-class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
-    """
-    Scikit-learn compatible CNN classifier for tabular data
-    """
+    class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
+        """
+        Scikit-learn compatible CNN classifier for tabular data
+        
+        Requires torch (install via: pip install -r requirements-nn.txt)
+        """
+        
+        def __init__(self, hidden_dims: list = [64, 32, 16], 
+                     learning_rate: float = 0.001,
+                     batch_size: int = 64,
+                     epochs: int = 10,
+                     device: Optional[str] = None,
+                     random_state: int = 42):
+            """
+            Initialize CNN classifier
+            
+            Args:
+                hidden_dims: List of hidden layer dimensions
+                learning_rate: Learning rate for optimizer
+                batch_size: Batch size for training
+                epochs: Number of training epochs
+                device: Device to use ('cpu' or 'cuda'), None for auto-detect
+                random_state: Random seed
+            
+            Raises:
+                ImportError: If torch is not available
+            """
+            if not TORCH_AVAILABLE:
+                raise ImportError(
+                    "CNNTabularClassifier requires torch. "
+                    "Install via: pip install -r requirements-nn.txt"
+                )
+            
+            self.hidden_dims = hidden_dims
+            self.learning_rate = learning_rate
+            self.batch_size = batch_size
+            self.epochs = epochs
+            self.random_state = random_state
+            
+            if device is None:
+                self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+else:
+    # Stub classes when torch is not available
+    class TabularDataset:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("TabularDataset requires torch. Install via: pip install -r requirements-nn.txt")
     
-    def __init__(self, hidden_dims: list = [64, 32, 16], 
-                 learning_rate: float = 0.001,
-                 batch_size: int = 64,
-                 epochs: int = 10,
-                 device: Optional[str] = None,
-                 random_state: int = 42):
+    class TabularCNN:
+        def __init__(self, *args, **kwargs):
+            raise ImportError("TabularCNN requires torch. Install via: pip install -r requirements-nn.txt")
+    
+    class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         """
-        Initialize CNN classifier
-        
-        Args:
-            hidden_dims: List of hidden layer dimensions
-            learning_rate: Learning rate for optimizer
-            batch_size: Batch size for training
-            epochs: Number of training epochs
-            device: Device to use ('cpu' or 'cuda'), None for auto-detect
-            random_state: Random seed
+        Stub for CNNTabularClassifier when torch is not available
         """
-        self.hidden_dims = hidden_dims
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.random_state = random_state
-        
-        if device is None:
-            self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "CNNTabularClassifier requires torch. "
+                "Install via: pip install -r requirements-nn.txt"
+            )
         else:
             self.device = torch.device(device)
         
@@ -174,55 +221,55 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             self
         """
-        self._set_random_state()
-        
-        # Encode labels if needed
-        y_encoded = self.label_encoder.fit_transform(y)
-        
-        self.input_dim = X.shape[1]
-        num_classes = len(np.unique(y_encoded))
-        
-        # Initialize model
-        self.model = TabularCNN(
-            input_dim=self.input_dim,
-            num_classes=num_classes,
-            hidden_dims=self.hidden_dims
-        ).to(self.device)
-        
-        # Loss and optimizer
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        
-        # Create dataset and dataloader
-        dataset = TabularDataset(X, y_encoded)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-        
-        # Training loop
-        self.model.train()
-        for epoch in range(self.epochs):
-            epoch_loss = 0.0
-            for batch_X, batch_y in dataloader:
-                batch_X = batch_X.to(self.device)
-                batch_y = batch_y.to(self.device)
-                
-                # Forward pass
-                optimizer.zero_grad()
-                outputs = self.model(batch_X)
-                loss = criterion(outputs, batch_y)
-                
-                # Backward pass
-                loss.backward()
-                optimizer.step()
-                
-                epoch_loss += loss.item()
+            self._set_random_state()
             
-            if (epoch + 1) % 5 == 0:
-                avg_loss = epoch_loss / len(dataloader)
-                print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {avg_loss:.4f}")
+            # Encode labels if needed
+            y_encoded = self.label_encoder.fit_transform(y)
+            
+            self.input_dim = X.shape[1]
+            num_classes = len(np.unique(y_encoded))
+            
+            # Initialize model
+            self.model = TabularCNN(
+                input_dim=self.input_dim,
+                num_classes=num_classes,
+                hidden_dims=self.hidden_dims
+            ).to(self.device)
+            
+            # Loss and optimizer
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
+            
+            # Create dataset and dataloader
+            dataset = TabularDataset(X, y_encoded)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+            
+            # Training loop
+            self.model.train()
+            for epoch in range(self.epochs):
+                epoch_loss = 0.0
+                for batch_X, batch_y in dataloader:
+                    batch_X = batch_X.to(self.device)
+                    batch_y = batch_y.to(self.device)
+                    
+                    # Forward pass
+                    optimizer.zero_grad()
+                    outputs = self.model(batch_X)
+                    loss = criterion(outputs, batch_y)
+                    
+                    # Backward pass
+                    loss.backward()
+                    optimizer.step()
+                    
+                    epoch_loss += loss.item()
+                
+                if (epoch + 1) % 5 == 0:
+                    avg_loss = epoch_loss / len(dataloader)
+                    print(f"Epoch {epoch + 1}/{self.epochs}, Loss: {avg_loss:.4f}")
+            
+            return self
         
-        return self
-    
-    def predict(self, X: np.ndarray) -> np.ndarray:
+        def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict class labels
         
@@ -232,26 +279,26 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             Predicted labels
         """
-        if self.model is None:
-            raise ValueError("Model must be fitted before prediction")
+            if self.model is None:
+                raise ValueError("Model must be fitted before prediction")
+            
+            self.model.eval()
+            dataset = TabularDataset(X)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
+            
+            predictions = []
+            with torch.no_grad():
+                for batch_X in dataloader:
+                    batch_X = batch_X.to(self.device)
+                    outputs = self.model(batch_X)
+                    _, predicted = torch.max(outputs, 1)
+                    predictions.extend(predicted.cpu().numpy())
+            
+            # Decode labels
+            predictions = np.array(predictions)
+            return self.label_encoder.inverse_transform(predictions)
         
-        self.model.eval()
-        dataset = TabularDataset(X)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
-        
-        predictions = []
-        with torch.no_grad():
-            for batch_X in dataloader:
-                batch_X = batch_X.to(self.device)
-                outputs = self.model(batch_X)
-                _, predicted = torch.max(outputs, 1)
-                predictions.extend(predicted.cpu().numpy())
-        
-        # Decode labels
-        predictions = np.array(predictions)
-        return self.label_encoder.inverse_transform(predictions)
-    
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+        def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
         Predict class probabilities
         
@@ -261,22 +308,22 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         Returns:
             Class probabilities
         """
-        if self.model is None:
-            raise ValueError("Model must be fitted before prediction")
-        
-        self.model.eval()
-        dataset = TabularDataset(X)
-        dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
-        
-        probabilities = []
-        with torch.no_grad():
-            for batch_X in dataloader:
-                batch_X = batch_X.to(self.device)
-                outputs = self.model(batch_X)
-                probs = torch.softmax(outputs, dim=1)
-                probabilities.extend(probs.cpu().numpy())
-        
-        return np.array(probabilities)
+            if self.model is None:
+                raise ValueError("Model must be fitted before prediction")
+            
+            self.model.eval()
+            dataset = TabularDataset(X)
+            dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
+            
+            probabilities = []
+            with torch.no_grad():
+                for batch_X in dataloader:
+                    batch_X = batch_X.to(self.device)
+                    outputs = self.model(batch_X)
+                    probs = torch.softmax(outputs, dim=1)
+                    probabilities.extend(probs.cpu().numpy())
+            
+            return np.array(probabilities)
 
 
 def main():
