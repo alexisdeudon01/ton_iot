@@ -333,10 +333,12 @@ class DatasetLoader:
         file_key = str(file_path_obj.resolve())
         
         # Check if already loaded (incremental mode)
-        if incremental and file_key in self.loaded_files:
+        # Note: For pipeline execution, we always reload data to ensure fresh data
+        # Incremental mode is mainly for manual data exploration scenarios
+        if incremental and file_key in self.loaded_files and sample_ratio == 1.0:
             logger.info(f"[STEP] TON_IoT file already loaded (incremental mode): {file_path_obj.name}")
-            logger.info(f"[INFO] Use incremental=False to reload")
-            return pd.DataFrame()  # Return empty, caller should handle cached data
+            logger.info(f"[INFO] Reloading anyway to ensure fresh data for pipeline...")
+            # Continue loading instead of returning empty
         
         logger.info(f"[STEP] Loading TON_IoT dataset")
         logger.info(f"[INPUT] File path: {file_path}")
@@ -567,6 +569,21 @@ class DatasetLoader:
                 f"No valid CSV files found in {dataset_path} or its subdirectories. "
                 f"Please download the CIC-DDoS2019 dataset."
             )
+        
+        # Remove duplicates (files with same name in different directories)
+        # Use a dict to track unique filenames, keeping the first occurrence
+        unique_files = {}
+        duplicates_found = 0
+        for csv_file in csv_files:
+            file_name = csv_file.name
+            if file_name not in unique_files:
+                unique_files[file_name] = csv_file
+            else:
+                duplicates_found += 1
+                logger.debug(f"[INFO] Skipping duplicate file: {csv_file} (already have {unique_files[file_name]})")
+        csv_files = list(unique_files.values())
+        if duplicates_found > 0:
+            logger.info(f"[INFO] Removed {duplicates_found} duplicate file(s) (same filename in different directories)")
         
         # Filter to only new files if incremental mode
         if incremental and detect_new_files:

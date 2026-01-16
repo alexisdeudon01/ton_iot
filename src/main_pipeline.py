@@ -187,7 +187,11 @@ class IRPPipeline:
         if self.sample_ratio < 1.0:
             logger.info(f"   [MODE TEST] Échantillonnage: {self.sample_ratio*100:.1f}% des données")
         try:
-            df_ton = self.loader.load_ton_iot(sample_ratio=self.sample_ratio, random_state=self.random_state)
+            # Always reload TON_IoT (disable incremental for pipeline to ensure fresh data)
+            df_ton = self.loader.load_ton_iot(sample_ratio=self.sample_ratio, random_state=self.random_state, incremental=False)
+            if df_ton.empty:
+                logger.warning("   ⚠ TON_IoT DataFrame is empty, trying to reload...")
+                df_ton = self.loader.load_ton_iot(sample_ratio=self.sample_ratio, random_state=self.random_state, incremental=False)
             logger.info(f"   TON_IoT: {df_ton.shape}")
         except FileNotFoundError as e:
             logger.error(f"   Error loading TON_IoT: {e}")
