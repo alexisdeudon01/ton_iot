@@ -7,12 +7,17 @@ Orchestrates all phases:
 - Phase 5: AHP-TOPSIS Ranking
 """
 import os
+import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
 import warnings
+from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # Import custom modules
 from dataset_loader import DatasetLoader
@@ -34,91 +39,137 @@ np.random.seed(RANDOM_STATE)
 class IRPPipeline:
     """Complete IRP research pipeline"""
     
-    def __init__(self, results_dir: str = 'results', random_state: int = 42):
+    def __init__(self, results_dir: str = 'output', random_state: int = 42):
         """
         Initialize pipeline
         
         Args:
-            results_dir: Directory for saving results
+            results_dir: Directory for saving results (default: 'output')
             random_state: Random seed for reproducibility
         """
         self.results_dir = Path(results_dir)
-        self.results_dir.mkdir(exist_ok=True)
+        self.results_dir.mkdir(parents=True, exist_ok=True)
         self.random_state = random_state
         self.loader = DatasetLoader()
         self.harmonizer = DataHarmonizer()
         self.pipeline = PreprocessingPipeline(random_state=random_state)
         
         # Create result subdirectories
-        (self.results_dir / 'phase1_preprocessing').mkdir(exist_ok=True)
-        (self.results_dir / 'phase3_evaluation').mkdir(exist_ok=True)
-        (self.results_dir / 'phase5_ranking').mkdir(exist_ok=True)
+        (self.results_dir / 'phase1_preprocessing').mkdir(parents=True, exist_ok=True)
+        (self.results_dir / 'phase3_evaluation').mkdir(parents=True, exist_ok=True)
+        (self.results_dir / 'phase3_evaluation' / 'algorithm_reports').mkdir(parents=True, exist_ok=True)
+        (self.results_dir / 'phase3_evaluation' / 'visualizations').mkdir(parents=True, exist_ok=True)
+        (self.results_dir / 'phase5_ranking').mkdir(parents=True, exist_ok=True)
+        (self.results_dir / 'logs').mkdir(parents=True, exist_ok=True)
+        
+        logger.info(f"Pipeline initialized with output directory: {self.results_dir.absolute()}")
     
     def phase1_preprocessing(self) -> pd.DataFrame:
         """
         Phase 1: Preprocessing Configuration Selection
-        - Load and harmonize datasets
-        - Early fusion
-        - Preprocessing with SMOTE and RobustScaler
+        - Load and harmonize datasets (TON_IoT + CIC-DDoS2019)
+        - Early fusion with statistical validation (Kolmogorov-Smirnov)
+        - Preprocessing with SMOTE (class balancing) and RobustScaler (feature scaling)
         
         Returns:
-            Preprocessed dataset
+            Tuple of (X_processed, y_processed, feature_names)
         """
-        print("=" * 60)
-        print("PHASE 1: Preprocessing Configuration Selection")
-        print("=" * 60)
+        logger.info("=" * 60)
+        logger.info("PHASE 1: Preprocessing Configuration Selection")
+        logger.info("=" * 60)
         
         # Load datasets
-        print("\n1.1 Loading datasets...")
+        logger.info("\n1.1 Loading datasets...")
         try:
             df_ton = self.loader.load_ton_iot()
-            print(f"   TON_IoT: {df_ton.shape}")
+            logger.info(f"   TON_IoT: {df_ton.shape}")
+        except FileNotFoundError as e:
+            logger.error(f"   Error loading TON_IoT: {e}")
+            raise
         except Exception as e:
-            print(f"   Error loading TON_IoT: {e}")
+            logger.error(f"   Unexpected error loading TON_IoT: {e}", exc_info=True)
             raise
         
         try:
             df_cic = self.loader.load_cic_ddos2019()
-            print(f"   CIC-DDoS2019: {df_cic.shape}")
+            logger.info(f"   CIC-DDoS2019: {df_cic.shape}")
             
             # Harmonize and fuse
-            print("\n1.2 Harmonizing datasets...")
-            df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(df_cic, df_ton)
-            print(f"   CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
-            print(f"   TON_IoT harmonized: {df_ton_harm.shape}")
+            logger.info("\n1.2 Harmonizing datasets...")
+            logger.info("   Mapping features between TON_IoT and CIC-DDoS2019...")
+            try:
+                df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(df_cic, df_ton)
+                logger.info(f"   CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
+                logger.info(f"   TON_IoT harmonized: {df_ton_harm.shape}")
+            except Exception as e:
+                logger.error(f"   Error during harmonization: {e}", exc_info=True)
+                raise
             
-            print("\n1.3 Early fusion...")
-            df_fused, validation = self.harmonizer.early_fusion(df_cic_harm, df_ton_harm)
-            print(f"   Fused dataset: {df_fused.shape}")
-            print(f"   Validation: {sum(1 for v in validation.values() if v.get('compatible', False))}/{len(validation)} features compatible")
+            logger.info("\n1.3 Early fusion...")
+            logger.info("   Performing statistical validation (Kolmogorov-Smirnov test)...")
+            try:
+                df_fused, validation = self.harmonizer.early_fusion(df_cic_harm, df_ton_harm)
+                compatible_count = sum(1 for v in validation.values() if v.get('compatible', False))
+                logger.info(f"   Fused dataset: {df_fused.shape}")
+                logger.info(f"   Validation: {compatible_count}/{len(validation)} features compatible")
+            except Exception as e:
+                logger.error(f"   Error during early fusion: {e}", exc_info=True)
+                raise
             
             # Use fused dataset
             df_processed = df_fused
             
         except FileNotFoundError:
-            print("   CIC-DDoS2019 not available, using TON_IoT only")
+            logger.warning("   CIC-DDoS2019 not available, using TON_IoT only")
+            df_processed = df_ton
+        except Exception as e:
+            logger.error(f"   Error processing CIC-DDoS2019: {e}", exc_info=True)
+            logger.warning("   Falling back to TON_IoT only")
             df_processed = df_ton
         
         # Prepare features and labels
         label_col = 'label' if 'label' in df_processed.columns else None
         if label_col is None:
-            raise ValueError("Label column not found in dataset")
+            error_msg = "Label column not found in dataset"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         
-        X = df_processed.drop([label_col, 'dataset_source'] if 'dataset_source' in df_processed.columns else [label_col], axis=1, errors='ignore')
-        y = df_processed[label_col]
+        try:
+            X = df_processed.drop([label_col, 'dataset_source'] if 'dataset_source' in df_processed.columns else [label_col], axis=1, errors='ignore')
+            y = df_processed[label_col]
+            logger.info(f"   Features shape: {X.shape}, Labels shape: {y.shape}")
+        except Exception as e:
+            logger.error(f"   Error preparing features/labels: {e}", exc_info=True)
+            raise
         
-        print("\n1.4 Preprocessing (SMOTE + RobustScaler)...")
-        X_processed, y_processed = self.pipeline.prepare_data(
-            X, y, apply_smote_flag=True, scale=True
-        )
-        print(f"   Processed shape: {X_processed.shape}")
-        print(f"   Class distribution: {pd.Series(y_processed).value_counts().to_dict()}")
+        logger.info("\n1.4 Preprocessing (SMOTE + RobustScaler)...")
+        logger.info("   Applying SMOTE for class balancing...")
+        logger.info("   Scaling features with RobustScaler...")
+        try:
+            X_processed, y_processed = self.pipeline.prepare_data(
+                X, y, apply_smote_flag=True, scale=True
+            )
+            logger.info(f"   Processed shape: {X_processed.shape}")
+            class_dist = pd.Series(y_processed).value_counts().to_dict()
+            logger.info(f"   Class distribution: {class_dist}")
+        except MemoryError as e:
+            logger.error(f"   Memory error during preprocessing: {e}")
+            logger.error("   Try reducing dataset size or increasing available memory")
+            raise
+        except Exception as e:
+            logger.error(f"   Error during preprocessing: {e}", exc_info=True)
+            raise
         
         # Save preprocessed data
-        df_preprocessed = pd.DataFrame(X_processed)
-        df_preprocessed['label'] = y_processed
-        df_preprocessed.to_csv(self.results_dir / 'phase1_preprocessing' / 'preprocessed_data.csv', index=False)
-        print(f"\n   Saved preprocessed data to {self.results_dir / 'phase1_preprocessing' / 'preprocessed_data.csv'}")
+        try:
+            df_preprocessed = pd.DataFrame(X_processed)
+            df_preprocessed['label'] = y_processed
+            output_file = self.results_dir / 'phase1_preprocessing' / 'preprocessed_data.csv'
+            df_preprocessed.to_csv(output_file, index=False)
+            logger.info(f"\n   Saved preprocessed data to {output_file}")
+        except Exception as e:
+            logger.error(f"   Error saving preprocessed data: {e}", exc_info=True)
+            raise
         
         return X_processed, y_processed, self.pipeline.feature_names
     
@@ -156,15 +207,15 @@ class IRPPipeline:
         feature_names_list = feature_names or [f'feature_{i}' for i in range(X.shape[1])]
         evaluator = Evaluation3D(feature_names=feature_names_list)
         
-        print(f"\n3.1 Evaluating {len(models)} algorithms with 5-fold CV...")
+        logger.info(f"\n3.1 Evaluating {len(models)} algorithms with 5-fold CV...")
         
         all_results = []
         
-        for model_name, model in models.items():
-            print(f"\n   Evaluating {model_name}...")
+        for model_name, model in tqdm(models.items(), desc="Evaluating algorithms"):
+            logger.info(f"\n   Evaluating {model_name}...")
             
             fold_results = []
-            for fold_idx, (train_idx, test_idx) in enumerate(cv.split(X, y)):
+            for fold_idx, (train_idx, test_idx) in enumerate(tqdm(cv.split(X, y), desc=f"  {model_name} CV folds", total=5, leave=False)):
                 X_train_fold, X_test_fold = X[train_idx], X[test_idx]
                 y_train_fold, y_test_fold = y[train_idx], y[test_idx]
                 
@@ -176,7 +227,8 @@ class IRPPipeline:
                     )
                     fold_results.append(results)
                 except Exception as e:
-                    print(f"      Error in fold {fold_idx+1}: {e}")
+                    logger.warning(f"      Error in fold {fold_idx+1} for {model_name}: {e}")
+                    logger.debug(f"      Full error traceback:", exc_info=True)
                     continue
             
             if fold_results:
@@ -192,15 +244,156 @@ class IRPPipeline:
                     'explainability_score': np.mean([r['explainability_score'] for r in fold_results])
                 }
                 all_results.append(avg_results)
-                print(f"      F1 Score: {avg_results['f1_score']:.4f}, "
-                      f"Time: {avg_results['training_time_seconds']:.2f}s")
+                logger.info(f"      {model_name} - F1 Score: {avg_results['f1_score']:.4f}, "
+                           f"Time: {avg_results['training_time_seconds']:.2f}s, "
+                           f"Explainability: {avg_results['explainability_score']:.4f}")
         
         # Create results DataFrame
-        results_df = pd.DataFrame(all_results)
-        results_df.to_csv(self.results_dir / 'phase3_evaluation' / 'evaluation_results.csv', index=False)
-        print(f"\n   Saved evaluation results to {self.results_dir / 'phase3_evaluation' / 'evaluation_results.csv'}")
+        try:
+            results_df = pd.DataFrame(all_results)
+            output_file = self.results_dir / 'phase3_evaluation' / 'evaluation_results.csv'
+            results_df.to_csv(output_file, index=False)
+            logger.info(f"\n   Saved evaluation results to {output_file}")
+        except Exception as e:
+            logger.error(f"   Error saving evaluation results: {e}", exc_info=True)
+            raise
+        
+        # Generate dimension scores
+        try:
+            dimension_scores = evaluator.get_dimension_scores()
+            dimension_scores_file = self.results_dir / 'phase3_evaluation' / 'dimension_scores.csv'
+            dimension_scores.to_csv(dimension_scores_file, index=False)
+            logger.info(f"   Saved dimension scores to {dimension_scores_file}")
+        except Exception as e:
+            logger.warning(f"   Error generating dimension scores: {e}")
+        
+        # Generate algorithm reports
+        logger.info("\n3.2 Generating algorithm reports...")
+        try:
+            for _, row in results_df.iterrows():
+                results_dict = row.to_dict()
+                evaluator.generate_algorithm_report(
+                    results_dict['model_name'], 
+                    results_dict,
+                    self.results_dir / 'phase3_evaluation'
+                )
+            logger.info("   Algorithm reports generated")
+        except Exception as e:
+            logger.warning(f"   Error generating algorithm reports: {e}")
+        
+        # Generate visualizations (if matplotlib available)
+        logger.info("\n3.3 Generating visualizations...")
+        try:
+            self._generate_visualizations(results_df, evaluator)
+            logger.info("   Visualizations generated")
+        except Exception as e:
+            logger.warning(f"   Error generating visualizations: {e}")
         
         return results_df
+    
+    def _generate_visualizations(self, results_df: pd.DataFrame, evaluator):
+        """Generate visualizations for the 3 dimensions"""
+        try:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            
+            viz_dir = self.results_dir / 'phase3_evaluation' / 'visualizations'
+            viz_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Dimension 1: Performance metrics
+            fig, ax = plt.subplots(figsize=(10, 6))
+            x = range(len(results_df))
+            width = 0.2
+            ax.bar([i - width for i in x], results_df['f1_score'], width, label='F1 Score', color='#1f77b4')
+            ax.bar(x, results_df['precision'], width, label='Precision', color='#ff7f0e')
+            ax.bar([i + width for i in x], results_df['recall'], width, label='Recall', color='#2ca02c')
+            ax.set_xlabel('Algorithm')
+            ax.set_ylabel('Score')
+            ax.set_title('Dimension 1: Detection Performance')
+            ax.set_xticks(x)
+            ax.set_xticklabels(results_df['model_name'], rotation=45, ha='right')
+            ax.legend()
+            ax.grid(axis='y', alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(viz_dir / 'dimension1_performance.png', dpi=150, bbox_inches='tight')
+            plt.close()
+            
+            # Dimension 2: Resource Efficiency
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+            ax1.bar(results_df['model_name'], results_df['training_time_seconds'], color='#d62728')
+            ax1.set_ylabel('Training Time (seconds)')
+            ax1.set_title('Training Time by Algorithm')
+            ax1.tick_params(axis='x', rotation=45)
+            ax1.grid(axis='y', alpha=0.3)
+            
+            ax2.bar(results_df['model_name'], results_df['memory_used_mb'], color='#9467bd')
+            ax2.set_ylabel('Memory Usage (MB)')
+            ax2.set_title('Memory Usage by Algorithm')
+            ax2.tick_params(axis='x', rotation=45)
+            ax2.grid(axis='y', alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(viz_dir / 'dimension2_resources.png', dpi=150, bbox_inches='tight')
+            plt.close()
+            
+            # Dimension 3: Explainability
+            fig, ax = plt.subplots(figsize=(10, 6))
+            x = range(len(results_df))
+            width = 0.25
+            ax.bar([i - width for i in x], results_df['native_interpretability'], width, label='Native', color='#8c564b')
+            if 'shap_score' in results_df.columns:
+                shap_values = results_df['shap_score'].fillna(0)
+                ax.bar(x, shap_values, width, label='SHAP', color='#e377c2')
+            if 'lime_score' in results_df.columns:
+                lime_values = results_df['lime_score'].fillna(0)
+                ax.bar([i + width for i in x], lime_values, width, label='LIME', color='#7f7f7f')
+            ax.set_xlabel('Algorithm')
+            ax.set_ylabel('Score')
+            ax.set_title('Dimension 3: Explainability')
+            ax.set_xticks(x)
+            ax.set_xticklabels(results_df['model_name'], rotation=45, ha='right')
+            ax.legend()
+            ax.grid(axis='y', alpha=0.3)
+            plt.tight_layout()
+            plt.savefig(viz_dir / 'dimension3_explainability.png', dpi=150, bbox_inches='tight')
+            plt.close()
+            
+            # Combined radar chart (if dimension scores available)
+            try:
+                dimension_scores = evaluator.get_dimension_scores()
+                fig, ax = plt.subplots(figsize=(10, 8), subplot_kw=dict(projection='polar'))
+                categories = ['Detection\nPerformance', 'Resource\nEfficiency', 'Explainability']
+                num_vars = len(categories)
+                angles = [n / float(num_vars) * 2 * np.pi for n in range(num_vars)]
+                angles += angles[:1]
+                
+                for idx, row in dimension_scores.iterrows():
+                    values = [
+                        row['detection_performance'],
+                        row['resource_efficiency'],
+                        row['explainability']
+                    ]
+                    values += values[:1]
+                    ax.plot(angles, values, 'o-', linewidth=2, label=row['model_name'])
+                    ax.fill(angles, values, alpha=0.1)
+                
+                ax.set_xticks(angles[:-1])
+                ax.set_xticklabels(categories)
+                ax.set_ylim(0, 1)
+                ax.set_title('3D Evaluation: Combined Dimensions', pad=20)
+                ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+                ax.grid(True)
+                plt.tight_layout()
+                plt.savefig(viz_dir / 'combined_3d_radar.png', dpi=150, bbox_inches='tight')
+                plt.close()
+            except Exception as e:
+                logger.debug(f"Could not generate radar chart: {e}")
+                
+        except ImportError:
+            logger.warning("Matplotlib/Seaborn not available. Skipping visualizations.")
+        except Exception as e:
+            logger.warning(f"Error generating visualizations: {e}", exc_info=True)
     
     def phase5_ranking(self, evaluation_results: pd.DataFrame):
         """
@@ -302,7 +495,7 @@ class IRPPipeline:
 
 def main():
     """Run the main pipeline"""
-    pipeline = IRPPipeline(results_dir='results', random_state=42)
+    pipeline = IRPPipeline(results_dir='output', random_state=42)
     pipeline.run()
 
 

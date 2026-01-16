@@ -1,34 +1,52 @@
+# ============================================================================
+# Core dependencies for IRP Research Pipeline
+# AI-Powered Log Analysis for Smarter Threat Detection
+# ============================================================================
+
 # Core data manipulation and numerical computing
+# Used for data loading, preprocessing, and numerical operations
 numpy>=1.21.0
 pandas>=1.3.0
 scipy>=1.7.0
 
 # Machine Learning
+# scikit-learn: Logistic Regression, Decision Tree, Random Forest, metrics
 scikit-learn>=1.0.0
 
 # Imbalanced Learning (for SMOTE)
+# Used in Phase 1 preprocessing for class balancing
 imbalanced-learn>=0.10.0
 
 # Deep Learning
+# PyTorch and TabNet for deep learning models (CNN, TabNet)
 torch>=1.12.0
 pytorch-tabnet>=4.0
 
-# Explainability
+# Explainability (Dimension 3)
+# SHAP and LIME for model explainability evaluation
 shap>=0.41.0
 lime>=0.2.0
 
-# System monitoring
+# System monitoring (Dimension 2: Resource Efficiency)
+# psutil: Memory and resource usage monitoring during training
 psutil>=5.9.0
 
-# XGBoost (évite les dépendances NVIDIA)
+# XGBoost (optional - not used in IRP methodology)
 # Note: Not used in IRP methodology but kept for backward compatibility
+# Avoids NVIDIA CUDA dependencies
 xgboost<3
 
 # Reinforcement Learning (optional)
+# For RL-based approaches (not core to IRP pipeline)
 stable-baselines3>=2.0.0
 gymnasium>=0.29.1
 shimmy>=2.0
 
 # Visualization
+# matplotlib/seaborn: For generating plots and visualizations of results
 matplotlib>=3.4.0
 seaborn>=0.11.0
+
+# Utilities
+# tqdm: Progress bars for long-running operations (loading CSV, training models, CV)
+tqdm>=4.64.0

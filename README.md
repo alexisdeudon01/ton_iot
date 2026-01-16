@@ -27,7 +27,22 @@ This repository implements the methodology described in the IRP research paper: 
 To run the complete pipeline and generate all results:
 
 ```bash
+python main.py
+```
+
+Or use the legacy entry point:
+
+```bash
 python main_pipeline.py
+```
+
+**Command-line options**:
+```bash
+python main.py                    # Run complete pipeline
+python main.py --phase 1          # Run only Phase 1 (preprocessing)
+python main.py --phase 3          # Run only Phase 3 (evaluation)
+python main.py --phase 5          # Run only Phase 5 (ranking)
+python main.py --output-dir custom_output  # Custom output directory
 ```
 
 This will execute three phases:
@@ -37,10 +52,31 @@ This will execute three phases:
 
 #### Three-Dimensional Evaluation Framework
 
-The framework evaluates algorithms across:
-- **Dimension 1: Detection Performance** - F1 Score (primary metric)
-- **Dimension 2: Resource Efficiency** - Training time, memory usage
-- **Dimension 3: Explainability** - SHAP/LIME scores, native interpretability
+The framework evaluates algorithms across three dimensions:
+
+##### Dimension 1: Detection Performance
+- **Metrics**: F1 Score (primary), Precision (Pr), Recall (Rc), Accuracy
+- **Calculation**: Using weighted average for multi-class problems (following CIC-DDoS2019 methodology)
+- **Formulas**: See `DIMENSIONS_CALCULATION.md` for detailed mathematical formulas
+
+##### Dimension 2: Resource Efficiency
+- **Metrics**: Training time (seconds), Memory usage (MB)
+- **Calculation**: Normalized combination of time and memory (60% time, 40% memory)
+- **Interpretation**: Higher score = more efficient (faster training, less memory)
+
+##### Dimension 3: Explainability
+- **Components**: 
+  - Native Interpretability (50%): Binary indicator for tree-based models
+  - SHAP Score (30%): Mean Absolute SHAP Values
+  - LIME Score (20%): Mean importance from LIME explanations
+- **Interpretation**: Higher score = more explainable model
+
+**Detailed calculations**: See `DIMENSIONS_CALCULATION.md` for complete formulas and visualizations.
+
+**Visual representations**: 
+- Bar charts for each dimension
+- Radar/spider charts for combined 3D visualization
+- Scatter plots for multi-dimensional comparison
 
 #### Algorithms Evaluated
 
@@ -56,6 +92,36 @@ According to IRP methodology:
 - **TON_IoT**: Included (train_test_network.csv)
 - **CIC-DDoS2019**: Download from [CIC Dataset](https://www.unb.ca/cic/datasets/ddos-2019.html) and place in `data/raw/CIC-DDoS2019/`
 
+##### CIC-DDoS2019 Dataset
+
+The CIC-DDoS2019 dataset is a comprehensive DDoS attack dataset containing:
+- **80 network traffic features** extracted using CICFlowMeter software (publicly available from CIC)
+- **11 types of DDoS attacks**: reflective DDoS (DNS, LDAP, MSSQL, TFTP), UDP, UDP-Lag, SYN, and others
+- Both benign and attack traffic flows
+
+**Reference Paper**: "Developing Realistic Distributed Denial of Service (DDoS) Attack Dataset and Taxonomy" by Sharafaldin et al. (2019), Canadian Institute for Cybersecurity (CIC).
+
+**Download**: [CIC-DDoS2019 Dataset](https://www.unb.ca/cic/datasets/ddos-2019.html)
+
+**Documentation**: See `dataset.pdf` in the repository for detailed methodology.
+
+##### Using Both Datasets Together
+
+The pipeline uses **both TON_IoT and CIC-DDoS2019 datasets** through a process of harmonization and early fusion:
+
+1. **Harmonization**: Features from both datasets are mapped to a common schema based on semantic similarity (exact matches and semantic mappings)
+2. **Early Fusion**: The harmonized datasets are combined into a single dataset with statistical validation (Kolmogorov-Smirnov test)
+3. **Preprocessing**: The fused dataset undergoes SMOTE (for class balancing) and RobustScaler (for feature scaling)
+
+**Dataset Structure for CIC-DDoS2019**:
+- Place CSV files in `data/raw/CIC-DDoS2019/`
+- The pipeline automatically loads all CSV files in the directory and combines them
+- Each CSV file typically represents a different attack type
+
+**Fallback Behavior**: If CIC-DDoS2019 is not available, the pipeline automatically falls back to using TON_IoT alone.
+
+**See also**: `OUTPUT_EXPECTED.md` for detailed information on dataset processing outputs.
+
 ### Legacy Scripts
 
 - `data_training.py` - Data exploration and basic ML models (Legacy code, kept for reference)
@@ -64,10 +130,15 @@ According to IRP methodology:
 
 ### IRP Pipeline Results
 
-Results are automatically generated in the `results/` directory:
-- `results/phase1_preprocessing/` - Preprocessed datasets
-- `results/phase3_evaluation/` - 3D evaluation metrics for all algorithms
-- `results/phase5_ranking/` - AHP-TOPSIS ranking results
+Results are automatically generated in the `output/` directory:
+- `output/phase1_preprocessing/` - Preprocessed datasets, harmonization statistics
+- `output/phase3_evaluation/` - 3D evaluation metrics, algorithm reports, visualizations
+  - `algorithm_reports/` - Detailed reports per algorithm
+  - `visualizations/` - Graphs and charts for each dimension
+- `output/phase5_ranking/` - AHP-TOPSIS ranking results, decision matrices
+- `output/logs/` - Log files for each phase
+
+**Expected outputs**: See `OUTPUT_EXPECTED.md` for detailed documentation of all output files, their formats, and how to interpret them.
 
 ### Data Exploration
 
