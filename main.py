@@ -14,6 +14,8 @@ Usage:
 import sys
 import argparse
 import logging
+import subprocess
+import re
 from pathlib import Path
 from datetime import datetime
 
@@ -40,6 +42,89 @@ def setup_logging(output_dir: Path):
     logger = logging.getLogger(__name__)
     logger.info(f"Logging initialized. Log file: {log_file}")
     return logger
+
+
+def check_requirements(output_dir: Path):
+    """
+    Check if all required packages from requirements.txt are installed
+    
+    Args:
+        output_dir: Output directory for logging
+        
+    Returns:
+        True if all requirements are met, False otherwise
+    """
+    logger = logging.getLogger(__name__)
+    requirements_file = Path('requirements.txt')
+    
+    if not requirements_file.exists():
+        logger.warning("requirements.txt not found. Skipping dependency check.")
+        return True
+    
+    logger.info("Checking Python dependencies from requirements.txt...")
+    
+    try:
+        with open(requirements_file, 'r') as f:
+            requirements = f.readlines()
+        
+        missing_packages = []
+        installed_packages = {}
+        
+        # Get installed packages
+        try:
+            result = subprocess.run(
+                [sys.executable, '-m', 'pip', 'list', '--format=freeze'],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            if result.returncode == 0:
+                for line in result.stdout.strip().split('\n'):
+                    if '==' in line:
+                        pkg_name = line.split('==')[0].lower().replace('-', '_').replace('.', '_')
+                        installed_packages[pkg_name] = line
+        except Exception as e:
+            logger.warning(f"Could not check installed packages: {e}")
+            return True  # Continue anyway
+        
+        # Parse requirements.txt
+        for req_line in requirements:
+            req_line = req_line.strip()
+            # Skip comments and empty lines
+            if not req_line or req_line.startswith('#'):
+                continue
+            
+            # Extract package name (handle version constraints)
+            match = re.match(r'^([a-zA-Z0-9_-]+(?:\[.*\])?)', req_line)
+            if match:
+                pkg_name_raw = match.group(1)
+                # Remove extras [optional]
+                pkg_name_clean = re.sub(r'\[.*\]', '', pkg_name_raw)
+                pkg_name_normalized = pkg_name_clean.lower().replace('-', '_').replace('.', '_')
+                
+                # Check if package is installed
+                found = False
+                for installed_name in installed_packages.keys():
+                    if installed_name.startswith(pkg_name_normalized) or pkg_name_normalized.startswith(installed_name):
+                        found = True
+                        break
+                
+                if not found:
+                    missing_packages.append(pkg_name_clean)
+        
+        if missing_packages:
+            logger.warning(f"Missing packages ({len(missing_packages)}): {', '.join(missing_packages[:5])}")
+            if len(missing_packages) > 5:
+                logger.warning(f"... and {len(missing_packages) - 5} more")
+            logger.info("Install missing packages with: pip install -r requirements.txt")
+            return False
+        else:
+            logger.info("All required packages are installed.")
+            return True
+            
+    except Exception as e:
+        logger.warning(f"Error checking requirements: {e}")
+        return True  # Continue anyway
 
 
 def main():
@@ -86,6 +171,12 @@ Examples:
     logger.info("=" * 70)
     logger.info(f"Output directory: {output_dir.absolute()}")
     logger.info(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    # Check requirements
+    if not check_requirements(output_dir):
+        logger.warning("Some dependencies may be missing. Continue anyway? (y/n)")
+        # For non-interactive mode, continue anyway but log warning
+        logger.warning("Continuing execution despite missing dependencies...")
     
     if args.phase:
         logger.info(f"Running Phase {args.phase} only")

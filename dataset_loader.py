@@ -21,15 +21,18 @@ logger = logging.getLogger(__name__)
 class DatasetLoader:
     """Loader for CIC-DDoS2019 and TON_IoT datasets"""
     
-    def __init__(self, data_dir: str = 'data/raw'):
+    def __init__(self, data_dir: str = 'datasets'):
         """
         Initialize the dataset loader
         
         Args:
-            data_dir: Root directory for raw datasets
+            data_dir: Root directory for datasets (default: 'datasets')
         """
         self.data_dir = Path(data_dir)
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure subdirectories exist
+        (self.data_dir / 'ton_iot').mkdir(parents=True, exist_ok=True)
+        (self.data_dir / 'cic_ddos2019').mkdir(parents=True, exist_ok=True)
         
     def load_ton_iot(self, file_path: Optional[str] = None) -> pd.DataFrame:
         """
@@ -42,11 +45,13 @@ class DatasetLoader:
             DataFrame containing TON_IoT data
         """
         if file_path is None:
-            # Try to find train_test_network.csv in current directory or data/raw
+            # Try to find TON_IoT dataset in standard locations
             possible_paths = [
-                Path('train_test_network.csv'),
-                self.data_dir / 'TON_IoT' / 'train_test_network.csv',
-                Path('Processed_datasets/Processed_Windows_dataset/windows10_dataset.csv')
+                self.data_dir / 'ton_iot' / 'train_test_network.csv',
+                self.data_dir / 'ton_iot' / 'windows10_dataset.csv',
+                Path('train_test_network.csv'),  # Legacy: root for backward compatibility
+                Path('Processed_datasets/Processed_Windows_dataset/windows10_dataset.csv'),  # Legacy
+                Path('data/raw/TON_IoT/train_test_network.csv'),  # Legacy
             ]
             
             for path in possible_paths:
@@ -56,8 +61,8 @@ class DatasetLoader:
             
             if file_path is None:
                 raise FileNotFoundError(
-                    "TON_IoT dataset not found. Please provide file_path or place "
-                    "train_test_network.csv in the project root or data/raw/TON_IoT/"
+                    f"TON_IoT dataset not found. Please provide file_path or place "
+                    f"train_test_network.csv in {self.data_dir / 'ton_iot'}/"
                 )
         
         logger.info(f"Loading TON_IoT dataset from: {file_path}")
@@ -96,7 +101,11 @@ class DatasetLoader:
             ValueError: If no valid CSV files could be loaded
         """
         if dataset_path is None:
-            dataset_path = self.data_dir / 'CIC-DDoS2019'
+            dataset_path = self.data_dir / 'cic_ddos2019'
+            # Also check legacy location
+            legacy_path = Path('data/raw/CIC-DDoS2019')
+            if legacy_path.exists() and not dataset_path.exists():
+                dataset_path = legacy_path
         
         dataset_path = Path(dataset_path)
         
@@ -105,7 +114,7 @@ class DatasetLoader:
                 f"CIC-DDoS2019 dataset not found at {dataset_path}. "
                 "Please download the dataset from: "
                 "https://www.unb.ca/cic/datasets/ddos-2019.html "
-                "and place it in data/raw/CIC-DDoS2019/"
+                f"and place CSV files in {self.data_dir / 'cic_ddos2019'}/"
             )
         
         # CIC-DDoS2019 typically contains multiple CSV files (one per attack type)
