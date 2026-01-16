@@ -64,7 +64,8 @@ plt.xlabel('Correlation')
 plt.ylabel('Features')
 plt.grid(axis='x', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.show()
+plt.savefig('correlation.png', dpi=150, bbox_inches='tight')
+plt.close()
 
 # Finding the most correlated pairs of features
 # We are interested in the absolute value of correlation coefficients (ignore the sign)
@@ -89,12 +90,20 @@ correlation_matrix_most_correlated = data_most_correlated.corr()
 plt.figure(figsize=(8, 6))
 sns.heatmap(correlation_matrix_most_correlated, annot=True, fmt=".2f", cmap='coolwarm', cbar=True)
 plt.title("Correlation Matrix of Most Correlated Features")
-plt.show()
+plt.savefig('correlation_matrix.png', dpi=150, bbox_inches='tight')
+plt.close()
 
 # =================================================== Training ======================================
 
 # Replacing empty strings with NaN and converting all columns to numeric where possible
-data_cleaned = data.replace('', np.nan).apply(pd.to_numeric, errors='ignore')
+def safe_to_numeric(series):
+    """Safely convert series to numeric, keeping non-numeric values as-is"""
+    try:
+        return pd.to_numeric(series)
+    except (ValueError, TypeError):
+        return series
+
+data_cleaned = data.replace('', np.nan).apply(safe_to_numeric)
 
 # Dropping any rows with NaN values for simplicity, but other strategies could be applied
 data_cleaned = data_cleaned.dropna()
@@ -194,7 +203,7 @@ model_performance["Precision Score"].append(precision_ridge)
 
 # XGBOOST
 # Initialize the model
-xgb_clf = XGBClassifier(use_label_encoder=False, eval_metric='logloss')
+xgb_clf = XGBClassifier(eval_metric='logloss')
 xgb_clf.fit(X_train_scaled, y_train)
 
 y_pred_xgb = xgb_clf.predict(X_test_scaled)
@@ -258,5 +267,6 @@ for i, metric in enumerate(metrics):
     ax.set_xticks(range(len(performance_df["Model"])))
 
 plt.tight_layout()
-plt.show()
+plt.savefig('model_performance.png', dpi=150, bbox_inches='tight')
+plt.close()
 print(performance_df)
