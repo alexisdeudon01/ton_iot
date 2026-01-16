@@ -314,6 +314,10 @@ class RealTimeVisualizer:
         # Active figures (for real-time updates)
         self.active_figures: Dict[str, plt.Figure] = {}
         
+        # Pipeline overview figure (for real-time updates)
+        self.pipeline_overview_fig: Optional[plt.Figure] = None
+        self.pipeline_overview_update_count = 0
+        
         logger.info(f"RealTimeVisualizer initialized (interactive: {self.enable_realtime})")
     
     def get_algorithm_visualizer(self, algorithm_name: str) -> AlgorithmVisualizer:
@@ -357,6 +361,8 @@ class RealTimeVisualizer:
             # Auto-save visualization every 5 updates
             if len(viz.metrics_history.get('accuracy', [])) % 5 == 0:
                 self._update_algorithm_visualization(algorithm_name, viz)
+                # Update pipeline overview in real-time
+                self._update_pipeline_overview_realtime()
     
     def callback_evaluation_progress(self, data: Dict[str, Any]):
         """Callback for evaluation progress"""
@@ -385,6 +391,121 @@ class RealTimeVisualizer:
         except Exception as e:
             logger.warning(f"Could not update visualization for {algorithm_name}: {e}")
     
+    def _update_pipeline_overview_realtime(self):
+        """Update pipeline overview visualization in real-time"""
+        try:
+            # Only update every 3 algorithm updates to avoid too frequent refreshes
+            self.pipeline_overview_update_count += 1
+            if self.pipeline_overview_update_count % 3 != 0:
+                return
+            
+            if not VISUALIZATION_AVAILABLE:
+                return
+            
+            # Create or update pipeline overview
+            if self.pipeline_overview_fig is None:
+                # Create new figure
+                self.pipeline_overview_fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+                self.pipeline_overview_fig.suptitle('Pipeline Progress Overview (Live)', 
+                                                    fontsize=16, fontweight='bold')
+                plt.ion()  # Turn on interactive mode
+                if self.enable_realtime:
+                    plt.show(block=False)
+            else:
+                # Clear existing axes
+                axes = self.pipeline_overview_fig.get_axes()
+                for ax in axes:
+                    ax.clear()
+            
+            # Data loading progress
+            ax1 = axes[0, 0]
+            for dataset, data_list in self.pipeline_metrics['data_loading'].items():
+                if data_list:
+                    rows = [d['rows'] for d in data_list]
+                    chunks = [d['chunks'] for d in data_list]
+                    ax1.plot(chunks, rows, marker='o', label=dataset, linewidth=2)
+            ax1.set_xlabel('Chunks Processed')
+            ax1.set_ylabel('Rows Loaded')
+            ax1.set_title('Data Loading Progress')
+            ax1.legend()
+            ax1.grid(True, alpha=0.3)
+            
+            # Algorithm performance comparison
+            ax2 = axes[0, 1]
+            algo_names = []
+            final_accuracies = []
+            for algo_name, viz in self.algorithm_visualizers.items():
+                if 'accuracy' in viz.metrics_history and len(viz.metrics_history['accuracy']) > 0:
+                    algo_names.append(algo_name)
+                    final_accuracies.append(viz.metrics_history['accuracy'][-1])
+            
+            if algo_names:
+                colors = plt.cm.viridis(np.linspace(0, 1, len(algo_names)))
+                ax2.barh(algo_names, final_accuracies, color=colors)
+                ax2.set_xlabel('Final Accuracy')
+                ax2.set_title('Algorithm Performance Comparison')
+                ax2.set_xlim([0, 1.1])
+                ax2.grid(True, alpha=0.3, axis='x')
+            else:
+                ax2.text(0.5, 0.5, 'No algorithms evaluated yet', 
+                        ha='center', va='center', transform=ax2.transAxes, fontsize=12)
+                ax2.set_title('Algorithm Performance Comparison')
+            
+            # Training time comparison
+            ax3 = axes[1, 0]
+            algo_names = []
+            training_times = []
+            for algo_name, viz in self.algorithm_visualizers.items():
+                if 'training_time' in viz.metrics_history and len(viz.metrics_history['training_time']) > 0:
+                    algo_names.append(algo_name)
+                    training_times.append(np.mean(viz.metrics_history['training_time']))
+            
+            if algo_names:
+                colors = plt.cm.plasma(np.linspace(0, 1, len(algo_names)))
+                ax3.barh(algo_names, training_times, color=colors)
+                ax3.set_xlabel('Average Training Time (s)')
+                ax3.set_title('Training Time Comparison')
+                ax3.grid(True, alpha=0.3, axis='x')
+            else:
+                ax3.text(0.5, 0.5, 'No training data yet', 
+                        ha='center', va='center', transform=ax3.transAxes, fontsize=12)
+                ax3.set_title('Training Time Comparison')
+            
+            # F1 Score comparison
+            ax4 = axes[1, 1]
+            algo_names = []
+            f1_scores = []
+            for algo_name, viz in self.algorithm_visualizers.items():
+                if 'f1_score' in viz.metrics_history and len(viz.metrics_history['f1_score']) > 0:
+                    algo_names.append(algo_name)
+                    f1_scores.append(viz.metrics_history['f1_score'][-1])
+            
+            if algo_names:
+                colors = plt.cm.coolwarm(np.linspace(0, 1, len(algo_names)))
+                ax4.barh(algo_names, f1_scores, color=colors)
+                ax4.set_xlabel('F1 Score')
+                ax4.set_title('F1 Score Comparison')
+                ax4.set_xlim([0, 1.1])
+                ax4.grid(True, alpha=0.3, axis='x')
+            else:
+                ax4.text(0.5, 0.5, 'No F1 scores yet', 
+                        ha='center', va='center', transform=ax4.transAxes, fontsize=12)
+                ax4.set_title('F1 Score Comparison')
+            
+            plt.tight_layout()
+            
+            # Update figure
+            self.pipeline_overview_fig.canvas.draw()
+            self.pipeline_overview_fig.canvas.flush_events()
+            
+            # Save snapshot periodically (every 10 updates)
+            if self.pipeline_overview_update_count % 10 == 0:
+                save_path = self.output_dir / 'pipeline_overview_realtime.png'
+                self.pipeline_overview_fig.savefig(save_path, dpi=150, bbox_inches='tight')
+            
+        except Exception as e:
+            logger.debug(f"Error updating pipeline overview in real-time: {e}")
+    
     def finalize_algorithm_visualizations(self):
         """Finalize and save all algorithm visualizations"""
         logger.info("[VIZ] Finalizing algorithm visualizations...")
@@ -408,6 +529,14 @@ class RealTimeVisualizer:
             except:
                 pass
         self.active_figures.clear()
+        
+        # Close pipeline overview figure
+        if self.pipeline_overview_fig:
+            try:
+                plt.close(self.pipeline_overview_fig)
+            except:
+                pass
+            self.pipeline_overview_fig = None
     
     def create_pipeline_overview(self, save_path: Optional[Path] = None):
         """Create overview visualization of entire pipeline"""
