@@ -167,6 +167,21 @@ class IRPPipeline:
         logger.info("PHASE 1: Preprocessing Configuration Selection")
         logger.info("=" * 60)
         
+        # Determine common features BEFORE loading datasets
+        logger.info("\n1.0 Pre-analysis: Determining common features...")
+        try:
+            common_features_info = self.loader._determine_common_features_before_load()
+            if common_features_info.get('common_features'):
+                logger.info(f"   ✓ {len(common_features_info['common_features'])} features communes identifiées")
+                # Store for use in harmonization
+                self._precomputed_common_features = common_features_info
+            else:
+                logger.info("   ⚠ Aucune feature commune pré-détectée, analyse complète lors de l'harmonisation")
+                self._precomputed_common_features = None
+        except Exception as e:
+            logger.warning(f"   Pre-analysis failed: {e}. Continuing with full analysis.")
+            self._precomputed_common_features = None
+        
         # Load datasets
         logger.info("\n1.1 Loading datasets...")
         if self.sample_ratio < 1.0:
@@ -189,14 +204,27 @@ class IRPPipeline:
             logger.info("\n1.2 Harmonizing datasets...")
             logger.info("   Mapping features between TON_IoT and CIC-DDoS2019...")
             try:
+                # Use precomputed features if available
+                if hasattr(self, '_precomputed_common_features') and self._precomputed_common_features:
+                    logger.info("   Using pre-determined common features from pre-analysis...")
+                    # Pass precomputed features info to harmonizer if possible
+                
                 df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(df_cic, df_ton)
                 logger.info(f"   CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
                 logger.info(f"   TON_IoT harmonized: {df_ton_harm.shape}")
                 
-                # Show common features in popup
+                # Log common features details
                 common_features = self.harmonizer.common_features_found
                 if common_features:
+                    logger.info(f"\n[FEATURES COMMUNES RÉSUMÉ]")
+                    logger.info(f"   Total features communes: {len(common_features)}")
+                    logger.info(f"   Features CIC-DDoS2019 originales: {len(df_cic.columns)}")
+                    logger.info(f"   Features TON_IoT originales: {len(df_ton.columns)}")
+                    
+                    # Show common features in popup
                     self._show_features_popup(common_features, len(df_cic.columns), len(df_ton.columns))
+                else:
+                    logger.warning("   ⚠ Aucune feature commune trouvée!")
                 
                 # Check if harmonization produced empty dataframes
                 if df_cic_harm.empty or df_ton_harm.empty or len(df_cic_harm.columns) == 0 or len(df_ton_harm.columns) == 0:

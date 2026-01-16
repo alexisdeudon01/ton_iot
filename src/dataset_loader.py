@@ -92,6 +92,135 @@ class DatasetLoader:
             logger.warning(f"Could not calculate adaptive chunk size: {e}. Using default.")
             return DEFAULT_CHUNK_SIZE
     
+    def _analyze_csv_headers(self, file_path: Path, n_rows: int = 1000) -> Tuple[List[str], pd.DataFrame]:
+        """
+        Analyze CSV headers and a few rows to understand structure
+        
+        Args:
+            file_path: Path to CSV file
+            n_rows: Number of rows to read for analysis (default: 1000)
+            
+        Returns:
+            Tuple of (column_names, sample_dataframe)
+        """
+        try:
+            # Read only a small sample to analyze structure
+            sample_df = pd.read_csv(file_path, nrows=n_rows, low_memory=False)
+            columns = list(sample_df.columns)
+            logger.debug(f"[ANALYSIS] Analyzed {len(columns)} columns from {file_path.name} (first {n_rows} rows)")
+            return columns, sample_df
+        except Exception as e:
+            logger.warning(f"Could not analyze headers from {file_path}: {e}")
+            # Fallback: read only first line to get column names
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    header_line = f.readline().strip()
+                    columns = header_line.split(',')
+                    # Clean column names
+                    columns = [col.strip().strip('"').strip("'") for col in columns]
+                    return columns, pd.DataFrame()
+            except Exception as e2:
+                logger.error(f"Could not read headers from {file_path}: {e2}")
+                return [], pd.DataFrame()
+    
+    def _determine_common_features_before_load(self, ton_path: Optional[Path] = None, 
+                                               cic_files: Optional[List[Path]] = None) -> Dict:
+        """
+        Determine common features BEFORE loading full datasets
+        Analyzes only headers and a few rows to determine feature mapping
+        
+        Args:
+            ton_path: Path to TON_IoT CSV file
+            cic_files: List of paths to CIC-DDoS2019 CSV files (use first one for analysis)
+            
+        Returns:
+            Dictionary with 'ton_columns', 'cic_columns', 'common_features', 'feature_mapping'
+        """
+        logger.info("[STEP] Détermination des features communes AVANT chargement complet...")
+        logger.info("[ACTION] Analyse des headers et quelques lignes...")
+        
+        result = {
+            'ton_columns': [],
+            'cic_columns': [],
+            'common_features': {},
+            'sample_ton': None,
+            'sample_cic': None
+        }
+        
+        # Analyze TON_IoT
+        if ton_path is None:
+            possible_paths = [
+                self.data_dir / 'ton_iot' / 'train_test_network.csv',
+                self.data_dir / 'ton_iot' / 'windows10_dataset.csv',
+                Path('train_test_network.csv'),
+            ]
+            for path in possible_paths:
+                if path.exists():
+                    ton_path = path
+                    break
+        
+        if ton_path and ton_path.exists():
+            ton_columns, sample_ton = self._analyze_csv_headers(ton_path, n_rows=1000)
+            result['ton_columns'] = ton_columns
+            result['sample_ton'] = sample_ton
+            logger.info(f"[OUTPUT] TON_IoT: {len(ton_columns)} colonnes détectées")
+        else:
+            logger.warning("[WARNING] TON_IoT file not found for header analysis")
+        
+        # Analyze CIC-DDoS2019 (use first CSV file)
+        if cic_files is None:
+            cic_dir = self.data_dir / 'cic_ddos2019'
+            cic_files = list(cic_dir.glob("*.csv"))
+            # Also check subdirectories
+            for subdir in cic_dir.iterdir():
+                if subdir.is_dir():
+                    cic_files.extend(list(subdir.glob("*.csv")))
+                    for subdir2 in subdir.iterdir():
+                        if subdir2.is_dir():
+                            cic_files.extend(list(subdir2.glob("*.csv")))
+            
+            # Filter out examples
+            cic_files = [f for f in cic_files if 'example' not in f.name.lower() 
+                        and 'sample' not in f.name.lower() 
+                        and 'template' not in f.name.lower()]
+        
+        if cic_files:
+            # Use first CSV file for analysis
+            cic_file = cic_files[0]
+            cic_columns, sample_cic = self._analyze_csv_headers(cic_file, n_rows=1000)
+            result['cic_columns'] = cic_columns
+            result['sample_cic'] = sample_cic
+            logger.info(f"[OUTPUT] CIC-DDoS2019: {len(cic_columns)} colonnes détectées (fichier: {cic_file.name})")
+        else:
+            logger.warning("[WARNING] CIC-DDoS2019 files not found for header analysis")
+        
+        # Use FeatureAnalyzer to determine common features
+        if result['sample_ton'] is not None and result['sample_cic'] is not None:
+            try:
+                from feature_analyzer import FeatureAnalyzer
+                analyzer = FeatureAnalyzer()
+                common_features = analyzer.extract_common_features(result['sample_ton'], result['sample_cic'])
+                result['common_features'] = common_features
+                logger.info(f"[OUTPUT] {len(common_features)} features communes déterminées AVANT chargement complet")
+            except Exception as e:
+                logger.warning(f"[WARNING] FeatureAnalyzer failed: {e}, using basic matching")
+                # Fallback: exact matches only
+                common_exact = set(result['ton_columns']) & set(result['cic_columns'])
+                result['common_features'] = [
+                    {'unified_name': col, 'ton_name': col, 'cic_name': col, 'type': 'exact_match'}
+                    for col in common_exact
+                ]
+        elif result['ton_columns'] and result['cic_columns']:
+            # Basic matching if samples not available
+            common_exact = set(result['ton_columns']) & set(result['cic_columns'])
+            result['common_features'] = [
+                {'unified_name': col, 'ton_name': col, 'cic_name': col, 'type': 'exact_match'}
+                for col in common_exact
+            ]
+            logger.info(f"[OUTPUT] {len(common_exact)} features communes exactes trouvées")
+        
+        return result
+    
     def _check_memory_and_gc(self, force: bool = False):
         """Check memory usage and trigger GC if needed"""
         if self.monitor is None:
@@ -195,6 +324,10 @@ class DatasetLoader:
         
         logger.info(f"[STEP] Loading TON_IoT dataset")
         logger.info(f"[INPUT] File path: {file_path}")
+        
+        # Determine common features BEFORE loading if possible
+        common_features_info = None
+        columns_to_load = None  # None = load all columns
         
         # Start progress tracking
         if self.monitor:

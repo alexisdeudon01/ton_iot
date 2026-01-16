@@ -8,8 +8,11 @@ import pandas as pd
 from scipy import stats
 from typing import Dict, List, Tuple, Optional
 import warnings
+import logging
 
 warnings.filterwarnings('ignore')
+
+logger = logging.getLogger(__name__)
 
 
 class DataHarmonizer:
@@ -116,6 +119,17 @@ class DataHarmonizer:
                 }
             
             logger.info(f"Found {len(mapping)} common features using FeatureAnalyzer")
+            
+            # Log common features details
+            if mapping:
+                logger.info(f"[FEATURES COMMUNES] Liste des {len(mapping)} features trouvées:")
+                for i, (unified_name, info) in enumerate(mapping.items(), 1):
+                    cic_name = info.get('cic', 'N/A')
+                    ton_name = info.get('ton', 'N/A')
+                    feat_type = info.get('type', 'unknown')
+                    confidence = info.get('confidence', 'unknown')
+                    logger.info(f"  {i:2d}. {unified_name:30s} | CIC: {cic_name:35s} | TON: {ton_name:35s} | Type: {feat_type:15s} | Conf: {confidence}")
+            
             return mapping
             
         except ImportError:
@@ -128,6 +142,10 @@ class DataHarmonizer:
         common_exact = set(df1.columns) & set(df2.columns)
         for col in common_exact:
             mapping[col] = {'cic': col, 'ton': col, 'type': 'exact_match'}
+        
+        logger.info(f"[FEATURES COMMUNES] {len(common_exact)} features exactes trouvées (fallback)")
+        if common_exact:
+            logger.info(f"  Features exactes: {', '.join(sorted(list(common_exact))[:10])}{'...' if len(common_exact) > 10 else ''}")
         
         # Enhanced semantic mappings based on actual analysis
         semantic_mappings = {
@@ -194,6 +212,14 @@ class DataHarmonizer:
                     'ton': ton_match,
                     'type': 'semantic_match'
                 }
+        
+        if mapping:
+            logger.info(f"[FEATURES COMMUNES] Total {len(mapping)} features communes (exactes + sémantiques)")
+            # Log summary
+            exact_count = sum(1 for info in mapping.values() if info.get('type') == 'exact_match')
+            semantic_count = sum(1 for info in mapping.values() if info.get('type') == 'semantic_match')
+            logger.info(f"  - Exactes: {exact_count}")
+            logger.info(f"  - Sémantiques: {semantic_count}")
         
         return mapping
     
