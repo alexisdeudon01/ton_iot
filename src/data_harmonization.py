@@ -84,7 +84,7 @@ class DataHarmonizer:
     def find_common_features(self, df1: pd.DataFrame, df2: pd.DataFrame, 
                             df1_name: str = "Dataset1", df2_name: str = "Dataset2") -> Dict:
         """
-        Find semantically similar features between datasets
+        Find semantically similar features between datasets using intelligent analysis
         
         Args:
             df1: First dataframe (e.g., CIC-DDoS2019)
@@ -97,41 +97,96 @@ class DataHarmonizer:
         """
         mapping = {}
         
+        # Try to use FeatureAnalyzer if available for intelligent matching
+        try:
+            from feature_analyzer import FeatureAnalyzer
+            analyzer = FeatureAnalyzer()
+            common_features = analyzer.extract_common_features(df1, df2)
+            
+            # Convert to mapping format
+            for feat in common_features:
+                unified_name = feat['unified_name']
+                mapping[unified_name] = {
+                    'cic': feat['cic_name'],
+                    'ton': feat['ton_name'],
+                    'type': feat['type'],
+                    'category': feat.get('category'),
+                    'unit': feat.get('unit'),
+                    'confidence': feat.get('confidence', 'medium')
+                }
+            
+            logger.info(f"Found {len(mapping)} common features using FeatureAnalyzer")
+            return mapping
+            
+        except ImportError:
+            logger.warning("FeatureAnalyzer not available, using basic matching")
+        except Exception as e:
+            logger.warning(f"FeatureAnalyzer failed: {e}, using basic matching")
+        
+        # Fallback to basic matching
         # Common exact matches
         common_exact = set(df1.columns) & set(df2.columns)
         for col in common_exact:
             mapping[col] = {'cic': col, 'ton': col, 'type': 'exact_match'}
         
-        # Semantic mappings based on common patterns
-        # Network flow features
+        # Enhanced semantic mappings based on actual analysis
         semantic_mappings = {
             # IP addresses
-            'src_ip': ['Src IP', 'src_ip', 'Source IP'],
-            'dst_ip': ['Dst IP', 'dst_ip', 'Destination IP'],
+            'src_ip': ['Src IP', 'src_ip', 'Source IP', 'source_ip', 'srcip'],
+            'dst_ip': ['Dst IP', 'dst_ip', 'Destination IP', 'destination_ip', 'dstip'],
             # Ports
-            'src_port': ['Src Port', 'src_port', 'Source Port'],
-            'dst_port': ['Dst Port', 'dst_port', 'Destination Port'],
+            'src_port': ['Src Port', 'src_port', 'Source Port', 'source_port', 'srcport'],
+            'dst_port': ['Dst Port', 'dst_port', 'Destination Port', 'destination_port', 'dstport'],
             # Protocol
-            'proto': ['Protocol', 'proto', 'Protocol Name'],
-            # Bytes
-            'src_bytes': ['Total Fwd Packets', 'src_bytes', 'Fwd IAT Total'],
-            'dst_bytes': ['Total Backward Packets', 'dst_bytes', 'Bwd IAT Total'],
-            # Duration
-            'duration': ['Flow Duration', 'duration', 'Flow Duration (ms)'],
-            # Packets
-            'src_pkts': ['Total Length of Fwd Packets', 'src_pkts', 'Fwd Packet Length Total'],
-            'dst_pkts': ['Total Length of Bwd Packets', 'dst_pkts', 'Bwd Packet Length Total'],
+            'proto': ['Protocol', 'proto', 'Protocol Name', 'protocol'],
+            # Duration/Time
+            'duration': ['Flow Duration', 'duration', 'Flow Duration (ms)', 'flow_duration', 'time'],
+            # Packets - Forward
+            'fwd_packets': ['Total Fwd Packets', 'fwd_packets', 'forward_packets', 'fwd_pkt'],
+            'fwd_bytes': ['Total Length of Fwd Packets', 'fwd_bytes', 'forward_bytes', 'fwd_length'],
+            # Packets - Backward
+            'bwd_packets': ['Total Backward Packets', 'bwd_packets', 'backward_packets', 'bwd_pkt'],
+            'bwd_bytes': ['Total Length of Bwd Packets', 'bwd_bytes', 'backward_bytes', 'bwd_length'],
+            # Flow statistics
+            'flow_bytes_per_sec': ['Flow Bytes/s', 'flow_bytes_per_sec', 'bytes_per_second', 'throughput'],
+            'flow_packets_per_sec': ['Flow Packets/s', 'flow_packets_per_sec', 'packets_per_second'],
+            # Flags
+            'syn_flags': ['SYN Flag Count', 'syn_flag', 'syn_count', 'syn'],
+            'ack_flags': ['ACK Flag Count', 'ack_flag', 'ack_count', 'ack'],
+            'fin_flags': ['FIN Flag Count', 'fin_flag', 'fin_count', 'fin'],
         }
         
         for unified_name, variants in semantic_mappings.items():
             cic_match = None
             ton_match = None
             
+            # Try exact match first
             for variant in variants:
                 if variant in df1.columns and cic_match is None:
                     cic_match = variant
                 if variant in df2.columns and ton_match is None:
                     ton_match = variant
+            
+            # Try case-insensitive and partial match
+            if not cic_match:
+                for col in df1.columns:
+                    col_lower = col.lower()
+                    for variant in variants:
+                        if variant.lower() in col_lower or col_lower in variant.lower():
+                            cic_match = col
+                            break
+                    if cic_match:
+                        break
+            
+            if not ton_match:
+                for col in df2.columns:
+                    col_lower = col.lower()
+                    for variant in variants:
+                        if variant.lower() in col_lower or col_lower in variant.lower():
+                            ton_match = col
+                            break
+                    if ton_match:
+                        break
             
             if cic_match and ton_match:
                 mapping[unified_name] = {
