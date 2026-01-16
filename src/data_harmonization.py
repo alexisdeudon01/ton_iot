@@ -330,18 +330,32 @@ class DataHarmonizer:
         df_ton_harmonized = pd.DataFrame(ton_data)
         
         # Add labels with binary classification
-        # CIC-DDoS2019: Benign = 0, all attacks (non-Benign) = 1
-        if label_col_cic:
+        # CIC-DDoS2019: After concatenating ALL files, use last column (Label)
+        # Everything that is NOT 'Benign' in Label column = Attack (1)
+        if label_col_cic and label_col_cic in df_cic.columns:
+            # df_cic is already the concatenated result of ALL CIC-DDoS2019 files
             cic_labels = df_cic[label_col_cic].copy()
+            logger.info(f"[LABEL] CIC-DDoS2019: Processing labels from concatenated dataset ({len(cic_labels)} rows)")
+            
             if cic_labels.dtype == 'object':
-                # Binary classification: Benign = 0, all attacks = 1
+                # Binary classification: Benign = 0, all attacks (NOT 'Benign') = 1
+                # Check all unique values to confirm
+                unique_labels = cic_labels.unique()
+                logger.debug(f"  Unique label values in last column: {sorted(unique_labels)}")
+                
+                # Everything that is NOT 'Benign' (case-insensitive) = Attack (1)
                 cic_labels_binary = (cic_labels.str.upper() != 'BENIGN').astype(int)
-                logger.info(f"[LABEL] CIC-DDoS2019 binary classification: Benign=0, Attacks=1")
-                logger.info(f"  Original labels: {cic_labels.value_counts().to_dict()}")
+                
+                logger.info(f"[LABEL] CIC-DDoS2019 binary classification: Benign=0, Attacks (non-Benign)=1")
+                logger.info(f"  Total rows: {len(cic_labels)}")
+                logger.info(f"  Original label distribution: {cic_labels.value_counts().to_dict()}")
                 logger.info(f"  Binary distribution: {cic_labels_binary.value_counts().to_dict()}")
+                logger.info(f"  → Benign (0): {len(cic_labels_binary[cic_labels_binary == 0])}, Attacks (1): {len(cic_labels_binary[cic_labels_binary == 1])}")
             else:
                 # Already numeric, assume 0=Benign, 1=Attack
                 cic_labels_binary = pd.to_numeric(cic_labels, errors='coerce').fillna(0).astype(int)
+                logger.info(f"[LABEL] CIC-DDoS2019: Labels already numeric, using as-is (0=Benign, 1=Attack)")
+            
             df_cic_harmonized['label'] = cic_labels_binary
         
         # TON_IoT: Binary classification: normal=0, ddos=1
