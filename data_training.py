@@ -13,12 +13,8 @@ from datetime import datetime
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge
 
-
-from google.colab import drive
-drive.mount('/content/drive')
-
-# Path to the CSV file in Google Drive
-file_path = '/content/drive/MyDrive/Spring 24/Data Science/train_test_network.csv' # Please feel free to use the import method that suits you best, this is custom to my drive (Hamza)
+# Path to the CSV file (local)
+file_path = 'train_test_network.csv'
 
 # Load CSV file into a DataFrame
 data = pd.read_csv(file_path)
