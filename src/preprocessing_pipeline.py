@@ -91,7 +91,66 @@ class PreprocessingPipeline:
                 raise ValueError("Scaler must be fitted before transforming test data")
             X_scaled = self.scaler.transform(X)
         
+        # Verify normalization after scaling
+        self._verify_scaled_features(X_scaled, fit=fit)
+        
         return X_scaled
+    
+    def _verify_scaled_features(self, X_scaled: np.ndarray, fit: bool = False) -> Dict:
+        """
+        Verify that features are properly normalized after scaling
+        Checks min/max values per feature
+        
+        Args:
+            X_scaled: Scaled feature array
+            fit: Whether this is the fit step (to log stats)
+            
+        Returns:
+            Dictionary with verification results
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        if len(X_scaled) == 0:
+            return {}
+        
+        # Calculate per-feature statistics
+        min_per_feature = X_scaled.min(axis=0)
+        max_per_feature = X_scaled.max(axis=0)
+        mean_per_feature = X_scaled.mean(axis=0)
+        std_per_feature = X_scaled.std(axis=0)
+        
+        # For RobustScaler: values are centered around 0 with IQR-based scaling
+        # Typically ranges from [-3, 3] but can be wider for outliers
+        # For MinMaxScaler: values should be in [0, 1]
+        
+        # Check if using RobustScaler (current implementation)
+        all_in_robust_range = np.all((min_per_feature >= -10.0) & (max_per_feature <= 10.0))
+        all_in_01_range = np.all((min_per_feature >= -0.1) & (max_per_feature <= 1.1))
+        
+        if fit:  # Only log during fit to avoid spam
+            n_features = X_scaled.shape[1]
+            logger.debug(f"[SCALING VERIFICATION] {n_features} features scaled with RobustScaler")
+            logger.debug(f"  Min values range: [{min_per_feature.min():.3f}, {min_per_feature.max():.3f}]")
+            logger.debug(f"  Max values range: [{max_per_feature.min():.3f}, {max_per_feature.max():.3f}]")
+            logger.debug(f"  Mean values range: [{mean_per_feature.min():.3f}, {mean_per_feature.max():.3f}]")
+            logger.debug(f"  Std values range: [{std_per_feature.min():.3f}, {std_per_feature.max():.3f}]")
+            
+            if all_in_robust_range:
+                logger.debug(f"  ✓ All features in RobustScaler expected range [-10, 10]")
+            elif all_in_01_range:
+                logger.warning(f"  ⚠ Features appear to be MinMaxScaled [0, 1], but using RobustScaler")
+            else:
+                logger.warning(f"  ⚠ Some features outside typical RobustScaler range")
+        
+        return {
+            'min_per_feature': min_per_feature,
+            'max_per_feature': max_per_feature,
+            'mean_per_feature': mean_per_feature,
+            'std_per_feature': std_per_feature,
+            'all_in_robust_range': all_in_robust_range,
+            'all_in_01_range': all_in_01_range
+        }
     
     def apply_smote(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """

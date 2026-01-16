@@ -275,13 +275,35 @@ class DataHarmonizer:
         cic_data = {}
         ton_data = {}
         
+        # Filter feature_mapping to only include features that actually exist in both DataFrames
+        valid_feature_mapping = {}
         for unified_name, mapping_info in feature_mapping.items():
+            cic_col = mapping_info.get('cic')
+            ton_col = mapping_info.get('ton')
+            
+            # Verify columns exist in actual DataFrames
+            if cic_col not in df_cic.columns:
+                logger.debug(f"[HARMONIZATION] Skipping '{unified_name}': CIC column '{cic_col}' not found in DataFrame")
+                continue
+            if ton_col not in df_ton.columns:
+                logger.debug(f"[HARMONIZATION] Skipping '{unified_name}': TON column '{ton_col}' not found in DataFrame")
+                continue
+            
+            valid_feature_mapping[unified_name] = mapping_info
+        
+        logger.info(f"[HARMONIZATION] Using {len(valid_feature_mapping)} valid features (from {len(feature_mapping)} mapped)")
+        
+        for unified_name, mapping_info in valid_feature_mapping.items():
             cic_col = mapping_info['cic']
             ton_col = mapping_info['ton']
             
             # Convert to numeric (IRP requires numeric features for model training)
-            cic_values = pd.to_numeric(df_cic[cic_col], errors='coerce')
-            ton_values = pd.to_numeric(df_ton[ton_col], errors='coerce')
+            try:
+                cic_values = pd.to_numeric(df_cic[cic_col], errors='coerce')
+                ton_values = pd.to_numeric(df_ton[ton_col], errors='coerce')
+            except KeyError as e:
+                logger.warning(f"[HARMONIZATION] Column not found: {e}, skipping feature '{unified_name}'")
+                continue
             
             # Keep features with at least 80% valid numeric values
             # These are necessary for IRP calculations (Dimension 1 & 3 require trained models)
@@ -318,7 +340,88 @@ class DataHarmonizer:
         self.feature_mapping_cic = {v['cic']: k for k, v in feature_mapping.items()}
         self.feature_mapping_ton = {v['ton']: k for k, v in feature_mapping.items()}
         
+        # Verify normalization of harmonized features
+        self._verify_harmonized_normalization(df_cic_harmonized, df_ton_harmonized)
+        
         return df_cic_harmonized, df_ton_harmonized
+    
+    def _verify_harmonized_normalization(self, df_cic: pd.DataFrame, df_ton: pd.DataFrame) -> Dict:
+        """
+        Verify that harmonized features are properly normalized (after preprocessing)
+        Checks min/max values and statistical distribution
+        
+        Args:
+            df_cic: Harmonized CIC-DDoS2019 DataFrame
+            df_ton: Harmonized TON_IoT DataFrame
+            
+        Returns:
+            Dictionary with verification results
+        """
+        verification_results = {
+            'cic_stats': {},
+            'ton_stats': {},
+            'normalized': True,
+            'issues': []
+        }
+        
+        # Check each harmonized feature
+        common_features = set(df_cic.columns) & set(df_ton.columns)
+        common_features = {f for f in common_features if f != 'label'}
+        
+        if not common_features:
+            logger.warning("[VERIFICATION] No common features to verify normalization")
+            return verification_results
+        
+        logger.info(f"[VERIFICATION] Vérification normalisation pour {len(common_features)} features communes...")
+        
+        for feat in sorted(common_features):
+            cic_values = df_cic[feat].dropna()
+            ton_values = df_ton[feat].dropna()
+            
+            if len(cic_values) == 0 or len(ton_values) == 0:
+                continue
+            
+            # Calculate statistics
+            cic_stats = {
+                'min': float(cic_values.min()),
+                'max': float(cic_values.max()),
+                'mean': float(cic_values.mean()),
+                'std': float(cic_values.std()),
+                'range': float(cic_values.max() - cic_values.min())
+            }
+            
+            ton_stats = {
+                'min': float(ton_values.min()),
+                'max': float(ton_values.max()),
+                'mean': float(ton_values.mean()),
+                'std': float(ton_values.std()),
+                'range': float(ton_values.max() - ton_values.min())
+            }
+            
+            verification_results['cic_stats'][feat] = cic_stats
+            verification_results['ton_stats'][feat] = ton_stats
+            
+            # Check if values are in reasonable range (after RobustScaler, values are typically in [-3, 3] for IQR-based)
+            # But also check if they could be min-max scaled [0, 1]
+            cic_in_01_range = (cic_stats['min'] >= -0.1 and cic_stats['max'] <= 1.1)
+            ton_in_01_range = (ton_stats['min'] >= -0.1 and ton_stats['max'] <= 1.1)
+            
+            cic_in_robust_range = (cic_stats['min'] >= -5.0 and cic_stats['max'] <= 5.0)
+            ton_in_robust_range = (ton_stats['min'] >= -5.0 and ton_stats['max'] <= 5.0)
+            
+            # Log if feature is already normalized (either min-max or robust)
+            if cic_in_01_range and ton_in_01_range:
+                logger.debug(f"  ✓ {feat}: Normalisé min-max [0, 1] | CIC: [{cic_stats['min']:.3f}, {cic_stats['max']:.3f}] | TON: [{ton_stats['min']:.3f}, {ton_stats['max']:.3f}]")
+            elif cic_in_robust_range and ton_in_robust_range:
+                logger.debug(f"  ✓ {feat}: Normalisé robuste [-5, 5] | CIC: [{cic_stats['min']:.3f}, {cic_stats['max']:.3f}] | TON: [{ton_stats['min']:.3f}, {ton_stats['max']:.3f}]")
+            else:
+                # Feature not normalized yet (will be normalized in preprocessing pipeline)
+                logger.debug(f"  ⚠ {feat}: Non normalisé (sera normalisé dans preprocessing) | CIC: [{cic_stats['min']:.2f}, {cic_stats['max']:.2f}] | TON: [{ton_stats['min']:.2f}, {ton_stats['max']:.2f}]")
+        
+        logger.info(f"[VERIFICATION] Vérification terminée: {len(common_features)} features analysées")
+        logger.info(f"[VERIFICATION] Note: Les features harmonisées seront normalisées avec RobustScaler dans preprocessing_pipeline")
+        
+        return verification_results
     
     def early_fusion(self, df_cic_harmonized: pd.DataFrame, 
                     df_ton_harmonized: pd.DataFrame,
