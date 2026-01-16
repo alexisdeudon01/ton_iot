@@ -156,6 +156,18 @@ Examples:
         help='Output directory for results (default: output)'
     )
     
+    parser.add_argument(
+        '--gui',
+        action='store_true',
+        help='Launch Tkinter GUI to visualize results after execution'
+    )
+    
+    parser.add_argument(
+        '--gui-only',
+        action='store_true',
+        help='Only launch the GUI visualizer (skip pipeline execution)'
+    )
+    
     args = parser.parse_args()
     
     # Setup output directory and logging
@@ -177,6 +189,18 @@ Examples:
         logger.warning("Some dependencies may be missing. Continue anyway? (y/n)")
         # For non-interactive mode, continue anyway but log warning
         logger.warning("Continuing execution despite missing dependencies...")
+    
+    # Handle GUI-only mode
+    if args.gui_only:
+        logger.info("GUI-only mode: Launching visualizer...")
+        try:
+            from src.results_visualizer import ResultsVisualizer
+            visualizer = ResultsVisualizer(output_dir)
+            visualizer.run()
+            return
+        except Exception as e:
+            logger.error(f"Error launching GUI: {e}", exc_info=True)
+            sys.exit(1)
     
     if args.phase:
         logger.info(f"Running Phase {args.phase} only")
@@ -251,9 +275,24 @@ Examples:
         logger.info("  - Phase 3: phase3_evaluation/")
         logger.info("  - Phase 5: phase5_ranking/")
         logger.info(f"  - Logs: logs/")
-        logger.info("")
-        logger.info("To visualize results with GUI:")
-        logger.info(f"  python -m src.results_visualizer --output-dir {output_dir}")
+        
+        # Launch GUI if requested
+        if args.gui or args.gui_only:
+            logger.info("")
+            logger.info("Launching Tkinter GUI visualizer...")
+            try:
+                from src.results_visualizer import ResultsVisualizer
+                visualizer = ResultsVisualizer(output_dir)
+                visualizer.run()
+            except Exception as e:
+                logger.error(f"Error launching GUI: {e}", exc_info=True)
+                logger.info("You can still launch the GUI manually with:")
+                logger.info(f"  python -m src.results_visualizer --output-dir {output_dir}")
+        else:
+            logger.info("")
+            logger.info("To visualize results with GUI:")
+            logger.info(f"  python main.py --gui --output-dir {output_dir}")
+            logger.info(f"  or: python -m src.results_visualizer --output-dir {output_dir}")
         
     except KeyboardInterrupt:
         logger.warning("Pipeline interrupted by user (Ctrl+C)")
