@@ -215,6 +215,8 @@ class IRPPipeline:
             logger.info(f"\n   Evaluating {model_name}...")
             
             fold_results = []
+            fold_level_results = []  # Store per-fold results for debugging
+            
             for fold_idx, (train_idx, test_idx) in enumerate(tqdm(cv.split(X, y), desc=f"  {model_name} CV folds", total=5, leave=False)):
                 X_train_fold, X_test_fold = X[train_idx], X[test_idx]
                 y_train_fold, y_test_fold = y[train_idx], y[test_idx]
@@ -224,21 +226,43 @@ class IRPPipeline:
                     from sklearn.base import clone
                     try:
                         model = clone(model_template)
-                    except Exception:
-                        # For custom models, use the template directly (they should handle their own state)
+                    except (TypeError, AttributeError) as clone_err:
+                        # For custom models that can't be cloned, reinitialize if possible
+                        logger.debug(f"      Could not clone {model_name}, using template: {clone_err}")
                         model = model_template
                     
+                    # Ensure model is fitted before evaluation (evaluate_model handles this internally)
                     results = evaluator.evaluate_model(
                         model, f"{model_name}_fold{fold_idx+1}",
                         X_train_fold, y_train_fold, X_test_fold, y_test_fold,
                         compute_explainability=False  # Disable for speed in CV
                     )
+                    
+                    # Validate that required metrics are present
+                    required_keys = ['f1_score', 'accuracy', 'precision', 'recall', 
+                                   'training_time_seconds', 'memory_used_mb', 'explainability_score']
+                    missing_keys = [k for k in required_keys if k not in results]
+                    if missing_keys:
+                        raise ValueError(f"Missing required metrics: {missing_keys}")
+                    
+                    # Add fold information
+                    results['fold'] = fold_idx + 1
                     fold_results.append(results)
+                    fold_level_results.append({
+                        'model_name': model_name,
+                        'fold': fold_idx + 1,
+                        **{k: v for k, v in results.items() if k in required_keys}
+                    })
+                    
+                    logger.debug(f"      Fold {fold_idx+1} - F1: {results['f1_score']:.4f}, "
+                               f"Acc: {results['accuracy']:.4f}")
+                    
                 except Exception as e:
                     logger.warning(f"      Error in fold {fold_idx+1} for {model_name}: {e}")
                     logger.debug(f"      Full error traceback:", exc_info=True)
                     continue
             
+            # Only add averaged results if we have at least one successful fold
             if fold_results:
                 # Average results across folds
                 avg_results = {
@@ -249,19 +273,48 @@ class IRPPipeline:
                     'recall': np.mean([r['recall'] for r in fold_results]),
                     'training_time_seconds': np.mean([r['training_time_seconds'] for r in fold_results]),
                     'memory_used_mb': np.mean([r['memory_used_mb'] for r in fold_results]),
-                    'explainability_score': np.mean([r['explainability_score'] for r in fold_results])
+                    'explainability_score': np.mean([r['explainability_score'] for r in fold_results]),
+                    'n_successful_folds': len(fold_results)  # Track how many folds succeeded
                 }
                 all_results.append(avg_results)
                 logger.info(f"      {model_name} - F1 Score: {avg_results['f1_score']:.4f}, "
                            f"Time: {avg_results['training_time_seconds']:.2f}s, "
-                           f"Explainability: {avg_results['explainability_score']:.4f}")
+                           f"Explainability: {avg_results['explainability_score']:.4f}, "
+                           f"Successful folds: {len(fold_results)}/5")
+            else:
+                logger.error(f"      {model_name} - All folds failed! Model not evaluated.")
         
-        # Create results DataFrame
+        # Create results DataFrame - ensure it's never empty
         try:
+            if not all_results:
+                logger.error("   CRITICAL: No evaluation results collected! Creating empty structure.")
+                # Create empty DataFrame with required columns to prevent downstream failures
+                all_results = [{
+                    'model_name': 'NO_MODELS_EVALUATED',
+                    'f1_score': np.nan,
+                    'accuracy': np.nan,
+                    'precision': np.nan,
+                    'recall': np.nan,
+                    'training_time_seconds': np.nan,
+                    'memory_used_mb': np.nan,
+                    'explainability_score': np.nan,
+                    'n_successful_folds': 0
+                }]
+                logger.error("   Check logs above for errors preventing model evaluation.")
+            
             results_df = pd.DataFrame(all_results)
+            
+            # Validate required columns are present
+            required_columns = ['model_name', 'f1_score', 'accuracy', 'precision', 'recall']
+            missing_cols = [col for col in required_columns if col not in results_df.columns]
+            if missing_cols:
+                logger.error(f"   Missing required columns in results: {missing_cols}")
+                raise ValueError(f"Results DataFrame missing required columns: {missing_cols}")
+            
             output_file = self.results_dir / 'phase3_evaluation' / 'evaluation_results.csv'
             results_df.to_csv(output_file, index=False)
             logger.info(f"\n   Saved evaluation results to {output_file}")
+            logger.info(f"   Total models evaluated: {len(results_df)}")
         except Exception as e:
             logger.error(f"   Error saving evaluation results: {e}", exc_info=True)
             raise
