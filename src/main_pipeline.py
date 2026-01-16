@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 from dataset_loader import DatasetLoader
 from data_harmonization import DataHarmonizer
 from preprocessing_pipeline import PreprocessingPipeline, StratifiedCrossValidator
+
+try:
+    from system_monitor import SystemMonitor
+except ImportError:
+    SystemMonitor = None
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -52,7 +57,17 @@ class IRPPipeline:
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.random_state = random_state
         self.sample_ratio = sample_ratio
-        self.loader = DatasetLoader()
+        
+        # Initialize system monitor
+        self.monitor = None
+        if SystemMonitor is not None:
+            try:
+                self.monitor = SystemMonitor(max_memory_percent=90.0)
+            except Exception as e:
+                logger.warning(f"Could not initialize SystemMonitor: {e}")
+        
+        # Initialize loader with monitor
+        self.loader = DatasetLoader(monitor=self.monitor)
         self.harmonizer = DataHarmonizer()
         self.pipeline = PreprocessingPipeline(random_state=random_state)
         
