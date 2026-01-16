@@ -28,6 +28,14 @@ try:
     from system_monitor import SystemMonitor
 except ImportError:
     SystemMonitor = None
+
+try:
+    from realtime_visualizer import RealTimeVisualizer, create_realtime_callback
+    VISUALIZATION_AVAILABLE = True
+except ImportError:
+    VISUALIZATION_AVAILABLE = False
+    RealTimeVisualizer = None
+    create_realtime_callback = None
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -70,6 +78,18 @@ class IRPPipeline:
         self.loader = DatasetLoader(monitor=self.monitor)
         self.harmonizer = DataHarmonizer()
         self.pipeline = PreprocessingPipeline(random_state=random_state)
+        
+        # Initialize real-time visualizer
+        self.visualizer = None
+        if VISUALIZATION_AVAILABLE and RealTimeVisualizer is not None:
+            try:
+                viz_dir = self.results_dir / 'realtime_visualizations'
+                self.visualizer = RealTimeVisualizer(viz_dir, enable_realtime=True)
+                # Connect callback to dataset loader
+                self.loader.progress_callback = create_realtime_callback(self.visualizer)
+                logger.info("Real-time visualizer initialized")
+            except Exception as e:
+                logger.warning(f"Could not initialize real-time visualizer: {e}")
         
         # Create result subdirectories
         (self.results_dir / 'phase1_preprocessing').mkdir(parents=True, exist_ok=True)
@@ -270,12 +290,35 @@ class IRPPipeline:
                             logger.warning(f"      Using template directly for {model_name} - may cause state issues")
                             model = model_template
                     
+                    # Send training progress update to visualizer
+                    if self.visualizer:
+                        self.visualizer.callback_training_progress({
+                            'algorithm': model_name,
+                            'fold': fold_idx + 1,
+                            'metrics': {}
+                        })
+                    
                     # Ensure model is fitted before evaluation (evaluate_model handles this internally)
                     results = evaluator.evaluate_model(
                         model, f"{model_name}_fold{fold_idx+1}",
                         X_train_fold, y_train_fold, X_test_fold, y_test_fold,
                         compute_explainability=False  # Disable for speed in CV
                     )
+                    
+                    # Send evaluation metrics update to visualizer
+                    if self.visualizer:
+                        self.visualizer.callback_evaluation_progress({
+                            'algorithm': model_name,
+                            'fold': fold_idx + 1,
+                            'metrics': {
+                                'accuracy': results.get('accuracy', 0),
+                                'f1_score': results.get('f1_score', 0),
+                                'precision': results.get('precision', 0),
+                                'recall': results.get('recall', 0),
+                                'training_time': results.get('training_time_seconds', 0),
+                                'memory': results.get('memory_used_mb', 0)
+                            }
+                        })
                     
                     # Validate that required metrics are present
                     required_keys = ['f1_score', 'accuracy', 'precision', 'recall', 
@@ -354,6 +397,18 @@ class IRPPipeline:
             results_df.to_csv(output_file, index=False)
             logger.info(f"\n   Saved evaluation results to {output_file}")
             logger.info(f"   Total models evaluated: {len(results_df)}")
+            
+            # Finalize algorithm visualizations
+            if self.visualizer:
+                logger.info("\n3.3 Finalizing real-time visualizations...")
+                try:
+                    self.visualizer.finalize_algorithm_visualizations()
+                    self.visualizer.create_pipeline_overview(
+                        save_path=self.results_dir / 'realtime_visualizations' / 'pipeline_overview.png'
+                    )
+                    logger.info("   ✓ Visualizations finalized")
+                except Exception as e:
+                    logger.warning(f"   Error finalizing visualizations: {e}")
         except Exception as e:
             logger.error(f"   Error saving evaluation results: {e}", exc_info=True)
             raise
