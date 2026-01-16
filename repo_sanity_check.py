@@ -176,7 +176,43 @@ def main():
         if file_contains(rl, "gymnasium"):
             warn("RL_training.py mentions gymnasium -> make sure import matches installed package")
 
-    # 8) Quick “ready to run” verdict
+    # 8) PNG files organization check
+    print("\n=== PNG files organization ===")
+    png_in_root = list(root.glob("*.png"))
+    results_dir = root / "results"
+    
+    expected_dirs = {
+        "results/data_analysis": ["correlation.png", "correlation_matrix.png"],
+        "results/machine_learning": ["model_performance.png", "Models.png"],
+        "results/reinforcement_learning": ["drlperf.png"],
+        "results/documentation": ["AI_implementation.png", "DLAccuracy.png", "DLLoss.png"]
+    }
+    
+    if png_in_root:
+        warn(f"{len(png_in_root)} PNG file(s) found in root directory (should be in results/):")
+        for png in png_in_root:
+            warn(f"  - {png.name}")
+        warn("  Run: python organize_png.py to organize them")
+    else:
+        ok("No PNG files in root directory")
+    
+    if results_dir.exists():
+        ok("results/ directory exists")
+        for dir_path, expected_files in expected_dirs.items():
+            target_dir = root / dir_path
+            if target_dir.exists():
+                found_files = [f.name for f in target_dir.glob("*.png")]
+                missing_files = set(expected_files) - set(found_files)
+                if found_files:
+                    ok(f"{dir_path}/ contains {len(found_files)} PNG file(s)")
+                if missing_files:
+                    warn(f"{dir_path}/ missing expected file(s): {', '.join(missing_files)}")
+            else:
+                warn(f"{dir_path}/ does not exist")
+    else:
+        warn("results/ directory does not exist (will be created when scripts run)")
+
+    # 9) Quick "ready to run" verdict
     print("\n=== Verdict ===")
     if missing:
         bad(f"Project NOT ready (missing files: {', '.join(missing)})")
@@ -191,6 +227,20 @@ def main():
              "      pip install -r requirements.txt")
     else:
         ok("Core deps seem installed.")
+
+    # 10) Summary of results directory structure
+    print("\n=== Results directory structure ===")
+    if results_dir.exists():
+        for subdir in sorted(results_dir.iterdir()):
+            if subdir.is_dir():
+                png_count = len(list(subdir.glob("*.png")))
+                algo_type = subdir.name.replace("_", " ").title()
+                if png_count > 0:
+                    ok(f"{subdir.name}/ - {algo_type} ({png_count} PNG file(s))")
+                else:
+                    warn(f"{subdir.name}/ - {algo_type} (empty)")
+    else:
+        warn("results/ directory not created yet (will be created when scripts run)")
 
     ok("Directory check completed.")
     sys.exit(0)

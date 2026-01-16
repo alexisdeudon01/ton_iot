@@ -1,9 +1,9 @@
 import gymnasium as gym
+from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_checker import check_env
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
-import gym
 import pandas as pd
 import matplotlib
 import matplotlib.pyplot as plt
@@ -16,7 +16,6 @@ from sklearn.metrics import mean_squared_error, r2_score
 from datetime import datetime
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import Ridge, Lasso
-from gym import spaces
 import numpy as np 
 
 # Define a custom environment for our dataset
@@ -36,25 +35,31 @@ class DatasetEnv(gym.Env):
         # Observation: features from the dataset
         self.observation_space = spaces.Box(low=0, high=1, shape=(self.dataset.shape[1],), dtype=np.float32)
     
-    def reset(self):
+    def reset(self, seed=None, options=None):
         # Reset the environment to the beginning
         self.current_step = 0
-        return self.dataset.iloc[self.current_step].values
+        obs = self.dataset.iloc[self.current_step].values
+        info = {}
+        return obs, info
 
     def step(self, action):
         # Compare the action with the actual label, reward if correct
         reward = 1 if action == self.labels.iloc[self.current_step] else -1
         
         self.current_step += 1
-        done = self.current_step == len(self.labels)
+        terminated = self.current_step >= len(self.labels)
+        truncated = False  # Episode can be truncated if max steps reached
         
         # Set placeholder for info
         info = {}
         
         # Provide the next state
-        next_state = self.dataset.iloc[self.current_step % len(self.labels)].values if not done else np.zeros(self.dataset.shape[1])
+        if terminated:
+            next_state = np.zeros(self.dataset.shape[1], dtype=np.float32)
+        else:
+            next_state = self.dataset.iloc[self.current_step % len(self.labels)].values
         
-        return next_state, reward, done, info
+        return next_state, reward, terminated, truncated, info
 
 # Prepare the environment
 file_path = 'Processed_datasets/Processed_Windows_dataset/windows10_dataset.csv'

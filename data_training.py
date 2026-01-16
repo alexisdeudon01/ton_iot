@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import matplotlib
@@ -64,7 +65,8 @@ plt.xlabel('Correlation')
 plt.ylabel('Features')
 plt.grid(axis='x', linestyle='--', alpha=0.7)
 plt.tight_layout()
-plt.savefig('correlation.png', dpi=150, bbox_inches='tight')
+os.makedirs('results/data_analysis', exist_ok=True)
+plt.savefig('results/data_analysis/correlation.png', dpi=150, bbox_inches='tight')
 plt.close()
 
 # Finding the most correlated pairs of features
@@ -90,7 +92,8 @@ correlation_matrix_most_correlated = data_most_correlated.corr()
 plt.figure(figsize=(8, 6))
 sns.heatmap(correlation_matrix_most_correlated, annot=True, fmt=".2f", cmap='coolwarm', cbar=True)
 plt.title("Correlation Matrix of Most Correlated Features")
-plt.savefig('correlation_matrix.png', dpi=150, bbox_inches='tight')
+os.makedirs('results/data_analysis', exist_ok=True)
+plt.savefig('results/data_analysis/correlation_matrix.png', dpi=150, bbox_inches='tight')
 plt.close()
 
 # =================================================== Training ======================================
@@ -267,6 +270,7 @@ for i, metric in enumerate(metrics):
     ax.set_xticks(range(len(performance_df["Model"])))
 
 plt.tight_layout()
-plt.savefig('model_performance.png', dpi=150, bbox_inches='tight')
+os.makedirs('results/machine_learning', exist_ok=True)
+plt.savefig('results/machine_learning/model_performance.png', dpi=150, bbox_inches='tight')
 plt.close()
 print(performance_df)
