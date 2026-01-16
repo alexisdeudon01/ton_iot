@@ -1011,10 +1011,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    except Exception as e:
-        print(f"\nCIC-DDoS2019 not available: {e}")
-
-
-if __name__ == "__main__":
-    main()
+    # (Nothing to fix here, remove duplicate/erroneous block)
