@@ -329,14 +329,25 @@ class IRPPipeline:
             logger.error(f"   Error preparing features/labels: {e}", exc_info=True)
             raise
         
-        logger.info("\n1.4 Preprocessing (SMOTE + RobustScaler)...")
-        logger.info("   Applying SMOTE for class balancing...")
-        logger.info("   Scaling features with RobustScaler...")
+        logger.info("\n1.4 Preprocessing pipeline (cleaning, encoding, feature selection, scaling, resampling)...")
         try:
-            X_processed, y_processed = self.pipeline.prepare_data(
-                X, y, apply_smote_flag=True, scale=True
+            # Use new preprocessing pipeline with all steps
+            preprocessing_result = self.pipeline.prepare_data(
+                X, y,
+                apply_encoding=True,
+                apply_feature_selection=True,
+                apply_scaling=True,
+                apply_resampling=True,
+                apply_splitting=False  # We don't split here, it's done in Phase 3 with cross-validation
             )
+            
+            # Extract processed data from result dictionary
+            X_processed = preprocessing_result['X_processed']
+            y_processed = preprocessing_result['y_processed']
+            feature_names = preprocessing_result['feature_names']
+            
             logger.info(f"   Processed shape: {X_processed.shape}")
+            logger.info(f"   Selected features: {len(feature_names)}")
             class_dist = pd.Series(y_processed).value_counts().to_dict()
             logger.info(f"   Class distribution: {class_dist}")
         except MemoryError as e:
@@ -349,7 +360,12 @@ class IRPPipeline:
         
         # Save preprocessed data
         try:
-            df_preprocessed = pd.DataFrame(X_processed)
+            # Create DataFrame with feature names (X_processed is numpy array after preprocessing)
+            if feature_names and len(feature_names) == X_processed.shape[1]:
+                df_preprocessed = pd.DataFrame(X_processed, columns=feature_names)
+            else:
+                # Fallback: use generic column names
+                df_preprocessed = pd.DataFrame(X_processed, columns=[f'feature_{i}' for i in range(X_processed.shape[1])])
             df_preprocessed['label'] = y_processed
             output_file = self.results_dir / 'phase1_preprocessing' / 'preprocessed_data.csv'
             df_preprocessed.to_csv(output_file, index=False)
@@ -358,7 +374,8 @@ class IRPPipeline:
             logger.error(f"   Error saving preprocessed data: {e}", exc_info=True)
             raise
         
-        return X_processed, y_processed, self.pipeline.feature_names
+        # Return processed data with feature names
+        return X_processed, y_processed, feature_names
     
     def phase3_evaluation(self, X: np.ndarray, y: np.ndarray, feature_names: list = None):
         """
