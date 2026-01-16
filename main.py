@@ -251,6 +251,9 @@ Examples:
         logger.info("  - Phase 3: phase3_evaluation/")
         logger.info("  - Phase 5: phase5_ranking/")
         logger.info(f"  - Logs: logs/")
+        logger.info("")
+        logger.info("To visualize results with GUI:")
+        logger.info(f"  python -m src.results_visualizer --output-dir {output_dir}")
         
     except KeyboardInterrupt:
         logger.warning("Pipeline interrupted by user (Ctrl+C)")

@@ -248,6 +248,34 @@ class Evaluation3D:
         precision = precision_score(y_test, y_pred, average=avg_method)  # Precision (Pr) from CIC-DDoS2019
         recall = recall_score(y_test, y_pred, average=avg_method)  # Recall (Rc) from CIC-DDoS2019
         
+        # Confusion Matrix - Detailed calculation
+        cm = confusion_matrix(y_test, y_pred)
+        logger.debug(f"Confusion Matrix for {model_name}: {cm.tolist()}")
+        
+        # Extract TP, TN, FP, FN for binary classification
+        if is_binary and cm.shape == (2, 2):
+            tn, fp, fn, tp = cm.ravel()
+            cm_details = {
+                'true_negatives': int(tn),
+                'false_positives': int(fp),
+                'false_negatives': int(fn),
+                'true_positives': int(tp),
+                'total_samples': int(cm.sum())
+            }
+        else:
+            # Multi-class: compute total TP, TN, FP, FN
+            tn = cm.diagonal().sum()
+            fp = cm.sum(axis=0) - cm.diagonal()
+            fn = cm.sum(axis=1) - cm.diagonal()
+            tp = cm.diagonal()
+            cm_details = {
+                'confusion_matrix': cm.tolist(),
+                'total_samples': int(cm.sum()),
+                'class_wise_tp': tp.tolist() if hasattr(tp, 'tolist') else list(tp),
+                'class_wise_fp': fp.tolist() if hasattr(fp, 'tolist') else list(fp),
+                'class_wise_fn': fn.tolist() if hasattr(fn, 'tolist') else list(fn),
+            }
+        
         # Dimension 2: Resource Efficiency
         monitor = ResourceMonitor()
         monitor.start()
@@ -277,7 +305,7 @@ class Evaluation3D:
         # Native interpretability (for tree-based models)
         native_interpretability = 1.0 if hasattr(model, 'feature_importances_') else 0.0
         
-        # Compile results
+        # Compile results with detailed confusion matrix information
         results = {
             'model_name': model_name,
             # Dimension 1: Detection Performance
@@ -285,6 +313,8 @@ class Evaluation3D:
             'accuracy': accuracy,
             'precision': precision,
             'recall': recall,
+            'confusion_matrix': cm.tolist() if hasattr(cm, 'tolist') else cm,
+            'confusion_matrix_details': cm_details,
             # Dimension 2: Resource Efficiency
             'training_time_seconds': resource_metrics['training_time_seconds'],
             'memory_used_mb': resource_metrics['memory_used_mb'],
