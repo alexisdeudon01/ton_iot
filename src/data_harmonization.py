@@ -209,29 +209,39 @@ class DataHarmonizer:
     def harmonize_features(self, df_cic: pd.DataFrame, df_ton: pd.DataFrame,
                           label_col_cic: Optional[str] = None,
                           label_col_ton: Optional[str] = None,
-                          precomputed_feature_mapping: Optional[Dict] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+                          precomputed_feature_mapping: Optional[Dict] = None,
+                          filter_ton_by_type: bool = True) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Harmonize features from both datasets to a common schema
         
         Args:
             df_cic: CIC-DDoS2019 dataframe
             df_ton: TON_IoT dataframe
-            label_col_cic: Label column name in CIC-DDoS2019
-            label_col_ton: Label column name in TON_IoT (default: 'label')
+            label_col_cic: Label column name in CIC-DDoS2019 (if None, uses last column)
+            label_col_ton: Label column name in TON_IoT (if None, uses last column)
             precomputed_feature_mapping: Pre-computed feature mapping from pre-analysis (optional)
+            filter_ton_by_type: If True, filter TON_IoT to keep only rows with type='normal' or 'ddos'
             
         Returns:
             Tuple of harmonized dataframes (df_cic_harmonized, df_ton_harmonized)
         """
-        # Auto-detect label columns
+        # Auto-detect label columns (use last column as per requirements)
         if label_col_cic is None:
-            for col in ['Label', 'label', 'Attack', 'Class']:
-                if col in df_cic.columns:
-                    label_col_cic = col
-                    break
+            label_col_cic = df_cic.columns[-1]
+            logger.info(f"[LABEL] CIC-DDoS2019: Using last column as label: {label_col_cic}")
         
         if label_col_ton is None:
-            label_col_ton = 'label' if 'label' in df_ton.columns else None
+            label_col_ton = df_ton.columns[-1]
+            logger.info(f"[LABEL] TON_IoT: Using last column as label: {label_col_ton}")
+        
+        # Filter TON_IoT: keep only rows with type='normal' or 'ddos' (if filter_ton_by_type is True)
+        if filter_ton_by_type and 'type' in df_ton.columns:
+            original_size = len(df_ton)
+            valid_mask = df_ton['type'].isin(['normal', 'ddos'])
+            df_ton = df_ton.loc[valid_mask].copy()
+            logger.info(f"[FILTER] TON_IoT: Kept {len(df_ton)}/{original_size} rows (type='normal' or 'ddos')")
+            if len(df_ton) == 0:
+                raise ValueError("No valid rows in TON_IoT after filtering (type='normal' or 'ddos')")
         
         # Use precomputed feature mapping if available, otherwise find common features
         if precomputed_feature_mapping is not None:
@@ -319,22 +329,42 @@ class DataHarmonizer:
         df_cic_harmonized = pd.DataFrame(cic_data)
         df_ton_harmonized = pd.DataFrame(ton_data)
         
-        # Add labels
+        # Add labels with binary classification
+        # CIC-DDoS2019: Benign = 0, all attacks (non-Benign) = 1
         if label_col_cic:
-            # Convert label to binary if needed
             cic_labels = df_cic[label_col_cic].copy()
             if cic_labels.dtype == 'object':
-                # Map attack/normal to 1/0
-                unique_labels = cic_labels.unique()
-                cic_labels = (cic_labels != unique_labels[0]).astype(int)
-            df_cic_harmonized['label'] = pd.to_numeric(cic_labels, errors='coerce').fillna(0)
+                # Binary classification: Benign = 0, all attacks = 1
+                cic_labels_binary = (cic_labels.str.upper() != 'BENIGN').astype(int)
+                logger.info(f"[LABEL] CIC-DDoS2019 binary classification: Benign=0, Attacks=1")
+                logger.info(f"  Original labels: {cic_labels.value_counts().to_dict()}")
+                logger.info(f"  Binary distribution: {cic_labels_binary.value_counts().to_dict()}")
+            else:
+                # Already numeric, assume 0=Benign, 1=Attack
+                cic_labels_binary = pd.to_numeric(cic_labels, errors='coerce').fillna(0).astype(int)
+            df_cic_harmonized['label'] = cic_labels_binary
         
-        if label_col_ton:
+        # TON_IoT: Binary classification: normal=0, ddos=1
+        # Note: Filtering by type was done earlier if filter_ton_by_type=True
+        if label_col_ton and label_col_ton in df_ton.columns:
             ton_labels = df_ton[label_col_ton].copy()
-            if ton_labels.dtype == 'object':
-                unique_labels = ton_labels.unique()
-                ton_labels = (ton_labels != unique_labels[0]).astype(int)
-            df_ton_harmonized['label'] = pd.to_numeric(ton_labels, errors='coerce').fillna(0)
+            
+            # Use 'type' column if available for binary classification
+            if 'type' in df_ton.columns:
+                # Binary classification based on type column: normal = 0, ddos = 1
+                ton_labels_binary = (df_ton['type'].str.lower() == 'ddos').astype(int)
+                logger.info(f"[LABEL] TON_IoT binary classification (using 'type' column): normal=0, ddos=1")
+                logger.info(f"  Type distribution: {df_ton['type'].value_counts().to_dict()}")
+            else:
+                # Fallback: use label column directly
+                if ton_labels.dtype == 'object':
+                    ton_labels_binary = (ton_labels.str.lower() == 'ddos').astype(int)
+                else:
+                    ton_labels_binary = pd.to_numeric(ton_labels, errors='coerce').fillna(0).astype(int)
+                logger.warning(f"[LABEL] TON_IoT 'type' column not found, using label column directly")
+            
+            logger.info(f"  Binary distribution: {ton_labels_binary.value_counts().to_dict()}")
+            df_ton_harmonized['label'] = ton_labels_binary
         
         self.harmonized_features = harmonized_cols
         self.feature_mapping_cic = {v['cic']: k for k, v in feature_mapping.items()}

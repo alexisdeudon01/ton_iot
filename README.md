@@ -42,9 +42,72 @@ python main.py --output-dir custom_output  # Custom output directory
 ```
 
 This will execute three phases:
-1. **Phase 1: Preprocessing Configuration Selection** - Dataset harmonization, early fusion, SMOTE, RobustScaler
+1. **Phase 1: Preprocessing Configuration Selection** - Complete preprocessing pipeline with all sub-steps
 2. **Phase 3: Multi-Dimensional Algorithm Evaluation** - Evaluation across 3 dimensions (Performance, Resources, Explainability)
 3. **Phase 5: AHP-TOPSIS Ranking** - Multi-criteria decision making for algorithm ranking
+
+#### Phase 1: Preprocessing Pipeline - Detailed Sub-steps
+
+The preprocessing pipeline follows a structured workflow with 6 main steps:
+
+**1. Harmonization of Features**
+- **CIC-DDoS2019**: Uses 80+ features extracted by CICFlowMeter
+- **TON_IoT**: Original features or CIC-ToN-IoT version (if available)
+- **Method**: Identifies common features through exact matches and semantic similarity
+- **Output**: Harmonized datasets with unified feature schema
+
+**2. Label Alignment (Binary Classification)**
+- **CIC-DDoS2019**: 
+  - Label column: Last column of CSV
+  - Binary mapping: `Benign = 0`, all attacks (non-Benign) = `1`
+- **TON_IoT**: 
+  - Label column: Last column of CSV
+  - Filtering: Keep only rows with `type='normal'` or `type='ddos'`
+  - Binary mapping: `normal = 0`, `ddos = 1`
+- **Output**: Standardized binary labels (0 = Normal/Benign, 1 = Attack/DDoS)
+
+**3. Unified Preprocessing**
+
+The fused dataset undergoes the following sub-steps:
+
+**3.1. Data Cleaning**
+- Remove NaN and Infinity values
+- Convert all columns to numeric
+- Drop columns that are all NaN
+- Impute remaining NaN values with median
+
+**3.2. Encoding**
+- Encode categorical features using LabelEncoder
+- Handle missing categorical values
+
+**3.3. Feature Selection**
+- Select top K features (default: 20) using Mutual Information
+- Reduces dimensionality and training time
+- Keeps most discriminative features
+
+**3.4. Scaling**
+- Normalize features using RobustScaler (median and IQR based)
+- Robust to outliers (better than StandardScaler for network traffic data)
+- Values typically in range [-3, 3]
+
+**3.5. Resampling**
+- Balance classes using SMOTE (Synthetic Minority Over-sampling Technique)
+- Prevents model bias towards majority class
+- Creates synthetic samples for minority class
+
+**4. Data Splitting (Train/Validation/Test)**
+
+**4.1. Stratified Splitting**
+- Split data into 3 parts with stratification:
+  - **Training Set**: 70% (default)
+  - **Validation Set**: 15% (default)
+  - **Test Set**: 15% (default)
+- Stratification ensures proportional representation of both datasets (TON_IoT and CIC-DDoS2019) in each split
+- Maintains class distribution across splits
+
+**4.2. Cross-Validation**
+- 5-fold stratified cross-validation for model evaluation
+- Ensures robust performance estimation
 
 #### Three-Dimensional Evaluation Framework
 

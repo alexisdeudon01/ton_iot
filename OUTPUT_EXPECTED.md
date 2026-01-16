@@ -39,15 +39,97 @@ output/
 
 ## Phase 1 : Preprocessing Configuration Selection
 
+### Workflow détaillé avec sous-étapes
+
+La Phase 1 suit un workflow structuré en 6 étapes principales :
+
+#### 1. Harmonisation des Caractéristiques (Features)
+
+**Objectif :** Aligner les features des deux datasets (TON_IoT et CIC-DDoS2019) sur un schéma commun.
+
+**Méthodes :**
+- **CIC-DDoS2019** : Utilise 80+ features extraites par CICFlowMeter
+- **TON_IoT** : Features originales ou version CIC-ToN-IoT (si disponible)
+- **Matching** : 
+  - Correspondances exactes (même nom de colonne)
+  - Correspondances sémantiques (similarité de sens, unités, catégories)
+- **Output** : Datasets harmonisés avec schéma unifié
+
+#### 2. Alignement des Étiquettes (Labels) - Classification Binaire
+
+**Objectif :** Standardiser les labels pour classification binaire (Normal/Benign = 0, Attack/DDoS = 1).
+
+**CIC-DDoS2019 :**
+- Colonne label : **Dernière colonne** du CSV
+- Mapping : `Benign = 0`, toutes les attaques (non-Benign) = `1`
+- Types d'attaques : DNS, LDAP, MSSQL, TFTP, UDP, UDP-Lag, SYN, etc.
+
+**TON_IoT :**
+- Colonne label : **Dernière colonne** du CSV
+- Filtrage : Conserver uniquement les lignes avec `type='normal'` ou `type='ddos'`
+- Mapping : `normal = 0`, `ddos = 1`
+- Autres types (backdoor, injection, etc.) : **Exclus** du dataset
+
+**Output :** Labels binaires standardisés (0 = Normal/Benign, 1 = Attack/DDoS)
+
+#### 3. Prétraitement Unifié
+
+Une fois les datasets fusionnés (via `pandas.concat`), les étapes suivantes sont appliquées :
+
+##### 3.1. Data Cleaning (Nettoyage)
+- **Suppression NaN et Infinity** : Remplacement par NaN puis imputation
+- **Conversion numérique** : Toutes les colonnes converties en numérique
+- **Suppression colonnes vides** : Colonnes entièrement NaN supprimées
+- **Imputation** : Valeurs NaN restantes remplacées par médiane
+
+##### 3.2. Encoding (Encodage)
+- **Features catégorielles** : Encodage avec LabelEncoder
+- **Gestion valeurs manquantes** : Remplacées par 'unknown' avant encodage
+
+##### 3.3. Feature Selection (Sélection de Features)
+- **Méthode** : Information Mutuelle (Mutual Information)
+- **Nombre de features** : Top K features (défaut : 20)
+- **Objectif** : Réduire la dimensionnalité et le temps d'entraînement
+- **Critère** : Features les plus discriminantes pour la classification
+
+##### 3.4. Scaling (Mise à l'échelle)
+- **Méthode** : RobustScaler (basé sur médiane et IQR)
+- **Avantage** : Robuste aux outliers (meilleur que StandardScaler pour trafic réseau)
+- **Plage typique** : Valeurs dans [-3, 3] (peut être plus large pour outliers)
+- **Objectif** : Normaliser les différences d'échelle entre trafic IoT (léger) et DDoS (massif)
+
+##### 3.5. Resampling (Rééchantillonnage)
+- **Méthode** : SMOTE (Synthetic Minority Over-sampling Technique)
+- **Objectif** : Équilibrer les classes (éviter biais vers classe majoritaire)
+- **Technique** : Création d'échantillons synthétiques pour classe minoritaire
+- **Note** : CIC-DDoS2019 souvent très volumineux par rapport à TON_IoT
+
+#### 4. Division et Test (Splitting)
+
+##### 4.1. Stratification
+- **Méthode** : `train_test_split` avec `stratify=y`
+- **Objectif** : Assurer représentation proportionnelle de TON_IoT et CIC-DDoS2019 dans chaque split
+- **Distribution des classes** : Maintenue dans chaque split
+
+##### 4.2. Division en 3 parties
+- **Training Set** : 70% (défaut) - Pour entraînement des modèles
+- **Validation Set** : 15% (défaut) - Pour validation et hyperparamètres
+- **Test Set** : 15% (défaut) - Pour évaluation finale
+
+##### 4.3. Cross-Validation
+- **Méthode** : 5-fold Stratified Cross-Validation
+- **Objectif** : Estimation robuste de la performance
+- **Utilisation** : Évaluation des algorithmes en Phase 3
+
 ### Fichiers générés
 
 #### `output/phase1_preprocessing/preprocessed_data.csv`
 
-**Description :** Données préprocessées après harmonisation, early fusion, SMOTE et RobustScaler.
+**Description :** Données préprocessées après toutes les étapes (harmonisation, early fusion, cleaning, encoding, feature selection, scaling, resampling, splitting).
 
 **Colonnes :**
-- Colonnes numériques : Features harmonisées et normalisées
-- `label` : Labels binaires (0 = normal, 1 = attaque)
+- Colonnes numériques : Features sélectionnées et normalisées (RobustScaler)
+- `label` : Labels binaires (0 = normal/benign, 1 = attack/ddos)
 
 **Format :** CSV avec header
 
@@ -60,6 +142,8 @@ feature_1,feature_2,...,feature_n,label
 ```
 
 **Utilisation :** Input pour Phase 3 (évaluation des algorithmes)
+
+**Note :** Les données sont déjà divisées en train/validation/test et peuvent être utilisées directement pour l'entraînement.
 
 ---
 
