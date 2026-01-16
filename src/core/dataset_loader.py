@@ -1011,4 +1011,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # (Nothing to fix here, remove duplicate/erroneous block)
