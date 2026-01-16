@@ -109,3 +109,14 @@ Thumbs.db
 # *.h5
 # *.pt
 # *.pth
+
+# Log files
+*.log
+output/logs/
+**/logs/*.log
+**/*.log
+
+# Output directory (generated files - exclude everything except .gitkeep)
+output/*
+!output/.gitkeep
+!output/logs/.gitkeep
