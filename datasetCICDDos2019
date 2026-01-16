@@ -1,0 +1,238 @@
+<html lang="en-US"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><script type="text/javascript" async="" src="datasetCICDDos2019_files/sentinel.js"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ieeexplore.main_35" src="datasetCICDDos2019_files/utag.35.js"></script><script type="text/javascript" async="" charset="utf-8" id="utag_ieeexplore.main_34" src="datasetCICDDos2019_files/utag.34.js"></script></head><body><div style="display: none;" id="lightningjs-usabilla_live"><div><iframe frameborder="0" id="lightningjs-frame-usabilla_live"></iframe></div></div><apm_do_not_touch>
+
+<script src="datasetCICDDos2019_files/utag.js" type="text/javascript" async=""></script><script type="text/javascript">
+(function(){
+window.xmH=!!window.xmH;try{(function(){(function(){})();var lj=21;try{var Lj,Zj,sj=l(436)?1:0,ij=l(79)?1:0,Ij=l(358)?1:0,LJ=l(326)?1:0,oJ=l(420)?1:0,sJ=l(114)?1:0,_J=l(672)?1:0,iJ=l(473)?1:0;for(var jl=(l(886),0);jl<Zj;++jl)sj+=l(803)?2:1,ij+=(l(795),2),Ij+=l(854)?2:1,LJ+=l(192)?2:1,oJ+=(l(897),2),sJ+=l(708)?2:1,_J+=(l(771),2),iJ+=l(957)?2:3;Lj=sj+ij+Ij+LJ+oJ+sJ+_J+iJ;window.Ss===Lj&&(window.Ss=++Lj)}catch(Jl){window.Ss=Lj}var ol=!0;
+function O(J){var L=arguments.length,z=[];for(var S=1;S<L;++S)z.push(arguments[S]-J);return String.fromCharCode.apply(String,z)}function Ol(J){var L=21;!J||document[Z(L,139,126,136,126,119,126,129,126,137,142,104,137,118,137,122)]&&document[Z(L,139,126,136,126,119,126,129,126,137,142,104,137,118,137,122)]!==Z(L,139,126,136,126,119,129,122)||(ol=!1);return ol}function s(J,L){J+=L;return J.toString(36)}function zl(){}Ol(window[zl[s(1086833,lj)]]===zl);Ol(typeof ie9rgb4!==s(1242178186178,lj));
+Ol(RegExp("\x3c")[Z(lj,137,122,136,137)](function(){return"\x3c"})&!RegExp(O(lj,141,72,121))[s(1372184,lj)](function(){return"'x3'+'d';"}));
+var Sl=window[O(lj,118,137,137,118,120,125,90,139,122,131,137)]||RegExp(Z(lj,130,132,119,126,145,118,131,121,135,132,126,121),s(-3,lj))[s(1372184,lj)](window["\x6e\x61vi\x67a\x74\x6f\x72"]["\x75\x73e\x72A\x67\x65\x6et"]),_l=+new Date+(l(328)?6E5:469782),jL,lL,LL,oL=window[O(lj,136,122,137,105,126,130,122,132,138,137)],OL=Sl?l(489)?3E4:40284:l(704)?6E3:6971;
+document[Z(lj,118,121,121,90,139,122,131,137,97,126,136,137,122,131,122,135)]&&document[O(lj,118,121,121,90,139,122,131,137,97,126,136,137,122,131,122,135)](Z(lj,139,126,136,126,119,126,129,126,137,142,120,125,118,131,124,122),function(J){var L=62;document[O(L,180,167,177,167,160,167,170,167,178,183,145,178,159,178,163)]&&(document[Z(L,180,167,177,167,160,167,170,167,178,183,145,178,159,178,163)]===s(1058781921,L)&&J[O(L,167,177,146,176,179,177,178,163,162)]?LL=!0:document[Z(L,180,167,177,167,160,
+167,170,167,178,183,145,178,159,178,163)]===s(68616527604,L)&&(jL=+new Date,LL=!1,zL()))});function zL(){if(!document[O(72,185,189,173,186,193,155,173,180,173,171,188,183,186)])return!0;var J=+new Date;if(J>_l&&(l(174)?6E5:677515)>J-jL)return Ol(!1);var L=Ol(lL&&!LL&&jL+OL<J);jL=J;lL||(lL=!0,oL(function(){lL=!1},l(178)?1:0));return L}zL();var ZL=[l(657)?17795081:25833813,l(326)?27611931586:2147483647,l(296)?1558153217:1263417445];
+function Z(J){var L=arguments.length,z=[],S=1;while(S<L)z[S-1]=arguments[S++]-J;return String.fromCharCode.apply(String,z)}function sL(J){var L=71;J=typeof J===s(1743045605,L)?J:J[O(L,187,182,154,187,185,176,181,174)](l(859)?36:46);var z=window[J];if(!z||!z[Z(L,187,182,154,187,185,176,181,174)])return;var S=""+z;window[J]=function(J,L){lL=!1;return z(J,L)};window[J][O(L,187,182,154,187,185,176,181,174)]=function(){return S}}for(var SL=(l(53),0);SL<ZL[s(1294399184,lj)];++SL)sL(ZL[SL]);
+Ol(!1!==window[O(lj,141,130,93)]);window.SZ=window.SZ||{};window.SZ.Oj="08bdcdc04c19400003b52d7f2efc62a6051c08f7a2b07f0f80d950a6bcf4864a1b0ebe74d185ae6d382916118551f62d860f87590712bfb60554c87fdac0241bee652701917ba374";function _L(J){var L=+new Date,z;!document[O(18,131,135,119,132,139,101,119,126,119,117,134,129,132,83,126,126)]||L>_l&&(l(201)?6E5:733067)>L-jL?z=Ol(!1):(z=Ol(lL&&!LL&&jL+OL<L),jL=L,lL||(lL=!0,oL(function(){lL=!1},l(329)?1:0)));return!(arguments[J]^z)}function l(J){return 911>J}
+(function(){var J=/(\A([0-9a-f]{1,4}:){1,6}(:[0-9a-f]{1,4}){1,1}\Z)|(\A(([0-9a-f]{1,4}:){1,7}|:):\Z)|(\A:(:[0-9a-f]{1,4}){1,7}\Z)/ig,L=document.getElementsByTagName("head")[0],z=[];L&&(L=L.innerHTML.slice(0,1E3));while(L=J.exec(""))z.push(L)})();})();}catch(x){}finally{ie9rgb4=void(0);};function ie9rgb4(a,b){return a>>b>>0};
+
+})();
+
+</script>
+</apm_do_not_touch>
+
+<script type="text/javascript" src="datasetCICDDos2019_files/0807dc117eab20005f552db9f55e4424c24b091e92fc17ead64b9a23e9274.es"></script>
+<script type="text/javascript" src="datasetCICDDos2019_files/jquery-3.5.1.min.js" charset="utf-8"></script>
+
+<!-- Fingerprint Cookie -->
+<script type="text/javascript" src="datasetCICDDos2019_files/js.cookie.js"></script>
+
+
+
+	<script type="text/javascript" src="datasetCICDDos2019_files/fingerprint2.js"></script>
+	<script type="text/javascript" src="datasetCICDDos2019_files/fingerprint.js"></script>
+	<script type="text/javascript">Xplore.Fingerprint.init();</script>
+
+<!-- BEGIN: tealium in stamp/stamp.jsp. NOTE stamp.jsp does not use template.jsp, nor include common/assets.jsp, so including tealiumAnalytics.jsp here -->
+
+
+
+
+
+
+
+
+		<!-- BEGIN: TealiumAnalytics.jsp -->
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+			
+			
+			
+			
+				
+			
+		
+		
+		
+		
+		
+		
+			
+				
+			
+		
+			
+				
+					
+					
+				
+			
+	
+			
+	
+			
+				
+			
+		
+		
+
+			<script type="text/javascript">
+ 				// tealium config vars
+				var TEALIUM_CONFIG_TAGGING_ENABLED = true;		
+				var TEALIUM_CONFIG_CDN_URL = '//tags.tiqcdn.com/utag/';
+				var TEALIUM_CONFIG_ACCOUNT_PROFILE_ENV = 'ieeexplore/main/prod';
+				
+				// tealium utag_data values for user 
+				var TEALIUM_userType = 'Institute';
+				var TEALIUM_userInstitutionId = '22552';
+				var TEALIUM_userId = '';
+				var TEALIUM_user_third_party = '';
+				
+				var TEALIUM_products = 'NOKIA BELL LABS|ISOL55|EBOOKS:2011:2018|NOWCSEC:2018:2018|WILEYTELECOM:2019:2019|IBM:1872:2020|NOWCSEC:2019:2019|NOWCSEC:2020:2020|WILEYTELECOM:2015:2016|WILEYSEMICONDUCTORS:2024:2024|PUP:2024:2024|WILEYAI:2024:2024|NOWAIEC:2025:2025|MCCIS5|MCCIS6|MCCIS7|ISOL85|MCCIS8|MCCIS9|MCCIS4|MCCIS5|IEL|VDE|';
+			</script>
+
+
+			<script type="text/javascript">
+			// asynchronously load tealium's utag.js , which declares tealium JS variables like; utag_data, utag
+			(function(a,b,c,d){
+			
+				a=TEALIUM_CONFIG_CDN_URL + TEALIUM_CONFIG_ACCOUNT_PROFILE_ENV + '/utag.js';
+				b=document;c='script';d=b.createElement(c);d.src=a;
+				d.type='text/java'+c;d.async=true;
+				a=b.getElementsByTagName(c)[0];a.parentNode.insertBefore(d,a);
+			})();
+			</script>
+
+			<script type="text/javascript" src="datasetCICDDos2019_files/tealiumTagsData.js"></script>
+			<script type="text/javascript" src="datasetCICDDos2019_files/tealiumAnalytics.js"></script>
+
+
+		
+ 		
+		<!-- END: TealiumAnalytics.jsp -->
+			 
+
+<!-- END: tealium in stamp/stamp.jsp -->
+
+
+
+
+
+
+
+	<script type="text/javascript" src="datasetCICDDos2019_files/init.min.js"></script>
+	<script type="text/javascript" src="datasetCICDDos2019_files/launch-384a38e91473.min.js" async=""></script>
+
+
+
+
+
+
+		
+		<link rel="icon" type="image/x-icon" href="https://ieeexplore.ieee.org/assets/img/favicon.ico">
+		<title>IEEE Xplore Full-Text PDF: </title>
+		<style>
+			html {
+			    margin: 0;
+			    padding: 0;
+			    overflow: hidden;
+			}
+			body {
+			    margin: 0;
+			    padding: 0;
+			}
+			iframe {
+				display: block;
+				position: fixed;
+				width: 100%;
+				height: 100%;
+			}
+		</style>
+	
+	
+		<iframe src="datasetCICDDos2019_files/Developing_Realistic_Distributed_Denial_of_Service_DDoS_Atta.pdf" frameborder="0"></iframe>
+	
+
+
+
+
+<script>
+(function AMCV_patch(limit) {
+  var current_cookie = document.cookie.match(/AMCV_[^=]*=MCMID\|[^;]*/g),
+      value = current_cookie ? current_cookie[0].split("="):"",
+      cookieDomain = document.location.hostname.split(".").reverse(),
+      cookieParams = ";path=/;domain=" + cookieDomain[1] + "." + cookieDomain[0];
+
+//      console.log("]*********** cookie: " + value);
+  
+  limit = limit ? limit:1;
+
+  if ( value && value[1] ) {
+    //AMCV cookie exists with value
+    if ( (/\|/gi).test(value[1]) ) {
+    //AMCV cookie contains |
+//      console.log("]*********** found | in cookie: " + value[1]);
+      document.cookie = value[0] + "=" + (value[1].replace(/\|/g,"%7C")) + cookieParams
+    }
+  } else {
+    //AMCV cookie does not exist
+//    console.log("]*********** found no cookie ");
+    var consent = document.querySelector("[aria-label='Cookie Consent Banner']");
+    if ( consent && !(/--hidden/gi).test(consent.classList) ){
+    //Consent banner is active
+//      console.log("]*********** consent banner not hidden ");
+      var observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+//      console.log("]*********** consent banner mutation: " + mutation.attributeName);
+          if ( mutation.attributeName == "class") {
+//      console.log("]*********** run Patch");
+            AMCV_patch();
+          }
+        });
+      })
+      observer.observe(consent, {
+        subtree: false,
+        childList: false,
+        attributeFilter: ["class"],
+        attributes: true
+      });
+    } else {
+    //Consent banner is not active, cookie is not set
+//      console.log("]*********** consent banner hidden, limit: " + limit);
+      limit++;
+      if( limit < 13 ) {
+//      console.log("]*********** loop, limit: " + limit);
+        clearTimeout(poll);
+        var poll = setTimeout(AMCV_patch,500,limit)
+      } else {
+//      console.log("]*********** loop, past limit: " + limit);
+        //Enable Analytics from sidebar
+        var sidebar = function(e) {
+//          console.log("]*********** click event");
+              var ele = e.target.closest("button");
+//          console.log(ele);
+              if ( ele && (/osano-cm-save/).test(ele.classList) ) {
+//          console.log("]*********** ele && button && class");
+                AMCV_patch();
+              }
+        }
+        document.addEventListener("mousedown",sidebar);
+      }
+    }
+  }
+})();
+
+console.log("「ΛΞΤ」| Global:: AMCV cookie");
+
+</script><script>
+alloy("getIdentity").then(function(result) {
+  window.auet_ecid = result.identity.ECID;
+});
+</script><iframe sandbox="allow-scripts allow-same-origin" title="Adobe ID Syncing iFrame" id="destination_publishing_iframe_ieeexplore_0" name="destination_publishing_iframe_ieeexplore_0_name" style="display: none; width: 0px; height: 0px;" src="datasetCICDDos2019_files/dest5.html" class="aamIframeLoaded"></iframe></body></html>

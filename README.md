@@ -19,15 +19,61 @@ processing, data manipulation, and algorithms implementation and evaluation.
 ![Proposed Framework Architecture.](AI_implementation.png)
 
 ## Running the code
-To run the code and find the results, please clone this project and download the data. The data path should be the same as the one used in the code. <br> 
-`data_training.py` is dedicated for the Machine Learning models and `RL_training.py` for the reinforcement learning implementation. 
 
-### TO NOTE
-In the code, We developed models other than the tested models, where we included both Deep Learning (Multilayer Perceptrons (MLP)) models and Reinforcement Learning (DQN) setup.
+### IRP Research Pipeline (Main Methodology)
+
+This repository implements the methodology described in the IRP research paper: **"AI-Powered Log Analysis for Smarter Threat Detection"**.
+
+To run the complete pipeline and generate all results:
+
+```bash
+python main_pipeline.py
+```
+
+This will execute three phases:
+1. **Phase 1: Preprocessing Configuration Selection** - Dataset harmonization, early fusion, SMOTE, RobustScaler
+2. **Phase 3: Multi-Dimensional Algorithm Evaluation** - Evaluation across 3 dimensions (Performance, Resources, Explainability)
+3. **Phase 5: AHP-TOPSIS Ranking** - Multi-criteria decision making for algorithm ranking
+
+#### Three-Dimensional Evaluation Framework
+
+The framework evaluates algorithms across:
+- **Dimension 1: Detection Performance** - F1 Score (primary metric)
+- **Dimension 2: Resource Efficiency** - Training time, memory usage
+- **Dimension 3: Explainability** - SHAP/LIME scores, native interpretability
+
+#### Algorithms Evaluated
+
+According to IRP methodology:
+- Logistic Regression (LR)
+- Decision Tree (DT)
+- Random Forest (RF)
+- CNN (Convolutional Neural Network for tabular data)
+- TabNet (Deep learning for tabular data)
+
+#### Datasets
+
+- **TON_IoT**: Included (train_test_network.csv)
+- **CIC-DDoS2019**: Download from [CIC Dataset](https://www.unb.ca/cic/datasets/ddos-2019.html) and place in `data/raw/CIC-DDoS2019/`
+
+### Legacy Scripts
+
+- `data_training.py` - Data exploration and basic ML models (Legacy code, kept for reference)
+- `RL_training.py` - Reinforcement Learning implementation (Optional)
 ## Results
+
+### IRP Pipeline Results
+
+Results are automatically generated in the `results/` directory:
+- `results/phase1_preprocessing/` - Preprocessed datasets
+- `results/phase3_evaluation/` - 3D evaluation metrics for all algorithms
+- `results/phase5_ranking/` - AHP-TOPSIS ranking results
+
+### Data Exploration
+
 First, we explored the data and we deducted a correlation analysis as in the figure below: <br>
 
-![Correlation with the target feature label](correlation.png)
+![Correlation with the target feature label](results/data_analysis/correlation.png)
 
 The main results are illustrated in the table and figure below:
 <br>

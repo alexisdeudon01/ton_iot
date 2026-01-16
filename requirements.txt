@@ -1,14 +1,30 @@
-# Core
+# Core data manipulation and numerical computing
 numpy>=1.21.0
 pandas>=1.3.0
+scipy>=1.7.0
 
 # Machine Learning
 scikit-learn>=1.0.0
 
+# Imbalanced Learning (for SMOTE)
+imbalanced-learn>=0.10.0
+
+# Deep Learning
+torch>=1.12.0
+pytorch-tabnet>=4.0
+
+# Explainability
+shap>=0.41.0
+lime>=0.2.0
+
+# System monitoring
+psutil>=5.9.0
+
 # XGBoost (évite les dépendances NVIDIA)
+# Note: Not used in IRP methodology but kept for backward compatibility
 xgboost<3
 
-# Reinforcement Learning
+# Reinforcement Learning (optional)
 stable-baselines3>=2.0.0
 gymnasium>=0.29.1
 shimmy>=2.0

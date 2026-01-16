@@ -5,14 +5,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import math
 import seaborn as sns
-import xgboost as xgb
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.metrics import mean_squared_error, r2_score
 from datetime import datetime
-from sklearn.impute import SimpleImputer
-from sklearn.linear_model import Ridge
 
 # Path to the CSV file (local)
 file_path = 'train_test_network.csv'
@@ -145,17 +139,17 @@ X_test_scaled = scaler.transform(X_test)
 
 
 from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import log_loss, mean_squared_error, r2_score, accuracy_score, precision_score, f1_score
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Initialize models
+# Initialize models (algorithms from IRP methodology)
 models = {
-    "Logistic Regression": LogisticRegression(max_iter=1000),
-    "Random Forest": RandomForestClassifier(),
-    "Gradient Boosting": GradientBoostingClassifier()
+    "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+    "Decision Tree": DecisionTreeClassifier(random_state=42),
+    "Random Forest": RandomForestClassifier(random_state=42)
 }
 
 # Dictionary to hold evaluation metrics for each model
@@ -168,65 +162,9 @@ model_performance = {
     "Precision Score": [],
     "R2 Score": []
 }
-from xgboost import XGBClassifier
-from sklearn.linear_model import RidgeClassifier
-
-Xr = data.drop(['label'], axis=1)
-yr = data['label']
-
-# Splitting the dataset
-Xr_train, Xr_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Standardizing features
-scaler = StandardScaler()
-Xr_train_scaled = scaler.fit_transform(X_train)
-Xr_test_scaled = scaler.transform(X_test)
-
-ridge_clf = RidgeClassifier()
-ridge_clf.fit(X_train_scaled, y_train)
-
-y_pred_ridge = ridge_clf.predict(X_test_scaled)
-
-accuracy_ridge = accuracy_score(y_test, y_pred_ridge)
-mse_ridge = np.sqrt(mean_squared_error(y_test, y_pred_ridge))
-r2_ridge = r2_score(y_test, y_pred_ridge)
-loss_ridge = log_loss(y_test, y_pred_ridge)
-loss_ridge = 0.6397665
-f1_ridge = f1_score(y_test, y_pred_ridge)
-precision_ridge = precision_score(y_test, y_pred_ridge)
-
-model_performance["Model"].append('Ridge')
-model_performance["Accuracy"].append(accuracy_ridge)
-model_performance["Log Loss"].append(loss_ridge)
-model_performance["RMSE"].append(mse_ridge)
-model_performance["R2 Score"].append(r2_ridge)
-model_performance["F1 Score"].append(f1_ridge)
-model_performance["Precision Score"].append(precision_ridge)
-
-
-# XGBOOST
-# Initialize the model
-xgb_clf = XGBClassifier(eval_metric='logloss')
-xgb_clf.fit(X_train_scaled, y_train)
-
-y_pred_xgb = xgb_clf.predict(X_test_scaled)
-
-# Evaluating Ridge Regression
-
-accuracy_xgb = accuracy_score(y_test, y_pred_xgb)
-mse_xgb = np.sqrt(mean_squared_error(y_test, y_pred_xgb))
-r2_xgb = r2_score(y_test, y_pred_xgb)
-loss_xgb = log_loss(y_test, y_pred_xgb)
-f1_xgb = f1_score(y_test, y_pred_xgb)
-precision_xgb = precision_score(y_test, y_pred_xgb)
-
-model_performance["Model"].append('XGBoost')
-model_performance["Accuracy"].append(accuracy_xgb)
-model_performance["Log Loss"].append(loss_xgb)
-model_performance["RMSE"].append(mse_xgb)
-model_performance["R2 Score"].append(r2_xgb)
-model_performance["F1 Score"].append(f1_xgb)
-model_performance["Precision Score"].append(precision_xgb)
+# Note: Ridge, XGBoost, and Gradient Boosting removed per IRP methodology
+# IRP uses: Logistic Regression, Decision Tree, Random Forest, CNN, TabNet
+# For full evaluation with all algorithms and AHP-TOPSIS ranking, use main_pipeline.py
 
 # Training and evaluating each model
 for name, model in models.items():

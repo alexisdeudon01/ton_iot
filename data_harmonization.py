@@ -1,0 +1,313 @@
+#!/usr/bin/env python3
+"""
+Data harmonization module for CIC-DDoS2019 and TON_IoT datasets
+Implements feature mapping and early fusion with statistical validation
+"""
+import numpy as np
+import pandas as pd
+from scipy import stats
+from typing import Dict, List, Tuple, Optional
+import warnings
+
+warnings.filterwarnings('ignore')
+
+
+class DataHarmonizer:
+    """Harmonizes heterogeneous datasets for joint analysis"""
+    
+    def __init__(self):
+        """Initialize the harmonizer with feature mapping schemas"""
+        self.feature_mapping_cic = {}
+        self.feature_mapping_ton = {}
+        self.harmonized_features = []
+        self.statistical_tests = {}
+        
+    def analyze_feature_similarity(self, df1: pd.DataFrame, df2: pd.DataFrame, 
+                                   col1: str, col2: str) -> Dict:
+        """
+        Analyze statistical similarity between two features
+        
+        Args:
+            df1: First dataframe
+            df2: Second dataframe
+            col1: Column name in df1
+            col2: Column name in df2
+            
+        Returns:
+            Dictionary with statistical test results
+        """
+        # Get numeric values only
+        val1 = pd.to_numeric(df1[col1], errors='coerce').dropna()
+        val2 = pd.to_numeric(df2[col2], errors='coerce').dropna()
+        
+        if len(val1) == 0 or len(val2) == 0:
+            return {'compatible': False, 'reason': 'Non-numeric or empty'}
+        
+        # Kolmogorov-Smirnov test
+        ks_stat, ks_pvalue = stats.ks_2samp(val1, val2)
+        
+        # Additional statistics
+        mean_diff = abs(val1.mean() - val2.mean())
+        std_diff = abs(val1.std() - val2.std())
+        
+        # Consider compatible if p-value > 0.05 or distributions are similar
+        compatible = ks_pvalue > 0.05 or (mean_diff < 0.1 * (val1.mean() + val2.mean()) / 2)
+        
+        return {
+            'compatible': compatible,
+            'ks_statistic': ks_stat,
+            'ks_pvalue': ks_pvalue,
+            'mean_diff': mean_diff,
+            'std_diff': std_diff,
+            'mean1': val1.mean(),
+            'mean2': val2.mean()
+        }
+    
+    def find_common_features(self, df1: pd.DataFrame, df2: pd.DataFrame, 
+                            df1_name: str = "Dataset1", df2_name: str = "Dataset2") -> Dict:
+        """
+        Find semantically similar features between datasets
+        
+        Args:
+            df1: First dataframe (e.g., CIC-DDoS2019)
+            df2: Second dataframe (e.g., TON_IoT)
+            df1_name: Name of first dataset
+            df2_name: Name of second dataset
+            
+        Returns:
+            Dictionary mapping features
+        """
+        mapping = {}
+        
+        # Common exact matches
+        common_exact = set(df1.columns) & set(df2.columns)
+        for col in common_exact:
+            mapping[col] = {'cic': col, 'ton': col, 'type': 'exact_match'}
+        
+        # Semantic mappings based on common patterns
+        # Network flow features
+        semantic_mappings = {
+            # IP addresses
+            'src_ip': ['Src IP', 'src_ip', 'Source IP'],
+            'dst_ip': ['Dst IP', 'dst_ip', 'Destination IP'],
+            # Ports
+            'src_port': ['Src Port', 'src_port', 'Source Port'],
+            'dst_port': ['Dst Port', 'dst_port', 'Destination Port'],
+            # Protocol
+            'proto': ['Protocol', 'proto', 'Protocol Name'],
+            # Bytes
+            'src_bytes': ['Total Fwd Packets', 'src_bytes', 'Fwd IAT Total'],
+            'dst_bytes': ['Total Backward Packets', 'dst_bytes', 'Bwd IAT Total'],
+            # Duration
+            'duration': ['Flow Duration', 'duration', 'Flow Duration (ms)'],
+            # Packets
+            'src_pkts': ['Total Length of Fwd Packets', 'src_pkts', 'Fwd Packet Length Total'],
+            'dst_pkts': ['Total Length of Bwd Packets', 'dst_pkts', 'Bwd Packet Length Total'],
+        }
+        
+        for unified_name, variants in semantic_mappings.items():
+            cic_match = None
+            ton_match = None
+            
+            for variant in variants:
+                if variant in df1.columns and cic_match is None:
+                    cic_match = variant
+                if variant in df2.columns and ton_match is None:
+                    ton_match = variant
+            
+            if cic_match and ton_match:
+                mapping[unified_name] = {
+                    'cic': cic_match,
+                    'ton': ton_match,
+                    'type': 'semantic_match'
+                }
+        
+        return mapping
+    
+    def harmonize_features(self, df_cic: pd.DataFrame, df_ton: pd.DataFrame,
+                          label_col_cic: Optional[str] = None,
+                          label_col_ton: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Harmonize features from both datasets to a common schema
+        
+        Args:
+            df_cic: CIC-DDoS2019 dataframe
+            df_ton: TON_IoT dataframe
+            label_col_cic: Label column name in CIC-DDoS2019
+            label_col_ton: Label column name in TON_IoT (default: 'label')
+            
+        Returns:
+            Tuple of harmonized dataframes (df_cic_harmonized, df_ton_harmonized)
+        """
+        # Auto-detect label columns
+        if label_col_cic is None:
+            for col in ['Label', 'label', 'Attack', 'Class']:
+                if col in df_cic.columns:
+                    label_col_cic = col
+                    break
+        
+        if label_col_ton is None:
+            label_col_ton = 'label' if 'label' in df_ton.columns else None
+        
+        # Find common features
+        feature_mapping = self.find_common_features(df_cic, df_ton, "CIC-DDoS2019", "TON_IoT")
+        
+        # Extract numeric features that can be harmonized
+        harmonized_cols = []
+        cic_data = {}
+        ton_data = {}
+        
+        for unified_name, mapping_info in feature_mapping.items():
+            cic_col = mapping_info['cic']
+            ton_col = mapping_info['ton']
+            
+            # Convert to numeric
+            cic_values = pd.to_numeric(df_cic[cic_col], errors='coerce')
+            ton_values = pd.to_numeric(df_ton[ton_col], errors='coerce')
+            
+            if cic_values.notna().sum() > 0.8 * len(df_cic) and \
+               ton_values.notna().sum() > 0.8 * len(df_ton):
+                harmonized_cols.append(unified_name)
+                cic_data[unified_name] = cic_values.fillna(cic_values.median())
+                ton_data[unified_name] = ton_values.fillna(ton_values.median())
+        
+        # Create harmonized dataframes
+        df_cic_harmonized = pd.DataFrame(cic_data)
+        df_ton_harmonized = pd.DataFrame(ton_data)
+        
+        # Add labels
+        if label_col_cic:
+            # Convert label to binary if needed
+            cic_labels = df_cic[label_col_cic].copy()
+            if cic_labels.dtype == 'object':
+                # Map attack/normal to 1/0
+                unique_labels = cic_labels.unique()
+                cic_labels = (cic_labels != unique_labels[0]).astype(int)
+            df_cic_harmonized['label'] = pd.to_numeric(cic_labels, errors='coerce').fillna(0)
+        
+        if label_col_ton:
+            ton_labels = df_ton[label_col_ton].copy()
+            if ton_labels.dtype == 'object':
+                unique_labels = ton_labels.unique()
+                ton_labels = (ton_labels != unique_labels[0]).astype(int)
+            df_ton_harmonized['label'] = pd.to_numeric(ton_labels, errors='coerce').fillna(0)
+        
+        self.harmonized_features = harmonized_cols
+        self.feature_mapping_cic = {v['cic']: k for k, v in feature_mapping.items()}
+        self.feature_mapping_ton = {v['ton']: k for k, v in feature_mapping.items()}
+        
+        return df_cic_harmonized, df_ton_harmonized
+    
+    def early_fusion(self, df_cic_harmonized: pd.DataFrame, 
+                    df_ton_harmonized: pd.DataFrame,
+                    validate: bool = True) -> Tuple[pd.DataFrame, Dict]:
+        """
+        Perform early fusion of harmonized datasets with statistical validation
+        
+        Args:
+            df_cic_harmonized: Harmonized CIC-DDoS2019 dataframe
+            df_ton_harmonized: Harmonized TON_IoT dataframe
+            validate: Whether to perform Kolmogorov-Smirnov validation
+            
+        Returns:
+            Tuple of (fused_dataframe, validation_results)
+        """
+        # Ensure same columns
+        common_cols = set(df_cic_harmonized.columns) & set(df_ton_harmonized.columns)
+        common_cols = sorted(list(common_cols))
+        
+        df_cic_aligned = df_cic_harmonized[common_cols]
+        df_ton_aligned = df_ton_harmonized[common_cols]
+        
+        # Add dataset source indicator
+        df_cic_aligned['dataset_source'] = 'CIC-DDoS2019'
+        df_ton_aligned['dataset_source'] = 'TON_IoT'
+        
+        # Concatenate
+        df_fused = pd.concat([df_cic_aligned, df_ton_aligned], ignore_index=True)
+        
+        validation_results = {}
+        
+        if validate:
+            # Perform KS tests on common numeric features (excluding label and source)
+            numeric_features = [col for col in common_cols 
+                              if col not in ['label', 'dataset_source'] and
+                              pd.api.types.is_numeric_dtype(df_fused[col])]
+            
+            for feature in numeric_features[:10]:  # Limit to first 10 for performance
+                cic_values = df_cic_aligned[feature].dropna()
+                ton_values = df_ton_aligned[feature].dropna()
+                
+                if len(cic_values) > 0 and len(ton_values) > 0:
+                    ks_stat, ks_pvalue = stats.ks_2samp(cic_values, ton_values)
+                    validation_results[feature] = {
+                        'ks_statistic': ks_stat,
+                        'ks_pvalue': ks_pvalue,
+                        'compatible': ks_pvalue > 0.05,
+                        'cic_mean': cic_values.mean(),
+                        'ton_mean': ton_values.mean()
+                    }
+            
+            self.statistical_tests = validation_results
+        
+        return df_fused, validation_results
+    
+    def get_harmonization_report(self) -> str:
+        """Generate a report on the harmonization process"""
+        report = f"Harmonization Report\n"
+        report += f"=" * 50 + "\n"
+        report += f"Number of harmonized features: {len(self.harmonized_features)}\n"
+        report += f"\nHarmonized features: {', '.join(self.harmonized_features)}\n"
+        
+        if self.statistical_tests:
+            report += f"\nStatistical Validation (Kolmogorov-Smirnov):\n"
+            compatible = sum(1 for v in self.statistical_tests.values() if v.get('compatible', False))
+            total = len(self.statistical_tests)
+            report += f"  Compatible features: {compatible}/{total}\n"
+            
+            for feature, results in list(self.statistical_tests.items())[:5]:
+                report += f"  {feature}: p-value={results['ks_pvalue']:.4f}, "
+                report += f"compatible={results['compatible']}\n"
+        
+        return report
+
+
+def main():
+    """Test the harmonization module"""
+    from dataset_loader import DatasetLoader
+    
+    loader = DatasetLoader()
+    
+    # Load datasets
+    try:
+        df_ton = loader.load_ton_iot()
+        print(f"TON_IoT loaded: {df_ton.shape}\n")
+    except Exception as e:
+        print(f"Could not load TON_IoT: {e}")
+        return
+    
+    try:
+        df_cic = loader.load_cic_ddos2019()
+        print(f"CIC-DDoS2019 loaded: {df_cic.shape}\n")
+    except Exception as e:
+        print(f"CIC-DDoS2019 not available: {e}")
+        print("Harmonization test skipped.")
+        return
+    
+    # Harmonize
+    harmonizer = DataHarmonizer()
+    df_cic_harm, df_ton_harm = harmonizer.harmonize_features(df_cic, df_ton)
+    
+    print(f"CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
+    print(f"TON_IoT harmonized: {df_ton_harm.shape}\n")
+    
+    # Early fusion
+    df_fused, validation = harmonizer.early_fusion(df_cic_harm, df_ton_harm)
+    print(f"Fused dataset: {df_fused.shape}\n")
+    
+    # Report
+    print(harmonizer.get_harmonization_report())
+
+
+if __name__ == "__main__":
+    main()
