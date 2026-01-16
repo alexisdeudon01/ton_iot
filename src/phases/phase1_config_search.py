@@ -1,4 +1,4 @@
-py#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Phase 1: Preprocessing Configuration Search
 Génère et évalue 108 configurations preprocessing pour trouver la meilleure
