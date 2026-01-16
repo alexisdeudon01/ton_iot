@@ -185,8 +185,6 @@ Examples:
     
     try:
         # Import pipeline (after logging setup)
-        import sys
-        from pathlib import Path
         # Add src directory to Python path
         src_path = Path(__file__).parent / 'src'
         if str(src_path) not in sys.path:
