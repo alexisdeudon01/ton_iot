@@ -110,13 +110,16 @@ Thumbs.db
 # *.pt
 # *.pth
 
-# Log files
+# Log files - exclude all .log files globally
 *.log
-output/logs/
 **/logs/*.log
-**/*.log
 
 # Output directory (generated files - exclude everything except .gitkeep)
+# Pattern order matters: exclude everything first, then un-exclude what we want
 output/*
 !output/.gitkeep
-!output/logs/.gitkeep
+!output/**/
+!output/**/.gitkeep
+
+# Note: output/logs/.gitkeep will be tracked because of !output/**/.gitkeep above
+# All .log files in output/logs/ are excluded by *.log pattern
