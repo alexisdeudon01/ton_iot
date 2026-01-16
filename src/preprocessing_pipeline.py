@@ -50,7 +50,8 @@ class PreprocessingPipeline:
         self.n_features = n_features
         self.scaler = RobustScaler()
         self.imputer = SimpleImputer(strategy='median')
-        self.smote = SMOTE(random_state=random_state, k_neighbors=5)
+        # SMOTE will be initialized in resample_data() with appropriate n_neighbors based on data
+        self.smote = None
         self.feature_selector = None
         self.label_encoders = {}
         self.feature_names = None
@@ -155,15 +156,16 @@ class PreprocessingPipeline:
         Returns:
             DataFrame with selected features
         """
-        logger.info(f"[PREPROCESSING] Step 3: Feature Selection (selecting top {self.n_features} features)...")
+        logger.info(f"[PREPROCESSING] Step 3: Feature Selection (selecting top {self.n_features} features using Mutual Information)...")
         
         if fit:
-            # Calculate mutual information scores
-            mi_scores = mutual_info_classif(X.values, y.values, random_state=self.random_state)
-            
-            # Select top K features
-            self.feature_selector = SelectKBest(k=min(self.n_features, len(X.columns)))
+            # Select top K features using Mutual Information (not default f_classif)
+            self.feature_selector = SelectKBest(score_func=mutual_info_classif, k=min(self.n_features, len(X.columns)))
             X_selected = self.feature_selector.fit_transform(X.values, y.values)
+            
+            # Calculate and log MI scores for selected features
+            mi_scores = self.feature_selector.scores_
+            logger.debug(f"  Mutual Information scores calculated for {len(mi_scores)} features")
             
             # Get selected feature names
             selected_indices = self.feature_selector.get_support(indices=True)
@@ -237,6 +239,7 @@ class PreprocessingPipeline:
         """
         Step 5: Resampling
         - Balance classes using SMOTE
+        - Skip SMOTE if minority class has insufficient samples (< n_neighbors+1)
         
         Args:
             X: Feature array
@@ -246,9 +249,35 @@ class PreprocessingPipeline:
             Tuple of (X_resampled, y_resampled)
         """
         logger.info("[PREPROCESSING] Step 5: Resampling with SMOTE...")
-        logger.info(f"  Before resampling: {pd.Series(y).value_counts().to_dict()}")
+        class_counts = pd.Series(y).value_counts().to_dict()
+        logger.info(f"  Before resampling: {class_counts}")
         
-        X_resampled, y_resampled = self.smote.fit_resample(X, y)
+        # Check if SMOTE can be applied (need at least n_neighbors+1 samples in minority class)
+        default_n_neighbors = 5
+        min_samples_needed = default_n_neighbors + 1  # SMOTE needs at least n_neighbors+1
+        
+        # Find minority class count
+        minority_count = min(class_counts.values())
+        
+        if minority_count < min_samples_needed:
+            logger.warning(
+                f"  ⚠ SMOTE skipped: Minority class has only {minority_count} sample(s), "
+                f"but SMOTE requires at least {min_samples_needed} samples (n_neighbors={default_n_neighbors}+1). "
+                f"Returning original data without resampling."
+            )
+            # Return original data without resampling
+            X_resampled = X.copy()
+            y_resampled = y.copy()
+            self.smote = None  # Mark that SMOTE was not applied
+        else:
+            # Adjust n_neighbors if minority class is small but sufficient
+            n_neighbors = min(default_n_neighbors, minority_count - 1)
+            if n_neighbors < default_n_neighbors:
+                logger.info(f"  Adjusted SMOTE n_neighbors from {default_n_neighbors} to {n_neighbors} (minority class has {minority_count} samples)")
+            
+            # Initialize SMOTE with adjusted n_neighbors
+            self.smote = SMOTE(n_neighbors=n_neighbors, random_state=self.random_state)
+            X_resampled, y_resampled = self.smote.fit_resample(X, y)
         
         logger.info(f"  After resampling: {pd.Series(y_resampled).value_counts().to_dict()}")
         logger.info(f"  Shape: {X_resampled.shape[0]} rows, {X_resampled.shape[1]} features")

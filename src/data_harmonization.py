@@ -349,8 +349,13 @@ class DataHarmonizer:
                 logger.info(f"[LABEL] CIC-DDoS2019 binary classification: Benign=0, Attacks (non-Benign)=1")
                 logger.info(f"  Total rows: {len(cic_labels)}")
                 logger.info(f"  Original label distribution: {cic_labels.value_counts().to_dict()}")
-                logger.info(f"  Binary distribution: {cic_labels_binary.value_counts().to_dict()}")
-                logger.info(f"  → Benign (0): {len(cic_labels_binary[cic_labels_binary == 0])}, Attacks (1): {len(cic_labels_binary[cic_labels_binary == 1])}")
+                binary_dist = cic_labels_binary.value_counts().to_dict()
+                logger.info(f"  Binary distribution: {binary_dist}")
+                benign_count = len(cic_labels_binary[cic_labels_binary == 0])
+                attack_count = len(cic_labels_binary[cic_labels_binary == 1])
+                benign_pct = (benign_count / len(cic_labels_binary)) * 100 if len(cic_labels_binary) > 0 else 0
+                attack_pct = (attack_count / len(cic_labels_binary)) * 100 if len(cic_labels_binary) > 0 else 0
+                logger.info(f"  → Benign (0): {benign_count} ({benign_pct:.2f}%), Attacks/DDoS (1): {attack_count} ({attack_pct:.2f}%)")
             else:
                 # Already numeric, assume 0=Benign, 1=Attack
                 cic_labels_binary = pd.to_numeric(cic_labels, errors='coerce').fillna(0).astype(int)
@@ -377,7 +382,13 @@ class DataHarmonizer:
                     ton_labels_binary = pd.to_numeric(ton_labels, errors='coerce').fillna(0).astype(int)
                 logger.warning(f"[LABEL] TON_IoT 'type' column not found, using label column directly")
             
-            logger.info(f"  Binary distribution: {ton_labels_binary.value_counts().to_dict()}")
+            binary_dist = ton_labels_binary.value_counts().to_dict()
+            logger.info(f"  Binary distribution: {binary_dist}")
+            normal_count = len(ton_labels_binary[ton_labels_binary == 0])
+            ddos_count = len(ton_labels_binary[ton_labels_binary == 1])
+            normal_pct = (normal_count / len(ton_labels_binary)) * 100 if len(ton_labels_binary) > 0 else 0
+            ddos_pct = (ddos_count / len(ton_labels_binary)) * 100 if len(ton_labels_binary) > 0 else 0
+            logger.info(f"  → Normal (0): {normal_count} ({normal_pct:.2f}%), DDoS (1): {ddos_count} ({ddos_pct:.2f}%)")
             df_ton_harmonized['label'] = ton_labels_binary
         
         self.harmonized_features = harmonized_cols
