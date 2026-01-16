@@ -1,0 +1,21 @@
+2026-01-16 18:55:04,170 - INFO - __main__ - Logging initialized. Log file: output/logs/main_20260116_185504.log
+2026-01-16 18:55:04,170 - INFO - __main__ - ======================================================================
+2026-01-16 18:55:04,170 - INFO - __main__ - IRP RESEARCH PIPELINE
+2026-01-16 18:55:04,170 - INFO - __main__ - AI-Powered Log Analysis for Smarter Threat Detection
+2026-01-16 18:55:04,170 - INFO - __main__ - ======================================================================
+2026-01-16 18:55:04,170 - INFO - __main__ - Output directory: /home/tor/ton_iot/ton_iot/output
+2026-01-16 18:55:04,170 - INFO - __main__ - Timestamp: 2026-01-16 18:55:04
+2026-01-16 18:55:04,170 - INFO - __main__ - Running complete pipeline (Phases 1, 3, 5)
+2026-01-16 18:55:04,490 - ERROR - __main__ - Error in pipeline execution: name 'List' is not defined
+Traceback (most recent call last):
+  File "/home/tor/ton_iot/ton_iot/main.py", line 97, in main
+    from main_pipeline import IRPPipeline
+  File "/home/tor/ton_iot/ton_iot/main_pipeline.py", line 23, in <module>
+    from dataset_loader import DatasetLoader
+  File "/home/tor/ton_iot/ton_iot/dataset_loader.py", line 21, in <module>
+    class DatasetLoader:
+  File "/home/tor/ton_iot/ton_iot/dataset_loader.py", line 143, in DatasetLoader
+    def get_attack_types(self, df: pd.DataFrame, label_col: Optional[str] = None) -> List[str]:
+                                                                                     ^^^^
+NameError: name 'List' is not defined. Did you mean: 'list'?
+2026-01-16 18:55:04,491 - ERROR - __main__ - See log file for full traceback

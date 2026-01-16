@@ -1,0 +1,102 @@
+2026-01-16 18:56:10,003 - INFO - __main__ - Logging initialized. Log file: output/logs/main_20260116_185610.log
+2026-01-16 18:56:10,003 - INFO - __main__ - ======================================================================
+2026-01-16 18:56:10,003 - INFO - __main__ - IRP RESEARCH PIPELINE
+2026-01-16 18:56:10,003 - INFO - __main__ - AI-Powered Log Analysis for Smarter Threat Detection
+2026-01-16 18:56:10,003 - INFO - __main__ - ======================================================================
+2026-01-16 18:56:10,003 - INFO - __main__ - Output directory: /home/tor/ton_iot/ton_iot/output
+2026-01-16 18:56:10,003 - INFO - __main__ - Timestamp: 2026-01-16 18:56:10
+2026-01-16 18:56:10,003 - INFO - __main__ - Running complete pipeline (Phases 1, 3, 5)
+2026-01-16 18:56:14,639 - INFO - main_pipeline - Pipeline initialized with output directory: /home/tor/ton_iot/ton_iot/output
+2026-01-16 18:56:14,639 - INFO - __main__ - Starting complete pipeline execution...
+2026-01-16 18:56:14,639 - INFO - main_pipeline - ============================================================
+2026-01-16 18:56:14,639 - INFO - main_pipeline - PHASE 1: Preprocessing Configuration Selection
+2026-01-16 18:56:14,639 - INFO - main_pipeline - ============================================================
+2026-01-16 18:56:14,639 - INFO - main_pipeline - 
+1.1 Loading datasets...
+2026-01-16 18:56:14,639 - INFO - dataset_loader - Loading TON_IoT dataset from: train_test_network.csv
+2026-01-16 18:56:15,572 - INFO - dataset_loader - TON_IoT loaded: 211043 rows, 44 columns
+2026-01-16 18:56:15,573 - INFO - main_pipeline -    TON_IoT: (211043, 44)
+2026-01-16 18:56:15,573 - WARNING - main_pipeline -    CIC-DDoS2019 not available, using TON_IoT only
+2026-01-16 18:56:15,617 - INFO - main_pipeline -    Features shape: (211043, 43), Labels shape: (211043,)
+2026-01-16 18:56:15,617 - INFO - main_pipeline - 
+1.4 Preprocessing (SMOTE + RobustScaler)...
+2026-01-16 18:56:15,617 - INFO - main_pipeline -    Applying SMOTE for class balancing...
+2026-01-16 18:56:15,617 - INFO - main_pipeline -    Scaling features with RobustScaler...
+2026-01-16 18:56:25,549 - INFO - main_pipeline -    Processed shape: (322086, 19)
+2026-01-16 18:56:25,555 - INFO - main_pipeline -    Class distribution: {1: 161043, 0: 161043}
+2026-01-16 18:56:29,716 - INFO - main_pipeline - 
+   Saved preprocessed data to output/phase1_preprocessing/preprocessed_data.csv
+2026-01-16 18:56:29,735 - INFO - main_pipeline - 
+3.1 Evaluating 5 algorithms with 5-fold CV...
+2026-01-16 18:56:29,736 - INFO - main_pipeline - 
+   Evaluating Logistic Regression...
+2026-01-16 18:56:29,775 - WARNING - main_pipeline -       Error in fold 1 for Logistic Regression: This LogisticRegression instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,796 - WARNING - main_pipeline -       Error in fold 2 for Logistic Regression: This LogisticRegression instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,813 - WARNING - main_pipeline -       Error in fold 3 for Logistic Regression: This LogisticRegression instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,838 - WARNING - main_pipeline -       Error in fold 4 for Logistic Regression: This LogisticRegression instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,858 - WARNING - main_pipeline -       Error in fold 5 for Logistic Regression: This LogisticRegression instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,859 - INFO - main_pipeline - 
+   Evaluating Decision Tree...
+2026-01-16 18:56:29,901 - WARNING - main_pipeline -       Error in fold 1 for Decision Tree: This DecisionTreeClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,917 - WARNING - main_pipeline -       Error in fold 2 for Decision Tree: This DecisionTreeClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,942 - WARNING - main_pipeline -       Error in fold 3 for Decision Tree: This DecisionTreeClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,962 - WARNING - main_pipeline -       Error in fold 4 for Decision Tree: This DecisionTreeClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,983 - WARNING - main_pipeline -       Error in fold 5 for Decision Tree: This DecisionTreeClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:29,983 - INFO - main_pipeline - 
+   Evaluating Random Forest...
+2026-01-16 18:56:30,024 - WARNING - main_pipeline -       Error in fold 1 for Random Forest: This RandomForestClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:30,044 - WARNING - main_pipeline -       Error in fold 2 for Random Forest: This RandomForestClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:30,066 - WARNING - main_pipeline -       Error in fold 3 for Random Forest: This RandomForestClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:30,087 - WARNING - main_pipeline -       Error in fold 4 for Random Forest: This RandomForestClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:30,109 - WARNING - main_pipeline -       Error in fold 5 for Random Forest: This RandomForestClassifier instance is not fitted yet. Call 'fit' with appropriate arguments before using this estimator.
+2026-01-16 18:56:30,110 - INFO - main_pipeline - 
+   Evaluating CNN...
+2026-01-16 18:56:30,147 - WARNING - main_pipeline -       Error in fold 1 for CNN: Model must be fitted before prediction
+2026-01-16 18:56:30,166 - WARNING - main_pipeline -       Error in fold 2 for CNN: Model must be fitted before prediction
+2026-01-16 18:56:30,186 - WARNING - main_pipeline -       Error in fold 3 for CNN: Model must be fitted before prediction
+2026-01-16 18:56:30,210 - WARNING - main_pipeline -       Error in fold 4 for CNN: Model must be fitted before prediction
+2026-01-16 18:56:30,227 - WARNING - main_pipeline -       Error in fold 5 for CNN: Model must be fitted before prediction
+2026-01-16 18:56:30,228 - INFO - main_pipeline - 
+   Evaluating TabNet...
+2026-01-16 18:56:30,270 - WARNING - main_pipeline -       Error in fold 1 for TabNet: Model must be fitted before prediction
+2026-01-16 18:56:30,286 - WARNING - main_pipeline -       Error in fold 2 for TabNet: Model must be fitted before prediction
+2026-01-16 18:56:30,309 - WARNING - main_pipeline -       Error in fold 3 for TabNet: Model must be fitted before prediction
+2026-01-16 18:56:30,329 - WARNING - main_pipeline -       Error in fold 4 for TabNet: Model must be fitted before prediction
+2026-01-16 18:56:30,354 - WARNING - main_pipeline -       Error in fold 5 for TabNet: Model must be fitted before prediction
+2026-01-16 18:56:30,356 - INFO - main_pipeline - 
+   Saved evaluation results to output/phase3_evaluation/evaluation_results.csv
+2026-01-16 18:56:30,357 - WARNING - main_pipeline -    Error generating dimension scores: 'model_name'
+2026-01-16 18:56:30,358 - INFO - main_pipeline - 
+3.2 Generating algorithm reports...
+2026-01-16 18:56:30,358 - INFO - main_pipeline -    Algorithm reports generated
+2026-01-16 18:56:30,358 - INFO - main_pipeline - 
+3.3 Generating visualizations...
+2026-01-16 18:56:30,374 - WARNING - main_pipeline - Error generating visualizations: 'f1_score'
+Traceback (most recent call last):
+  File "/home/tor/ton_iot/ton_iot/main_pipeline.py", line 309, in _generate_visualizations
+    ax.bar([i - width for i in x], results_df['f1_score'], width, label='F1 Score', color='#1f77b4')
+                                   ~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/tor/ton_iot/ton_iot/.toniot/lib/python3.12/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tor/ton_iot/ton_iot/.toniot/lib/python3.12/site-packages/pandas/core/indexes/range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'f1_score'
+2026-01-16 18:56:30,376 - INFO - main_pipeline -    Visualizations generated
+2026-01-16 18:56:30,381 - ERROR - __main__ - Error in pipeline execution: 'f1_score'
+Traceback (most recent call last):
+  File "/home/tor/ton_iot/ton_iot/main.py", line 147, in main
+    pipeline.run()
+  File "/home/tor/ton_iot/ton_iot/main_pipeline.py", line 479, in run
+    ranking_results = self.phase5_ranking(evaluation_results)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tor/ton_iot/ton_iot/main_pipeline.py", line 438, in phase5_ranking
+    evaluation_results['f1_score'].values,  # Dimension 1: Detection Performance
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/home/tor/ton_iot/ton_iot/.toniot/lib/python3.12/site-packages/pandas/core/frame.py", line 4113, in __getitem__
+    indexer = self.columns.get_loc(key)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tor/ton_iot/ton_iot/.toniot/lib/python3.12/site-packages/pandas/core/indexes/range.py", line 417, in get_loc
+    raise KeyError(key)
+KeyError: 'f1_score'
+2026-01-16 18:56:30,382 - ERROR - __main__ - See log file for full traceback
