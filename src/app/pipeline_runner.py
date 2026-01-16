@@ -7,26 +7,34 @@ import logging
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from ..config import PipelineConfig
-from ..phases.phase1_config_search import Phase1ConfigSearch
+import sys
+from pathlib import Path
+
+# Import from config module (src/config.py)
+_parent_dir = Path(__file__).parent.parent.parent
+if str(_parent_dir) not in sys.path:
+    sys.path.insert(0, str(_parent_dir))
+
+from src.config import PipelineConfig
+from src.phases.phase1_config_search import Phase1ConfigSearch
 # Imports conditionnels pour phases 2-5 (à créer)
 try:
-    from ..phases.phase2_apply_best_config import Phase2ApplyBestConfig
+    from src.phases.phase2_apply_best_config import Phase2ApplyBestConfig
 except ImportError:
     Phase2ApplyBestConfig = None
 
 try:
-    from ..phases.phase3_evaluation import Phase3Evaluation
+    from src.phases.phase3_evaluation import Phase3Evaluation
 except ImportError:
     Phase3Evaluation = None
 
 try:
-    from ..phases.phase4_ahp_preferences import Phase4AHPPreferences
+    from src.phases.phase4_ahp_preferences import Phase4AHPPreferences
 except ImportError:
     Phase4AHPPreferences = None
 
 try:
-    from ..phases.phase5_topsis_ranking import Phase5TOPSISRanking
+    from src.phases.phase5_topsis_ranking import Phase5TOPSISRanking
 except ImportError:
     Phase5TOPSISRanking = None
 

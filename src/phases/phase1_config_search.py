@@ -10,7 +10,14 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 from tqdm import tqdm
 
-from ..config import PipelineConfig, generate_108_configs
+# Import from config module
+import sys
+from pathlib import Path as PathLib
+_parent_dir = PathLib(__file__).parent.parent.parent
+if str(_parent_dir) not in sys.path:
+    sys.path.insert(0, str(_parent_dir))
+
+from src.config import PipelineConfig, generate_108_configs
 
 logger = logging.getLogger(__name__)
 

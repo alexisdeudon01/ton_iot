@@ -4,9 +4,16 @@ CLI parsing pour le pipeline IRP
 Sans dépendance UI (Tkinter optionnel via --interactive)
 """
 import argparse
+import sys
 from pathlib import Path
 from typing import Optional
-from ..config import PipelineConfig
+
+# Import from config module (src/config.py, not src/config/ package)
+_parent_dir = Path(__file__).parent.parent.parent
+if str(_parent_dir) not in sys.path:
+    sys.path.insert(0, str(_parent_dir))
+
+from src.config import PipelineConfig
 
 
 def parse_args() -> argparse.Namespace:
