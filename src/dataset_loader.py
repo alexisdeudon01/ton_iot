@@ -118,10 +118,28 @@ class DatasetLoader:
             )
         
         # CIC-DDoS2019 typically contains multiple CSV files (one per attack type)
-        csv_files = list(dataset_path.glob("*.csv"))
+        # Exclude example files and documentation files
+        all_csv_files = list(dataset_path.glob("*.csv"))
+        csv_files = [
+            f for f in all_csv_files 
+            if not any(excluded in f.name.lower() for excluded in ['example', 'sample', 'template', 'structure'])
+        ]
         
         if not csv_files:
+            # If only example files were found, provide a helpful error message
+            if all_csv_files:
+                example_files = [f.name for f in all_csv_files]
+                raise FileNotFoundError(
+                    f"Only example/template CSV files found in {dataset_path}: {example_files}. "
+                    f"Please download the actual CIC-DDoS2019 dataset from "
+                    f"https://www.unb.ca/cic/datasets/ddos-2019.html and place the CSV files here. "
+                    f"Example files are excluded from loading to prevent data corruption."
+                )
             raise FileNotFoundError(f"No CSV files found in {dataset_path}")
+        
+        if len(all_csv_files) > len(csv_files):
+            excluded_count = len(all_csv_files) - len(csv_files)
+            logger.info(f"Excluded {excluded_count} example/template file(s) from loading")
         
         logger.info(f"Found {len(csv_files)} CSV files in CIC-DDoS2019 dataset")
         
