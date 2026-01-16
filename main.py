@@ -48,7 +48,7 @@ def setup_logging(output_dir: Path):
 
 def ask_test_mode() -> bool:
     """
-    Ask user via Tkinter popup if they want to run in test mode (0.1% of data)
+    Ask user via Tkinter popup if they want to run in test mode (0.001% of data)
     
     Returns:
         True if user wants test mode, False otherwise
@@ -61,7 +61,7 @@ def ask_test_mode() -> bool:
         message=(
             "Voulez-vous exécuter le pipeline en mode TEST ?\n\n"
             "Mode TEST:\n"
-            "  • Utilise 0.1% des données (échantillonnage aléatoire)\n"
+            "  • Utilise 0.001% des données (échantillonnage aléatoire)\n"
             "  • Plus rapide pour les tests\n"
             "  • Résultats non représentatifs de la production\n\n"
             "Cliquez sur 'Oui' pour le mode TEST\n"
@@ -206,15 +206,15 @@ Examples:
     
     logger = setup_logging(output_dir)
     
-    # Ask user if they want test mode (0.1% of data)
+    # Ask user if they want test mode (0.001% of data)
     logger.info("Asking user for test mode preference...")
     test_mode = ask_test_mode()
     
     if test_mode:
         logger.info("=" * 70)
-        logger.warning("⚠️  MODE TEST ACTIVÉ - Utilisation de 0.1% des données")
+        logger.warning("⚠️  MODE TEST ACTIVÉ - Utilisation de 0.001% des données")
         logger.info("=" * 70)
-        sample_ratio = 0.001  # 0.1% instead of 10%
+        sample_ratio = 0.00001  # 0.001% instead of 0.1%
     else:
         logger.info("Mode production - Utilisation de 100% des données")
         sample_ratio = 1.0
