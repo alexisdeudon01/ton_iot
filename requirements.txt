@@ -4,16 +4,20 @@ pandas>=1.3.0
 
 # Machine Learning
 scikit-learn>=1.0.0
-xgboost>=1.5.0
+
+# IMPORTANT: avoid pulling NVIDIA CUDA deps on non-NVIDIA machines
+# xgboost>=3 can drag nvidia-nccl-cu12 on Linux
+xgboost<3
 
 # Reinforcement Learning
 stable-baselines3>=1.6.0
 gym>=0.21.0
+# (optional but recommended for SB3 + gym compatibility)
+shimmy>=2.0
 
 # Data visualization
 matplotlib>=3.4.0
 seaborn>=0.11.0
 
 # Note: google.colab is only needed for Google Colab environment
-# If running locally, you can remove or comment out google-colab
 # google-colab
