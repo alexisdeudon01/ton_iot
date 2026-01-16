@@ -5,14 +5,17 @@
 ```
 ton_iot/
 ├── main.py                          # Point d'entrée principal (CLI)
-├── main_pipeline.py                 # Pipeline IRP principal
-├── dataset_loader.py                # Chargement datasets (TON_IoT, CIC-DDoS2019)
-├── data_harmonization.py            # Harmonisation et early fusion
-├── preprocessing_pipeline.py        # Preprocessing (SMOTE, RobustScaler)
-├── evaluation_3d.py                 # Évaluation 3D (Performance, Resources, Explainability)
-├── ahp_topsis_framework.py          # AHP-TOPSIS ranking
-├── models_cnn.py                    # Modèle CNN pour données tabulaires
-├── models_tabnet.py                 # Modèle TabNet
+│
+├── src/                             # Modules source
+│   ├── __init__.py
+│   ├── main_pipeline.py             # Pipeline IRP principal
+│   ├── dataset_loader.py            # Chargement datasets (TON_IoT, CIC-DDoS2019)
+│   ├── data_harmonization.py        # Harmonisation et early fusion
+│   ├── preprocessing_pipeline.py     # Preprocessing (SMOTE, RobustScaler)
+│   ├── evaluation_3d.py             # Évaluation 3D (Performance, Resources, Explainability)
+│   ├── ahp_topsis_framework.py       # AHP-TOPSIS ranking
+│   ├── models_cnn.py                # Modèle CNN pour données tabulaires
+│   └── models_tabnet.py             # Modèle TabNet
 │
 ├── README.md                        # Documentation principale
 ├── DIMENSIONS_CALCULATION.md        # Documentation calcul des 3 dimensions
@@ -51,11 +54,14 @@ ton_iot/
 
 ## Fichiers Principaux
 
-### Points d'entrée
+### Point d'entrée
 - **`main.py`** : Point d'entrée principal avec CLI (`python main.py`)
-- **`main_pipeline.py`** : Pipeline IRP complet (appelé par main.py)
+  - Ajoute automatiquement `src/` au Python path
+  - Vérifie les dépendances depuis `requirements.txt`
+  - Importe et exécute le pipeline IRP
 
-### Modules Core
+### Modules Core (dans `src/`)
+- **`main_pipeline.py`** : Pipeline IRP complet (appelé par main.py)
 - **`dataset_loader.py`** : Charge TON_IoT et CIC-DDoS2019
 - **`data_harmonization.py`** : Harmonisation et early fusion des datasets
 - **`preprocessing_pipeline.py`** : Preprocessing (SMOTE, RobustScaler, CV)

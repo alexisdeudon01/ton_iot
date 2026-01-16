@@ -30,11 +30,7 @@ To run the complete pipeline and generate all results:
 python main.py
 ```
 
-Or use the legacy entry point:
-
-```bash
-python main_pipeline.py
-```
+**Note**: The `main.py` file is the only Python file at the project root. All other modules are organized in the `src/` directory.
 
 **Command-line options**:
 ```bash
