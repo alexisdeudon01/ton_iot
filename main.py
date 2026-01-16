@@ -18,6 +18,8 @@ import subprocess
 import re
 from pathlib import Path
 from datetime import datetime
+import tkinter as tk
+from tkinter import messagebox
 
 # Setup logging first (before importing pipeline)
 def setup_logging(output_dir: Path):
@@ -42,6 +44,34 @@ def setup_logging(output_dir: Path):
     logger = logging.getLogger(__name__)
     logger.info(f"Logging initialized. Log file: {log_file}")
     return logger
+
+
+def ask_test_mode() -> bool:
+    """
+    Ask user via Tkinter popup if they want to run in test mode (10% of data)
+    
+    Returns:
+        True if user wants test mode, False otherwise
+    """
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    
+    response = messagebox.askyesno(
+        title="Mode Test",
+        message=(
+            "Voulez-vous exécuter le pipeline en mode TEST ?\n\n"
+            "Mode TEST:\n"
+            "  • Utilise 10% des données (échantillonnage aléatoire)\n"
+            "  • Plus rapide pour les tests\n"
+            "  • Résultats non représentatifs de la production\n\n"
+            "Cliquez sur 'Oui' pour le mode TEST\n"
+            "Cliquez sur 'Non' pour utiliser 100% des données"
+        ),
+        icon='question'
+    )
+    
+    root.destroy()
+    return response
 
 
 def check_requirements(output_dir: Path):
@@ -176,6 +206,19 @@ Examples:
     
     logger = setup_logging(output_dir)
     
+    # Ask user if they want test mode (10% of data)
+    logger.info("Asking user for test mode preference...")
+    test_mode = ask_test_mode()
+    
+    if test_mode:
+        logger.info("=" * 70)
+        logger.warning("⚠️  MODE TEST ACTIVÉ - Utilisation de 10% des données")
+        logger.info("=" * 70)
+        sample_ratio = 0.1
+    else:
+        logger.info("Mode production - Utilisation de 100% des données")
+        sample_ratio = 1.0
+    
     # Welcome message
     logger.info("=" * 70)
     logger.info("IRP RESEARCH PIPELINE")
@@ -215,8 +258,8 @@ Examples:
             sys.path.insert(0, str(src_path))
         from main_pipeline import IRPPipeline
         
-        # Initialize pipeline
-        pipeline = IRPPipeline(results_dir=str(output_dir), random_state=42)
+        # Initialize pipeline with sample_ratio
+        pipeline = IRPPipeline(results_dir=str(output_dir), random_state=42, sample_ratio=sample_ratio)
         
         if args.phase == 1:
             # Phase 1 only

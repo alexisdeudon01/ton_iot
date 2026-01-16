@@ -38,15 +38,17 @@ class DatasetLoader:
         (self.data_dir / 'ton_iot').mkdir(parents=True, exist_ok=True)
         (self.data_dir / 'cic_ddos2019').mkdir(parents=True, exist_ok=True)
         
-    def load_ton_iot(self, file_path: Optional[str] = None) -> pd.DataFrame:
+    def load_ton_iot(self, file_path: Optional[str] = None, sample_ratio: float = 1.0, random_state: int = 42) -> pd.DataFrame:
         """
         Load TON_IoT dataset
         
         Args:
             file_path: Path to TON_IoT CSV file. If None, looks for train_test_network.csv in root
+            sample_ratio: Ratio of data to sample (1.0 = 100%, 0.1 = 10% for testing). Default: 1.0
+            random_state: Random seed for sampling. Default: 42
             
         Returns:
-            DataFrame containing TON_IoT data
+            DataFrame containing TON_IoT data (sampled if sample_ratio < 1.0)
         """
         if file_path is None:
             # Try to find TON_IoT dataset in standard locations
@@ -107,6 +109,14 @@ class DatasetLoader:
             logger.info(f"[OUTPUT] TON_IoT loaded: {df.shape[0]:,} rows, {df.shape[1]} columns")
             logger.info(f"[OUTPUT] Memory usage: ~{df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
             
+            # Sample data if sample_ratio < 1.0
+            if sample_ratio < 1.0 and len(df) > 0:
+                original_size = len(df)
+                sample_size = max(1, int(len(df) * sample_ratio))
+                logger.info(f"[ACTION] Échantillonnage aléatoire: {sample_ratio*100:.1f}% ({sample_size:,} lignes sur {original_size:,})")
+                df = df.sample(n=sample_size, random_state=random_state).reset_index(drop=True)
+                logger.info(f"[OUTPUT] TON_IoT après échantillonnage: {df.shape[0]:,} rows, {df.shape[1]} columns")
+            
             return df
             
         except FileNotFoundError as e:
@@ -121,7 +131,7 @@ class DatasetLoader:
             logger.error(f"[ERROR] Error loading TON_IoT dataset: {e}", exc_info=True)
             raise
     
-    def load_cic_ddos2019(self, dataset_path: Optional[str] = None) -> pd.DataFrame:
+    def load_cic_ddos2019(self, dataset_path: Optional[str] = None, sample_ratio: float = 1.0, random_state: int = 42) -> pd.DataFrame:
         """
         Load CIC-DDoS2019 dataset
         
@@ -139,9 +149,11 @@ class DatasetLoader:
         
         Args:
             dataset_path: Path to CIC-DDoS2019 directory or CSV file. If None, looks in data/raw/CIC-DDoS2019/
+            sample_ratio: Ratio of data to sample from each file (1.0 = 100%, 0.1 = 10% for testing). Default: 1.0
+            random_state: Random seed for sampling. Default: 42
             
         Returns:
-            DataFrame containing CIC-DDoS2019 data with 80 CICFlowMeter features
+            DataFrame containing CIC-DDoS2019 data with 80 CICFlowMeter features (sampled if sample_ratio < 1.0)
             
         Raises:
             FileNotFoundError: If dataset directory or CSV files not found
@@ -245,6 +257,14 @@ class DatasetLoader:
                 try:
                     for chunk in pd.read_csv(csv_file, low_memory=False, chunksize=CHUNK_SIZE):
                         logger.debug(f"[ACTION] Processing chunk {chunk_count + 1} from {csv_file.name}: {chunk.shape}")
+                        
+                        # Sample chunk if sample_ratio < 1.0
+                        if sample_ratio < 1.0 and len(chunk) > 0:
+                            original_chunk_size = len(chunk)
+                            chunk_sample_size = max(1, int(original_chunk_size * sample_ratio))
+                            chunk = chunk.sample(n=chunk_sample_size, random_state=random_state).reset_index(drop=True)
+                            logger.debug(f"[ACTION] Chunk échantillonné: {chunk_sample_size:,} lignes sur {original_chunk_size:,}")
+                        
                         file_chunks.append(chunk)
                         chunk_count += 1
                         total_rows_loaded += len(chunk)
@@ -298,6 +318,16 @@ class DatasetLoader:
             
             logger.info(f"[OUTPUT] CIC-DDoS2019 loaded successfully: {combined_df.shape[0]:,} rows, {combined_df.shape[1]} columns")
             logger.info(f"[OUTPUT] Memory usage: ~{combined_df.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
+            
+            # Additional sampling if needed (in case we sampled per-chunk, this ensures exact ratio)
+            if sample_ratio < 1.0 and len(combined_df) > 0:
+                original_size = len(combined_df)
+                final_sample_size = max(1, int(len(combined_df) * sample_ratio))
+                if final_sample_size < original_size:
+                    logger.info(f"[ACTION] Échantillonnage final pour ajuster le ratio exact: {sample_ratio*100:.1f}% ({final_sample_size:,} lignes sur {original_size:,})")
+                    combined_df = combined_df.sample(n=final_sample_size, random_state=random_state).reset_index(drop=True)
+                    logger.info(f"[OUTPUT] CIC-DDoS2019 après échantillonnage: {combined_df.shape[0]:,} rows, {combined_df.shape[1]} columns")
+                    gc.collect()
             
             return combined_df
             

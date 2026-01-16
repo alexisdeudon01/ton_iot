@@ -39,17 +39,19 @@ np.random.seed(RANDOM_STATE)
 class IRPPipeline:
     """Complete IRP research pipeline"""
     
-    def __init__(self, results_dir: str = 'output', random_state: int = 42):
+    def __init__(self, results_dir: str = 'output', random_state: int = 42, sample_ratio: float = 1.0):
         """
         Initialize pipeline
         
         Args:
             results_dir: Directory for saving results (default: 'output')
             random_state: Random seed for reproducibility
+            sample_ratio: Ratio of data to use (1.0 = 100%, 0.1 = 10% for testing)
         """
         self.results_dir = Path(results_dir)
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.random_state = random_state
+        self.sample_ratio = sample_ratio
         self.loader = DatasetLoader()
         self.harmonizer = DataHarmonizer()
         self.pipeline = PreprocessingPipeline(random_state=random_state)
@@ -80,8 +82,10 @@ class IRPPipeline:
         
         # Load datasets
         logger.info("\n1.1 Loading datasets...")
+        if self.sample_ratio < 1.0:
+            logger.info(f"   [MODE TEST] Échantillonnage: {self.sample_ratio*100:.1f}% des données")
         try:
-            df_ton = self.loader.load_ton_iot()
+            df_ton = self.loader.load_ton_iot(sample_ratio=self.sample_ratio, random_state=self.random_state)
             logger.info(f"   TON_IoT: {df_ton.shape}")
         except FileNotFoundError as e:
             logger.error(f"   Error loading TON_IoT: {e}")
@@ -91,7 +95,7 @@ class IRPPipeline:
             raise
         
         try:
-            df_cic = self.loader.load_cic_ddos2019()
+            df_cic = self.loader.load_cic_ddos2019(sample_ratio=self.sample_ratio, random_state=self.random_state)
             logger.info(f"   CIC-DDoS2019: {df_cic.shape}")
             
             # Harmonize and fuse
