@@ -447,34 +447,9 @@ class IRPPipeline:
                 y_train_fold, y_test_fold = y[train_idx], y[test_idx]
                 
                 try:
-                    # Create a fresh model instance for each fold to avoid state contamination
-                    from sklearn.base import clone
-                    try:
-                        model = clone(model_template)
-                    except (TypeError, AttributeError) as clone_err:
-                        # For custom models (CNN, TabNet) that can't be cloned, create a new instance
-                        logger.debug(f"      Could not clone {model_name}, creating new instance: {clone_err}")
-                        if model_name == 'CNN':
-                            # Reinitialize CNN with same parameters
-                            model = CNNTabularClassifier(
-                                epochs=model_template.epochs,
-                                batch_size=model_template.batch_size,
-                                random_state=model_template.random_state,
-                                learning_rate=getattr(model_template, 'learning_rate', 0.001),
-                                hidden_dims=getattr(model_template, 'hidden_dims', [128, 64, 32])
-                            )
-                        elif model_name == 'TabNet':
-                            # Reinitialize TabNet with same parameters
-                            model = TabNetClassifierWrapper(
-                                max_epochs=model_template.max_epochs,
-                                batch_size=model_template.batch_size,
-                                seed=model_template.seed,
-                                verbose=model_template.verbose
-                            )
-                        else:
-                            # Fallback: use template (risky for custom models)
-                            logger.warning(f"      Using template directly for {model_name} - may cause state issues")
-                            model = model_template
+                    # Create a fresh, unfitted model instance for each fold to avoid state contamination
+                    from src.core.model_utils import fresh_model
+                    model = fresh_model(model_template)
                     
                     # Send training progress update to visualizer
                     if self.visualizer:

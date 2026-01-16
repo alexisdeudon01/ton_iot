@@ -231,15 +231,9 @@ class Evaluation3D:
         monitor = ResourceMonitor()
         monitor.start()
         
-        # Create a clone/fresh instance of the model to avoid state issues across folds
-        # For sklearn models, we can use clone; for custom models, we need to reinitialize
-        try:
-            from sklearn.base import clone
-            model_clone = clone(model)
-        except Exception:
-            # For custom models that can't be cloned, use the model directly
-            # But this might cause issues if model state persists across folds
-            model_clone = model
+        # Create a fresh, unfitted model instance to avoid state issues across folds
+        from src.core.model_utils import fresh_model
+        model_clone = fresh_model(model)
         
         # Train the model
         model_clone.fit(X_train, y_train)
