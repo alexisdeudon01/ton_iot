@@ -1,0 +1,55 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+		"python.analysis.autoImportCompletions": true,
+		"python.analysis.typeCheckingMode": "basic",
+		"python.linting.enabled": true,
+		"python.linting.pylintEnabled": false,
+		"python.linting.flake8Enabled": true,
+		"python.formatting.provider": "black",
+		"python.formatting.blackArgs": [
+			"--line-length=100"
+		],
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit"
+		},
+		"files.exclude": {
+			"**/__pycache__": true,
+			"**/*.pyc": true,
+			"**/.pytest_cache": true,
+			"**/.mypy_cache": true,
+			"**/.ruff_cache": true
+		},
+		"files.associations": {
+			"*.py": "python"
+		},
+		"python.analysis.extraPaths": [],
+		"python.terminal.activateEnvironment": true,
+		"[python]": {
+			"editor.defaultFormatter": "ms-python.black-formatter",
+			"editor.tabSize": 4,
+			"editor.insertSpaces": true,
+			"editor.rulers": [100]
+		},
+		"files.trimTrailingWhitespace": true,
+		"files.insertFinalNewline": true,
+		"files.trimFinalNewlines": true
+	},
+	"extensions": {
+		"recommendations": [
+			"ms-python.python",
+			"ms-python.vscode-pylance",
+			"ms-python.black-formatter",
+			"ms-python.isort",
+			"ms-toolsai.jupyter",
+			"ms-toolsai.jupyter-keymap",
+			"ms-toolsai.jupyter-renderers"
+		]
+	}
+}
