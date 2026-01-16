@@ -205,11 +205,16 @@ class IRPPipeline:
             logger.info("   Mapping features between TON_IoT and CIC-DDoS2019...")
             try:
                 # Use precomputed features if available
+                precomputed_mapping = None
                 if hasattr(self, '_precomputed_common_features') and self._precomputed_common_features:
-                    logger.info("   Using pre-determined common features from pre-analysis...")
-                    # Pass precomputed features info to harmonizer if possible
+                    precomputed_mapping = self._precomputed_common_features.get('common_features')
+                    if precomputed_mapping:
+                        logger.info(f"   Using {len(precomputed_mapping)} pre-determined common features from pre-analysis...")
                 
-                df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(df_cic, df_ton)
+                df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(
+                    df_cic, df_ton, 
+                    precomputed_feature_mapping=precomputed_mapping
+                )
                 logger.info(f"   CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
                 logger.info(f"   TON_IoT harmonized: {df_ton_harm.shape}")
                 

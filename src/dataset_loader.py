@@ -465,7 +465,7 @@ class DatasetLoader:
     
     def load_cic_ddos2019(self, dataset_path: Optional[str] = None, sample_ratio: float = 1.0, 
                           random_state: int = 42, incremental: bool = True, 
-                          detect_new_files: bool = True) -> pd.DataFrame:
+                          detect_new_files: bool = True, max_files_in_test: int = 10) -> pd.DataFrame:
         """
         Load CIC-DDoS2019 dataset with memory-efficient sampling and new file detection
         
@@ -535,6 +535,16 @@ class DatasetLoader:
             elif len(self.loaded_files) > 0:
                 logger.info(f"[INFO] All files already loaded. Use incremental=False to reload all.")
                 return pd.DataFrame()
+        
+        # Limit files in test mode
+        original_count = len(csv_files)
+        if sample_ratio < 1.0 and max_files_in_test > 0 and len(csv_files) > max_files_in_test:
+            # Randomly sample files for testing
+            import random
+            random.seed(random_state)
+            csv_files = random.sample(csv_files, min(max_files_in_test, len(csv_files)))
+            csv_files.sort(key=lambda x: x.name)  # Sort for reproducibility
+            logger.info(f"[MODE TEST] Limited to {len(csv_files)} files (from {original_count} total) for testing")
         
         logger.info(f"Found {len(csv_files)} CSV file(s) to process in CIC-DDoS2019 dataset")
         
