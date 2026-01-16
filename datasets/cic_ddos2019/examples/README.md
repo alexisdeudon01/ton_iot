@@ -14,44 +14,46 @@ The actual CIC-DDoS2019 dataset CSV files should be placed in the parent directo
 
 ## Directory Structure
 
-The CIC-DDoS2019 dataset is organized by days:
+**⚠️ IMPORTANT: No Need to Reorganize Files**
 
-- **`Training-Day01/`** - Training set with 12 attack types + benign
-  - Contains CSV files for all attack types used during training
-  - See `Training-Day01/README.md` for details
+The dataset loader is designed to **automatically detect and load CSV files** from any location within `datasets/cic_ddos2019/`, including:
+- Root directory (`datasets/cic_ddos2019/*.csv`)
+- Subdirectories (`datasets/cic_ddos2019/*/*.csv`)
+- Nested subdirectories (`datasets/cic_ddos2019/*/*/*.csv`)
 
-- **`Test-Day02/`** - Test set with 7 attack types + benign  
-  - Contains CSV files for a subset of attacks for evaluation
-  - See `Test-Day02/README.md` for details
+**Why you don't need to reorganize:**
 
-### Organization Options
+1. **Flexible Loading**: The dataset loader recursively searches all subdirectories, so files can remain in `examples/Training-Day01/` and `examples/Test-Day02/` as they are.
 
-You can organize the dataset in two ways:
+2. **Automatic Filtering**: The loader automatically excludes template/example files (files with "example", "sample", "template", or "structure" in their name) while loading actual data files.
 
-**Option 1: Flat structure (current default)**
+3. **No Manual Organization Required**: Whether your CSV files are in:
+   - `examples/Training-Day01/`
+   - `examples/Test-Day02/`
+   - Root directory
+   - Any other subdirectory
+   
+   The loader will find and load them automatically.
+
+4. **Prevents Data Corruption**: By filtering by filename pattern rather than directory location, we can safely store example template files alongside real data without risk of accidental loading.
+
+**Current Organization (as-is):**
 ```
 datasets/cic_ddos2019/
-├── Benign.csv
-├── UDP.csv
-├── SYN.csv
-├── ...
+├── examples/
+│   ├── Training-Day01/
+│   │   ├── DrDoS_NTP.csv        ← Will be loaded
+│   │   ├── UDP.csv              ← Will be loaded
+│   │   ├── SYN.csv              ← Will be loaded
+│   │   └── ...
+│   ├── Test-Day02/
+│   │   ├── DrDoS_DNS.csv        ← Will be loaded
+│   │   ├── TFTP.csv             ← Will be loaded
+│   │   └── ...
+│   └── example_cicddos2019_structure.csv  ← Excluded (template file)
 ```
 
-**Option 2: By day (recommended for large datasets)**
-```
-datasets/cic_ddos2019/
-├── Training-Day01/
-│   ├── Benign.csv
-│   ├── UDP.csv
-│   ├── SYN.csv
-│   └── ...
-└── Test-Day02/
-    ├── Benign.csv
-    ├── UDP.csv
-    └── ...
-```
-
-The dataset loader automatically detects and loads CSV files from both structures.
+**Result**: The dataset loader automatically detects all valid CSV files (currently ~20 files) regardless of their location within the directory tree.
 
 ## Usage
 

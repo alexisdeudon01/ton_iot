@@ -4,22 +4,20 @@ This directory contains example CSV files for **Training Day 01** of the CIC-DDo
 
 ## Expected Content
 
-Training Day 01 should contain CSV files for **12 attack types** plus benign traffic:
+Training Day 01 should contain CSV files for **7 attack types** plus benign traffic, as documented on the [official UNB CIC-DDoS2019 website](https://www.unb.ca/cic/datasets/ddos-2019.html):
 
-### Attack Types (12 types):
+### Attack Types (7 attacks + Benign):
+According to the official documentation, the **First Day (Training Day)** executed these attacks:
 1. **Benign.csv** - Normal network traffic
-2. **PortMap.csv** - Port map attack
-3. **NetBIOS.csv** - NetBIOS attack
-4. **LDAP.csv** - LDAP amplification attack
-5. **MSSQL.csv** - MSSQL attack
-6. **UDP.csv** - UDP flood attack
-7. **UDP-Lag.csv** - UDP-Lag attack
-8. **SYN.csv** - SYN flood attack
-9. **DNS.csv** - DNS amplification attack
-10. **TFTP.csv** - TFTP attack
-11. **NTP.csv** - NTP amplification attack
-12. **SSDP.csv** - SSDP attack
-13. **WebDDoS.csv** - Web-based DDoS attack
+2. **PortMap.csv** - Port map attack (9:43 - 9:51)
+3. **NetBIOS.csv** - NetBIOS attack (10:00 - 10:09)
+4. **LDAP.csv** - LDAP amplification attack (10:21 - 10:30)
+5. **MSSQL.csv** - MSSQL attack (10:33 - 10:42)
+6. **UDP.csv** - UDP flood attack (10:53 - 11:03)
+7. **UDP-Lag.csv** - UDP-Lag attack (11:14 - 11:24)
+8. **SYN.csv** - SYN flood attack (11:28 - 17:35)
+
+**Note**: Some datasets may also include files from the second day (NTP, DNS, TFTP, SSDP, SNMP, WebDDoS) but these are from the **Test Day** according to UNB documentation.
 
 ## Structure Example
 

@@ -35,10 +35,22 @@ The pipeline will automatically detect and use `train_test_network.csv` if prese
 
 **Download**: [CIC-DDoS2019 Dataset](https://www.unb.ca/cic/datasets/ddos-2019.html)
 
+**Important: No File Organization Required**
+
+The dataset loader automatically detects and loads CSV files from **any location** within `datasets/cic_ddos2019/`, including:
+- Root directory: `datasets/cic_ddos2019/*.csv`
+- Subdirectories: `datasets/cic_ddos2019/*/*.csv`
+- Nested subdirectories: `datasets/cic_ddos2019/*/*/*.csv`
+
+**Why you don't need to reorganize:**
+1. **Flexible Loading**: The loader recursively searches all subdirectories, so files can stay in `examples/Training-Day01/` and `examples/Test-Day02/` as they are.
+2. **Automatic Filtering**: Template files (containing "example", "sample", "template", or "structure" in name) are automatically excluded.
+3. **Prevents Data Corruption**: Filtering by filename pattern (not directory) allows safe co-location of templates and real data.
+
 **Instructions**:
-1. Download the CIC-DDoS2019 dataset from the official website
-2. Extract all CSV files into `datasets/cic_ddos2019/`
-3. The pipeline will automatically load and combine all CSV files
+- Place CSV files anywhere within `datasets/cic_ddos2019/` (including subdirectories)
+- The pipeline will automatically detect, filter, and load all valid CSV files
+- No manual organization or file moving required
 
 **Note**: The dataset is optional. If not available, the pipeline will use TON_IoT only.
 

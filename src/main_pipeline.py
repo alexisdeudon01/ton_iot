@@ -227,9 +227,29 @@ class IRPPipeline:
                     try:
                         model = clone(model_template)
                     except (TypeError, AttributeError) as clone_err:
-                        # For custom models that can't be cloned, reinitialize if possible
-                        logger.debug(f"      Could not clone {model_name}, using template: {clone_err}")
-                        model = model_template
+                        # For custom models (CNN, TabNet) that can't be cloned, create a new instance
+                        logger.debug(f"      Could not clone {model_name}, creating new instance: {clone_err}")
+                        if model_name == 'CNN':
+                            # Reinitialize CNN with same parameters
+                            model = CNNTabularClassifier(
+                                epochs=model_template.epochs,
+                                batch_size=model_template.batch_size,
+                                random_state=model_template.random_state,
+                                learning_rate=getattr(model_template, 'learning_rate', 0.001),
+                                hidden_dims=getattr(model_template, 'hidden_dims', [128, 64, 32])
+                            )
+                        elif model_name == 'TabNet':
+                            # Reinitialize TabNet with same parameters
+                            model = TabNetClassifierWrapper(
+                                max_epochs=model_template.max_epochs,
+                                batch_size=model_template.batch_size,
+                                seed=model_template.seed,
+                                verbose=model_template.verbose
+                            )
+                        else:
+                            # Fallback: use template (risky for custom models)
+                            logger.warning(f"      Using template directly for {model_name} - may cause state issues")
+                            model = model_template
                     
                     # Ensure model is fitted before evaluation (evaluate_model handles this internally)
                     results = evaluator.evaluate_model(
@@ -342,13 +362,27 @@ class IRPPipeline:
         except Exception as e:
             logger.warning(f"   Error generating algorithm reports: {e}")
         
-        # Generate visualizations (if matplotlib available)
+        # Generate dimension visualizations using Evaluation3D method
         logger.info("\n3.3 Generating visualizations...")
         try:
-            self._generate_visualizations(results_df, evaluator)
-            logger.info("   Visualizations generated")
+            saved_viz = evaluator.generate_dimension_visualizations(
+                self.results_dir / 'phase3_evaluation'
+            )
+            if saved_viz:
+                logger.info(f"   Generated {len(saved_viz)} visualization(s)")
+                for viz_name, viz_path in saved_viz.items():
+                    logger.debug(f"      - {viz_name}: {viz_path}")
+            else:
+                logger.warning("   No visualizations were generated")
         except Exception as e:
-            logger.warning(f"   Error generating visualizations: {e}")
+            logger.warning(f"   Error generating dimension visualizations: {e}")
+            # Fallback to manual visualization if method fails
+            try:
+                logger.info("   Attempting fallback visualization method...")
+                self._generate_visualizations(results_df, evaluator)
+                logger.info("   Fallback visualizations generated")
+            except Exception as e2:
+                logger.error(f"   Fallback visualization also failed: {e2}")
         
         return results_df
     

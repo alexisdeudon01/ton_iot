@@ -114,6 +114,12 @@ Thumbs.db
 *.log
 **/logs/*.log
 
+# CSV data files (datasets)
+*.csv
+**/*.csv
+# But allow empty directories and example structure files if needed
+!**/example*.csv
+
 # Output directory (generated files - exclude everything except .gitkeep)
 # Pattern order matters: exclude everything first, then un-exclude what we want
 output/*

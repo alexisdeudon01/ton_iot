@@ -110,9 +110,18 @@ The pipeline uses **both TON_IoT and CIC-DDoS2019 datasets** through a process o
 3. **Preprocessing**: The fused dataset undergoes SMOTE (for class balancing) and RobustScaler (for feature scaling)
 
 **Dataset Structure for CIC-DDoS2019**:
-- Place CSV files in `data/raw/CIC-DDoS2019/`
-- The pipeline automatically loads all CSV files in the directory and combines them
-- Each CSV file typically represents a different attack type
+
+⚠️ **No File Organization Required**: The dataset loader automatically detects and loads CSV files from **any location** within `datasets/cic_ddos2019/`:
+- Root directory: `datasets/cic_ddos2019/*.csv`
+- Subdirectories: `datasets/cic_ddos2019/*/*.csv` (e.g., `examples/Training-Day01/`)
+- Nested subdirectories: `datasets/cic_ddos2019/*/*/*.csv`
+
+**Why you don't need to reorganize:**
+1. **Flexible Loading**: The loader recursively searches all subdirectories
+2. **Automatic Filtering**: Template files (containing "example", "sample", "template", or "structure" in name) are excluded
+3. **No Manual Work**: Files can stay in their current locations (e.g., `examples/Training-Day01/`)
+
+**Legacy paths**: The pipeline also checks `data/raw/CIC-DDoS2019/` for backward compatibility.
 
 **Fallback Behavior**: If CIC-DDoS2019 is not available, the pipeline automatically falls back to using TON_IoT alone.
 

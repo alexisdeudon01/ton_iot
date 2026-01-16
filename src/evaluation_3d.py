@@ -515,6 +515,219 @@ class Evaluation3D:
         # This is a simplified version - actual calculation uses all models for normalization
         # For report purposes, return a placeholder that will be recalculated properly
         return results.get('explainability_score', 0)  # Placeholder
+    
+    def generate_dimension_visualizations(self, output_dir: Path) -> Dict[str, str]:
+        """
+        Generate visualizations for each of the 3 dimensions
+        
+        Creates bar charts, scatter plots, and radar charts for:
+        - Dimension 1: Detection Performance (F1, Precision, Recall)
+        - Dimension 2: Resource Efficiency (Time, Memory)
+        - Dimension 3: Explainability (SHAP, LIME, Native)
+        - Combined 3D visualization (radar chart)
+        
+        Args:
+            output_dir: Directory to save visualizations
+            
+        Returns:
+            Dictionary mapping dimension names to file paths of saved visualizations
+        """
+        if not VISUALIZATION_AVAILABLE:
+            logger.warning("Visualizations not available (matplotlib/seaborn not installed)")
+            return {}
+        
+        viz_dir = output_dir / 'visualizations'
+        viz_dir.mkdir(parents=True, exist_ok=True)
+        
+        df = self.get_results_df()
+        if df.empty:
+            logger.warning("No results available for visualization")
+            return {}
+        
+        saved_files = {}
+        
+        try:
+            # Dimension 1: Detection Performance
+            fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+            fig.suptitle('Dimension 1: Detection Performance', fontsize=16, fontweight='bold')
+            
+            models = df['model_name'].values
+            metrics = ['f1_score', 'precision', 'recall', 'accuracy']
+            titles = ['F1 Score', 'Precision (Pr)', 'Recall (Rc)', 'Accuracy']
+            
+            for idx, (metric, title) in enumerate(zip(metrics, titles)):
+                ax = axes[idx // 2, idx % 2]
+                values = df[metric].values
+                bars = ax.bar(models, values, color=plt.cm.viridis(np.linspace(0, 1, len(models))))
+                ax.set_title(title, fontweight='bold')
+                ax.set_ylabel('Score')
+                ax.set_ylim([0, max(1.0, values.max() * 1.1)])
+                ax.tick_params(axis='x', rotation=45)
+                ax.grid(axis='y', alpha=0.3)
+                
+                # Add value labels on bars
+                for bar, val in zip(bars, values):
+                    height = bar.get_height()
+                    ax.text(bar.get_x() + bar.get_width()/2., height,
+                           f'{val:.3f}', ha='center', va='bottom', fontsize=9)
+            
+            plt.tight_layout()
+            dim1_path = viz_dir / 'dimension1_performance.png'
+            plt.savefig(dim1_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            saved_files['dimension1'] = str(dim1_path)
+            logger.info(f"Saved Dimension 1 visualization: {dim1_path}")
+            
+            # Dimension 2: Resource Efficiency
+            fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+            fig.suptitle('Dimension 2: Resource Efficiency', fontsize=16, fontweight='bold')
+            
+            # Training Time
+            ax1 = axes[0]
+            time_values = df['training_time_seconds'].values
+            bars1 = ax1.bar(models, time_values, color=plt.cm.plasma(np.linspace(0, 1, len(models))))
+            ax1.set_title('Training Time', fontweight='bold')
+            ax1.set_ylabel('Time (seconds)')
+            ax1.tick_params(axis='x', rotation=45)
+            ax1.grid(axis='y', alpha=0.3)
+            for bar, val in zip(bars1, time_values):
+                height = bar.get_height()
+                ax1.text(bar.get_x() + bar.get_width()/2., height,
+                        f'{val:.2f}s', ha='center', va='bottom', fontsize=9)
+            
+            # Memory Usage
+            ax2 = axes[1]
+            memory_values = df['memory_used_mb'].values
+            bars2 = ax2.bar(models, memory_values, color=plt.cm.plasma(np.linspace(0.3, 1, len(models))))
+            ax2.set_title('Memory Usage', fontweight='bold')
+            ax2.set_ylabel('Memory (MB)')
+            ax2.tick_params(axis='x', rotation=45)
+            ax2.grid(axis='y', alpha=0.3)
+            for bar, val in zip(bars2, memory_values):
+                height = bar.get_height()
+                ax2.text(bar.get_x() + bar.get_width()/2., height,
+                        f'{val:.2f}MB', ha='center', va='bottom', fontsize=9)
+            
+            plt.tight_layout()
+            dim2_path = viz_dir / 'dimension2_resources.png'
+            plt.savefig(dim2_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            saved_files['dimension2'] = str(dim2_path)
+            logger.info(f"Saved Dimension 2 visualization: {dim2_path}")
+            
+            # Dimension 3: Explainability
+            fig, ax = plt.subplots(figsize=(12, 6))
+            fig.suptitle('Dimension 3: Explainability', fontsize=16, fontweight='bold')
+            
+            explain_scores = df['explainability_score'].values
+            native_int = df['native_interpretability'].values
+            
+            x = np.arange(len(models))
+            width = 0.35
+            
+            bars1 = ax.bar(x - width/2, explain_scores, width, label='Combined Explainability Score', 
+                          color=plt.cm.coolwarm(0.3))
+            bars2 = ax.bar(x + width/2, native_int, width, label='Native Interpretability', 
+                          color=plt.cm.coolwarm(0.7))
+            
+            ax.set_ylabel('Score')
+            ax.set_title('Explainability Metrics', fontweight='bold')
+            ax.set_xticks(x)
+            ax.set_xticklabels(models, rotation=45, ha='right')
+            ax.legend()
+            ax.set_ylim([0, 1.1])
+            ax.grid(axis='y', alpha=0.3)
+            
+            # Add value labels
+            for bars in [bars1, bars2]:
+                for bar in bars:
+                    height = bar.get_height()
+                    if height > 0:
+                        ax.text(bar.get_x() + bar.get_width()/2., height,
+                               f'{height:.2f}', ha='center', va='bottom', fontsize=9)
+            
+            plt.tight_layout()
+            dim3_path = viz_dir / 'dimension3_explainability.png'
+            plt.savefig(dim3_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            saved_files['dimension3'] = str(dim3_path)
+            logger.info(f"Saved Dimension 3 visualization: {dim3_path}")
+            
+            # Combined 3D Radar Chart
+            dim_scores = self.get_dimension_scores()
+            if not dim_scores.empty:
+                fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+                
+                # Prepare data for radar chart
+                categories = ['Detection\nPerformance', 'Resource\nEfficiency', 'Explainability']
+                num_vars = len(categories)
+                
+                # Compute angle for each category
+                angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+                angles += angles[:1]  # Complete the circle
+                
+                # Plot each model
+                colors = plt.cm.tab10(np.linspace(0, 1, len(dim_scores)))
+                for idx, row in dim_scores.iterrows():
+                    values = [
+                        row['detection_performance'],
+                        row['resource_efficiency'],
+                        row['explainability']
+                    ]
+                    values += values[:1]  # Complete the circle
+                    
+                    ax.plot(angles, values, 'o-', linewidth=2, label=row['model_name'], color=colors[idx])
+                    ax.fill(angles, values, alpha=0.25, color=colors[idx])
+                
+                # Customize radar chart
+                ax.set_xticks(angles[:-1])
+                ax.set_xticklabels(categories)
+                ax.set_ylim(0, 1)
+                ax.set_yticks([0.2, 0.4, 0.6, 0.8, 1.0])
+                ax.set_yticklabels(['0.2', '0.4', '0.6', '0.8', '1.0'], fontsize=10)
+                ax.grid(True)
+                ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+                
+                plt.title('3D Evaluation Framework - Combined View', fontsize=14, fontweight='bold', pad=20)
+                plt.tight_layout()
+                
+                radar_path = viz_dir / 'combined_3d_radar.png'
+                plt.savefig(radar_path, dpi=150, bbox_inches='tight')
+                plt.close()
+                saved_files['combined_radar'] = str(radar_path)
+                logger.info(f"Saved combined 3D radar chart: {radar_path}")
+            
+            # Scatter plot: Performance vs Efficiency
+            fig, ax = plt.subplots(figsize=(10, 8))
+            
+            perf = dim_scores['detection_performance'].values if not dim_scores.empty else df['f1_score'].values
+            eff = dim_scores['resource_efficiency'].values if not dim_scores.empty else 1 - (df['training_time_seconds'].values / df['training_time_seconds'].max())
+            
+            scatter = ax.scatter(perf, eff, s=200, c=dim_scores['explainability'].values if not dim_scores.empty else df['explainability_score'].values,
+                               cmap='viridis', alpha=0.6, edgecolors='black', linewidth=2)
+            
+            for i, model in enumerate(models):
+                ax.annotate(model, (perf[i], eff[i]), xytext=(5, 5), textcoords='offset points', fontsize=10)
+            
+            ax.set_xlabel('Detection Performance (normalized)', fontsize=12, fontweight='bold')
+            ax.set_ylabel('Resource Efficiency (normalized)', fontsize=12, fontweight='bold')
+            ax.set_title('Performance vs Efficiency (color = Explainability)', fontsize=14, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+            
+            cbar = plt.colorbar(scatter)
+            cbar.set_label('Explainability Score', fontsize=11)
+            
+            plt.tight_layout()
+            scatter_path = viz_dir / 'performance_vs_efficiency_scatter.png'
+            plt.savefig(scatter_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            saved_files['scatter'] = str(scatter_path)
+            logger.info(f"Saved scatter plot: {scatter_path}")
+            
+        except Exception as e:
+            logger.error(f"Error generating visualizations: {e}", exc_info=True)
+        
+        return saved_files
 
 
 def main():

@@ -17,7 +17,7 @@
 
 ## Dimension 2: Resource Efficiency
 
-- **Training Time**: 91.32 seconds
+- **Training Time**: 85.88 seconds
 - **Memory Usage**: 0.14 MB
 - **Peak Memory**: 0.00 MB
 
