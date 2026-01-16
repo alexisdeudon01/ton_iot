@@ -467,7 +467,7 @@ class Evaluation3D:
         report += f"- **Memory Usage**: {results.get('memory_used_mb', 0):.2f} MB\n"
         report += f"- **Peak Memory**: {results.get('peak_memory_mb', 0):.2f} MB\n\n"
         
-        time_score = self._calculate_resource_efficiency(results)
+        time_score = self._calculate_resource_efficiency(results, self.results)
         if time_score > 0.8:
             eff_interp = "Très efficace (rapide et peu de mémoire)"
         elif time_score > 0.5:

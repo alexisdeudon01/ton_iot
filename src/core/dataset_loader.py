@@ -726,15 +726,28 @@ class DatasetLoader:
                         def skip_func(row_idx):
                             return row_idx > 0 and (row_idx % decimation_step != 0)
                         
-                        df_file = pd.read_csv(csv_file, skiprows=skip_func, low_memory=False, nrows=int(1e6))
+                        df_file = pd.read_csv(csv_file, skiprows=skip_func, low_memory=True, nrows=int(1e6))
                         
                         # Fine-tune sample size if needed
                         target_size = max(100, int(len(df_file) * (sample_ratio / (1.0/decimation_step))))
                         if len(df_file) > target_size:
                             df_file = df_file.sample(n=target_size, random_state=random_state).reset_index(drop=True)
                         
-                        all_chunks.append(df_file)
+                        # Optimize dtypes on decimated file
+                        df_file = self._optimize_dtypes(df_file)
+                        
+                        dfs_files.append(df_file)
+                        total_rows_loaded += len(df_file)
                         logger.info(f"[OUTPUT] Loaded {csv_file.name}: {df_file.shape[0]:,} rows using decimation")
+                        
+                        # Batch concat if needed (same as chunk-based path)
+                        if len(dfs_files) >= CONCAT_BATCH_SIZE:
+                            logger.info(f"[ACTION] Batch concat: combining {len(dfs_files)} files...")
+                            df_batch = pd.concat(dfs_files, ignore_index=True)
+                            dfs_files = [df_batch]  # Replace with single batched DF
+                            del df_batch
+                            gc.collect()
+                        
                         continue  # Skip chunk-based loading for this file
                     else:
                         # For larger ratios, use chunk-based approach
@@ -992,6 +1005,13 @@ def main():
         print(f"  Shape: {cic_info['shape']}")
         print(f"  Label column: {cic_info.get('label_column', 'Not found')}")
         print(f"  Memory usage: {cic_info['memory_usage_mb']:.2f} MB")
+    except Exception as e:
+        print(f"\nCIC-DDoS2019 not available: {e}")
+
+
+if __name__ == "__main__":
+    main()
+
     except Exception as e:
         print(f"\nCIC-DDoS2019 not available: {e}")
 
