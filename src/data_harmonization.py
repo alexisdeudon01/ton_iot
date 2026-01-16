@@ -15,12 +15,30 @@ warnings.filterwarnings('ignore')
 class DataHarmonizer:
     """Harmonizes heterogeneous datasets for joint analysis"""
     
+    # CICFlowMeter feature patterns (to detect standard features)
+    # These are common patterns found in CIC-DDoS2019 dataset (80 features)
+    CICFLOWMETER_PATTERNS = [
+        'Flow Duration', 'Total Fwd Packets', 'Total Backward Packets',
+        'Total Length of Fwd Packets', 'Total Length of Bwd Packets',
+        'Fwd Packet Length', 'Bwd Packet Length', 'Flow Bytes/s',
+        'Flow Packets/s', 'Flow IAT', 'Fwd IAT', 'Bwd IAT',
+        'Fwd PSH Flags', 'Bwd PSH Flags', 'Fwd URG Flags', 'Bwd URG Flags',
+        'Fwd Header Length', 'Bwd Header Length', 'Fwd Packets/s', 'Bwd Packets/s',
+        'Packet Length', 'FIN Flag', 'SYN Flag', 'RST Flag', 'PSH Flag',
+        'ACK Flag', 'URG Flag', 'CWE Flag', 'ECE Flag', 'Down/Up Ratio',
+        'Average Packet', 'Avg Fwd Segment', 'Avg Bwd Segment',
+        'Fwd Avg Bytes/Bulk', 'Fwd Avg Packets/Bulk', 'Fwd Avg Bulk Rate',
+        'Bwd Avg Bytes/Bulk', 'Bwd Avg Packets/Bulk', 'Bwd Avg Bulk Rate',
+        'Subflow Fwd', 'Subflow Bwd', 'Init_Win_bytes', 'Active', 'Idle'
+    ]
+    
     def __init__(self):
         """Initialize the harmonizer with feature mapping schemas"""
         self.feature_mapping_cic = {}
         self.feature_mapping_ton = {}
         self.harmonized_features = []
         self.statistical_tests = {}
+        self.common_features_found = []
         
     def analyze_feature_similarity(self, df1: pd.DataFrame, df2: pd.DataFrame, 
                                    col1: str, col2: str) -> Dict:
@@ -151,6 +169,38 @@ class DataHarmonizer:
         
         # Find common features
         feature_mapping = self.find_common_features(df_cic, df_ton, "CIC-DDoS2019", "TON_IoT")
+        self.common_features_found = list(feature_mapping.keys())
+        
+        # Use CICFlowMeter standard features if available in CIC dataset
+        # Detect CICFlowMeter features by pattern matching (more flexible than exact match)
+        cic_standard_features = []
+        for pattern in self.CICFLOWMETER_PATTERNS:
+            matching = [col for col in df_cic.columns if pattern.lower() in col.lower()]
+            cic_standard_features.extend(matching)
+        
+        # Remove duplicates while preserving order
+        cic_standard_features = list(dict.fromkeys(cic_standard_features))
+        
+        if len(cic_standard_features) > 0:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"   Found {len(cic_standard_features)} CICFlowMeter-like features in CIC-DDoS2019")
+            # Try to map TON_IoT features to CICFlowMeter features
+            for cic_feat in cic_standard_features:
+                if cic_feat not in feature_mapping:
+                    # Try to find semantic match in TON_IoT
+                    cic_lower = cic_feat.lower().replace(' ', '_').replace('/', '_')
+                    for ton_col in df_ton.columns:
+                        ton_lower = ton_col.lower().replace(' ', '_').replace('/', '_')
+                        # More flexible matching
+                        if (cic_lower in ton_lower or ton_lower in cic_lower or 
+                            any(term in ton_lower for term in cic_lower.split('_') if len(term) > 3)):
+                            feature_mapping[cic_feat] = {
+                                'cic': cic_feat,
+                                'ton': ton_col,
+                                'type': 'cicflowmeter_standard'
+                            }
+                            break
         
         # Extract numeric features that can be harmonized
         harmonized_cols = []

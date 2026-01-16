@@ -377,15 +377,47 @@ class Evaluation3D:
         return pd.DataFrame(self.results)
     
     def get_dimension_scores(self) -> pd.DataFrame:
-        """Get normalized scores for each dimension"""
+        """
+        Get normalized scores for each dimension according to IRP methodology
+        
+        Formulas according to IRP_FinalADE_v2.0ADE-2-1.pdf:
+        - Dimension 1: F1 Score (normalized min-max)
+        - Dimension 2: 0.6 * normalized_time + 0.4 * normalized_memory (inverse normalized)
+        - Dimension 3: 0.5 * native + 0.3 * normalized_SHAP + 0.2 * normalized_LIME
+        """
         df = self.get_results_df()
         
-        # Normalize each dimension to [0, 1] scale
+        # Dimension 1: Detection Performance (F1 Score normalized)
+        f1_min = df['f1_score'].min()
+        f1_max = df['f1_score'].max()
+        f1_range = f1_max - f1_min + 1e-10  # Avoid division by zero
+        dimension1_normalized = (df['f1_score'] - f1_min) / f1_range
+        
+        # Dimension 2: Resource Efficiency (0.6 * time + 0.4 * memory)
+        # Normalize time and memory (inverse: less is better -> more is better)
+        time_min = df['training_time_seconds'].min()
+        time_max = df['training_time_seconds'].max()
+        time_range = time_max - time_min + 1e-10
+        normalized_time = 1 - (df['training_time_seconds'] - time_min) / time_range
+        
+        memory_min = df['memory_used_mb'].min()
+        memory_max = df['memory_used_mb'].max()
+        memory_range = memory_max - memory_min + 1e-10
+        normalized_memory = 1 - (df['memory_used_mb'] - memory_min) / memory_range
+        
+        # Combined Dimension 2: 0.6 * time + 0.4 * memory (IRP formula)
+        dimension2_score = 0.6 * normalized_time + 0.4 * normalized_memory
+        
+        # Dimension 3: Explainability (already normalized in _compute_combined_explainability)
+        # Using: 0.5 * native + 0.3 * normalized_SHAP + 0.2 * normalized_LIME
+        dimension3_normalized = df['explainability_score']
+        
+        # Create normalized dimension scores DataFrame
         dimension_scores = pd.DataFrame({
             'model_name': df['model_name'],
-            'detection_performance': (df['f1_score'] - df['f1_score'].min()) / (df['f1_score'].max() - df['f1_score'].min() + 1e-10),
-            'resource_efficiency': 1 - (df['training_time_seconds'] - df['training_time_seconds'].min()) / (df['training_time_seconds'].max() - df['training_time_seconds'].min() + 1e-10),
-            'explainability': df['explainability_score']
+            'detection_performance': dimension1_normalized,  # F1 Score normalized
+            'resource_efficiency': dimension2_score,  # 0.6*time + 0.4*memory
+            'explainability': dimension3_normalized  # Already normalized (0.5*native + 0.3*SHAP + 0.2*LIME)
         })
         
         return dimension_scores

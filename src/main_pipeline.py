@@ -13,6 +13,8 @@ import pandas as pd
 from pathlib import Path
 import warnings
 from tqdm import tqdm
+import tkinter as tk
+from tkinter import messagebox, scrolledtext
 
 warnings.filterwarnings('ignore')
 
@@ -101,6 +103,56 @@ class IRPPipeline:
         
         logger.info(f"Pipeline initialized with output directory: {self.results_dir.absolute()}")
     
+    def _show_features_popup(self, common_features: list, cic_total: int, ton_total: int):
+        """Show popup with common features found during harmonization"""
+        try:
+            root = tk.Tk()
+            root.withdraw()  # Hide main window
+            
+            # Create popup window
+            popup = tk.Toplevel(root)
+            popup.title("Features Communes Trouvées - Harmonisation")
+            popup.geometry("700x500")
+            popup.resizable(True, True)
+            
+            # Title
+            title = tk.Label(popup, text="Features Communes entre CIC-DDoS2019 et TON_IoT", 
+                           font=("Arial", 14, "bold"))
+            title.pack(pady=10)
+            
+            # Summary
+            summary_text = f"Total features CIC-DDoS2019: {cic_total}\n"
+            summary_text += f"Total features TON_IoT: {ton_total}\n"
+            summary_text += f"Features communes trouvées: {len(common_features)}\n\n"
+            summary_label = tk.Label(popup, text=summary_text, font=("Arial", 10))
+            summary_label.pack(pady=5)
+            
+            # Features list
+            text_frame = tk.Frame(popup)
+            text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+            
+            scroll_text = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, height=15, width=80)
+            scroll_text.pack(fill=tk.BOTH, expand=True)
+            
+            # Display features
+            features_text = "\n".join([f"{i+1}. {feat}" for i, feat in enumerate(common_features)])
+            scroll_text.insert(tk.END, features_text)
+            scroll_text.config(state=tk.DISABLED)  # Make read-only
+            
+            # Close button
+            close_btn = tk.Button(popup, text="Fermer", command=popup.destroy, 
+                                font=("Arial", 10), width=20)
+            close_btn.pack(pady=10)
+            
+            # Make popup modal (blocking)
+            popup.transient(root)
+            popup.grab_set()
+            popup.wait_window()
+            root.destroy()
+            
+        except Exception as e:
+            logger.warning(f"Could not display features popup: {e}")
+    
     def phase1_preprocessing(self) -> pd.DataFrame:
         """
         Phase 1: Preprocessing Configuration Selection
@@ -140,23 +192,77 @@ class IRPPipeline:
                 df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(df_cic, df_ton)
                 logger.info(f"   CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
                 logger.info(f"   TON_IoT harmonized: {df_ton_harm.shape}")
+                
+                # Show common features in popup
+                common_features = self.harmonizer.common_features_found
+                if common_features:
+                    self._show_features_popup(common_features, len(df_cic.columns), len(df_ton.columns))
+                
+                # Check if harmonization produced empty dataframes
+                if df_cic_harm.empty or df_ton_harm.empty or len(df_cic_harm.columns) == 0 or len(df_ton_harm.columns) == 0:
+                    logger.warning("   Harmonization produced empty dataframes. Using original datasets directly.")
+                    # Use original datasets but standardize label column
+                    df_cic_processed = df_cic.copy()
+                    df_ton_processed = df_ton.copy()
+                    
+                    # Standardize label columns
+                    cic_label_col = None
+                    for col in ['Label', 'label', 'Attack', 'Class']:
+                        if col in df_cic_processed.columns:
+                            cic_label_col = col
+                            break
+                    if cic_label_col and cic_label_col != 'label':
+                        df_cic_processed['label'] = df_cic_processed[cic_label_col]
+                    
+                    ton_label_col = 'label' if 'label' in df_ton_processed.columns else None
+                    
+                    # Use only TON_IoT if it has label, otherwise try CIC
+                    if ton_label_col:
+                        df_processed = df_ton_processed
+                        logger.info("   Using TON_IoT dataset (has label column)")
+                    elif cic_label_col:
+                        df_processed = df_cic_processed
+                        logger.info(f"   Using CIC-DDoS2019 dataset (has label column: {cic_label_col})")
+                    else:
+                        raise ValueError("Neither dataset has a valid label column")
+                else:
+                    logger.info("\n1.3 Early fusion...")
+                    logger.info("   Performing statistical validation (Kolmogorov-Smirnov test)...")
+                    try:
+                        df_fused, validation = self.harmonizer.early_fusion(df_cic_harm, df_ton_harm)
+                        compatible_count = sum(1 for v in validation.values() if v.get('compatible', False))
+                        logger.info(f"   Fused dataset: {df_fused.shape}")
+                        logger.info(f"   Validation: {compatible_count}/{len(validation)} features compatible")
+                    except Exception as e:
+                        logger.error(f"   Error during early fusion: {e}", exc_info=True)
+                        raise
+                    
+                    # Use fused dataset
+                    df_processed = df_fused
+                    
             except Exception as e:
                 logger.error(f"   Error during harmonization: {e}", exc_info=True)
-                raise
-            
-            logger.info("\n1.3 Early fusion...")
-            logger.info("   Performing statistical validation (Kolmogorov-Smirnov test)...")
-            try:
-                df_fused, validation = self.harmonizer.early_fusion(df_cic_harm, df_ton_harm)
-                compatible_count = sum(1 for v in validation.values() if v.get('compatible', False))
-                logger.info(f"   Fused dataset: {df_fused.shape}")
-                logger.info(f"   Validation: {compatible_count}/{len(validation)} features compatible")
-            except Exception as e:
-                logger.error(f"   Error during early fusion: {e}", exc_info=True)
-                raise
-            
-            # Use fused dataset
-            df_processed = df_fused
+                logger.warning("   Falling back to using original datasets...")
+                # Fallback: use original datasets
+                df_cic_processed = df_cic.copy()
+                df_ton_processed = df_ton.copy()
+                
+                # Standardize label columns
+                cic_label_col = None
+                for col in ['Label', 'label', 'Attack', 'Class']:
+                    if col in df_cic_processed.columns:
+                        cic_label_col = col
+                        break
+                if cic_label_col and cic_label_col != 'label':
+                    df_cic_processed['label'] = df_cic_processed[cic_label_col]
+                
+                # Prefer TON_IoT if it has label
+                if 'label' in df_ton_processed.columns:
+                    df_processed = df_ton_processed
+                elif cic_label_col:
+                    df_processed = df_cic_processed
+                else:
+                    raise ValueError("Neither dataset has a valid label column after harmonization failure")
             
         except FileNotFoundError:
             logger.warning("   CIC-DDoS2019 not available, using TON_IoT only")
