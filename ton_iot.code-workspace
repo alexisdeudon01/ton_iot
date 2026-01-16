@@ -31,6 +31,8 @@
 		},
 		"python.analysis.extraPaths": [],
 		"python.terminal.activateEnvironment": true,
+		"python.requirementsPath": "./requirements.txt",
+		"python.analysis.diagnosticMode": "workspace",
 		"[python]": {
 			"editor.defaultFormatter": "ms-python.black-formatter",
 			"editor.tabSize": 4,
@@ -46,10 +48,7 @@
 			"ms-python.python",
 			"ms-python.vscode-pylance",
 			"ms-python.black-formatter",
-			"ms-python.isort",
-			"ms-toolsai.jupyter",
-			"ms-toolsai.jupyter-keymap",
-			"ms-toolsai.jupyter-renderers"
+			"ms-python.isort"
 		]
 	}
 }
