@@ -391,33 +391,69 @@ class PreprocessingPipeline:
         else:
             X_scaled = X_array
         
-        # Step 5: Resampling
-        if apply_resampling:
-            X_resampled, y_resampled = self.resample_data(X_scaled, y_array)
-        else:
-            X_resampled, y_resampled = X_scaled, y_array
-        
-        # Step 6: Splitting
-        result = {
-            'X_processed': X_resampled,
-            'y_processed': y_resampled,
-            'feature_names': self.selected_features,
-            'preprocessing_steps': {
-                'cleaning': True,
-                'encoding': apply_encoding,
-                'feature_selection': apply_feature_selection,
-                'scaling': apply_scaling,
-                'resampling': apply_resampling,
-                'splitting': False
-            }
-        }
-        
+        # Step 5: Splitting (BEFORE resampling to avoid data leakage)
+        # IMPORTANT: Split first, then apply SMOTE only on training data
         if apply_splitting:
-            splits = self.split_data(X_resampled, y_resampled, train_ratio, val_ratio, test_ratio)
-            result['splits'] = splits
-            result['preprocessing_steps']['splitting'] = True
+            splits = self.split_data(X_scaled, y_array, train_ratio, val_ratio, test_ratio)
+            X_train, y_train = splits['train']
+            X_val, y_val = splits['val']
+            X_test, y_test = splits['test']
+            
+            # Step 6: Resampling (SMOTE) - ONLY on training data
+            if apply_resampling:
+                logger.info("[PREPROCESSING] Applying SMOTE ONLY to training data (after split to prevent data leakage)...")
+                X_train_resampled, y_train_resampled = self.resample_data(X_train, y_train)
+                # Keep validation and test sets unchanged
+                X_val_resampled, y_val_resampled = X_val, y_val
+                X_test_resampled, y_test_resampled = X_test, y_test
+            else:
+                X_train_resampled, y_train_resampled = X_train, y_train
+                X_val_resampled, y_val_resampled = X_val, y_val
+                X_test_resampled, y_test_resampled = X_test, y_test
+            
+            # Update splits with resampled training data
+            splits = {
+                'train': (X_train_resampled, y_train_resampled),
+                'val': (X_val_resampled, y_val_resampled),
+                'test': (X_test_resampled, y_test_resampled)
+            }
+            result = {
+                'X_processed': X_train_resampled,  # Return training data as main output
+                'y_processed': y_train_resampled,
+                'feature_names': self.selected_features,
+                'splits': splits,
+                'preprocessing_steps': {
+                    'cleaning': True,
+                    'encoding': apply_encoding,
+                    'feature_selection': apply_feature_selection,
+                    'scaling': apply_scaling,
+                    'splitting': True,
+                    'resampling': apply_resampling
+                }
+            }
         else:
-            result['splits'] = None
+            # No splitting: apply SMOTE on all data (not recommended for production)
+            if apply_resampling:
+                logger.warning("[PREPROCESSING] ⚠ WARNING: Applying SMOTE before splitting - this can cause data leakage!")
+                logger.warning("  Consider using apply_splitting=True to split first, then resample only training data.")
+                X_resampled, y_resampled = self.resample_data(X_scaled, y_array)
+            else:
+                X_resampled, y_resampled = X_scaled, y_array
+            
+            result = {
+                'X_processed': X_resampled,
+                'y_processed': y_resampled,
+                'feature_names': self.selected_features,
+                'splits': None,
+                'preprocessing_steps': {
+                    'cleaning': True,
+                    'encoding': apply_encoding,
+                    'feature_selection': apply_feature_selection,
+                    'scaling': apply_scaling,
+                    'resampling': apply_resampling,
+                    'splitting': False
+                }
+            }
         
         logger.info("=" * 60)
         logger.info("PREPROCESSING COMPLETE")

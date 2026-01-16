@@ -1,4 +1,4 @@
 Alternative,Score,Rank
-Decision Tree,0.9971790562596381,1
-Random Forest,0.8978993732260685,2
-Logistic Regression,0.0,3
+Random Forest,0.7614363688662286,1
+Logistic Regression,0.6457305441518164,2
+Decision Tree,0.3962484753285481,3
