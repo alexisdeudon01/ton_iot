@@ -144,14 +144,19 @@ class IRPPipeline:
                                 font=("Arial", 10), width=20)
             close_btn.pack(pady=10)
             
-            # Make popup modal (blocking)
+            # Make popup non-blocking (don't wait for window to close)
             popup.transient(root)
-            popup.grab_set()
-            popup.wait_window()
-            root.destroy()
+            popup.lift()
+            popup.focus_force()
+            
+            # Update root to process events without blocking
+            root.update()
+            
+            logger.info(f"   Features popup displayed (non-blocking). Pipeline continuing...")
+            # Don't destroy root - let it run in background, user can close popup manually
             
         except Exception as e:
-            logger.warning(f"Could not display features popup: {e}")
+            logger.warning(f"Could not display features popup: {e}. Continuing...")
     
     def phase1_preprocessing(self) -> pd.DataFrame:
         """
