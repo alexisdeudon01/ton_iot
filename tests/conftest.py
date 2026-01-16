@@ -1,30 +1,19 @@
-#!/usr/bin/env python3
 """
-Pytest configuration and fixtures
+Pytest fixtures for IRP Pipeline tests
 """
 import pytest
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+# Add project root to path
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from src.config import PipelineConfig, TEST_CONFIG
 
 
 @pytest.fixture
-def test_config():
-    """PipelineConfig for testing"""
+def config():
+    """PipelineConfig fixture for testing"""
     return TEST_CONFIG
-
-
-@pytest.fixture
-def sample_config():
-    """Standard PipelineConfig for tests"""
-    return PipelineConfig(
-        test_mode=True,
-        sample_ratio=0.001,
-        random_state=42,
-        output_dir="output/test",
-        interactive=False
-    )

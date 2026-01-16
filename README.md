@@ -18,6 +18,21 @@ processing, data manipulation, and algorithms implementation and evaluation.
 <br>
 ![Proposed Framework Architecture.](AI_implementation.png)
 
+## Installation
+
+### Core Dependencies (Required)
+```bash
+pip install -r requirements-core.txt
+```
+
+### Neural Network & Explainability Dependencies (Optional)
+For CNN, TabNet, SHAP, and LIME support:
+```bash
+pip install -r requirements-nn.txt
+```
+
+**Note**: For CUDA-enabled PyTorch, follow the [official PyTorch installation instructions](https://pytorch.org/get-started/locally/).
+
 ## Running the code
 
 ### IRP Research Pipeline (Main Methodology)
