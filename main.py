@@ -211,8 +211,9 @@ Examples:
                 import numpy as np
                 preprocessed = pd.read_csv(output_dir / 'phase1_preprocessing' / 'preprocessed_data.csv')
                 y = preprocessed['label'].values
-                X = preprocessed.drop('label', axis=1).values
-                feature_names = list(preprocessed.columns[:-1])
+                X_df = preprocessed.drop('label', axis=1)
+                X = X_df.values
+                feature_names = list(X_df.columns)
                 logger.info(f"Loaded preprocessed data: {X.shape}")
             except FileNotFoundError:
                 logger.error("Preprocessed data not found. Please run Phase 1 first.")
