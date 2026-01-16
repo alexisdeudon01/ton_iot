@@ -132,11 +132,19 @@ class DatasetLoader:
         return indices
     
     def _count_file_rows(self, file_path: Path) -> int:
-        """Quickly count total rows in a CSV file"""
+        """Quickly count total rows in a CSV file (optimized for large files)"""
         try:
-            # Fast method: count newlines
+            # Fast method: count newlines in chunks to avoid loading entire file
+            count = 0
+            chunk_size = 1024 * 1024  # 1MB chunks
             with open(file_path, 'rb') as f:
-                return sum(1 for _ in f) - 1  # Subtract 1 for header
+                while True:
+                    chunk = f.read(chunk_size)
+                    if not chunk:
+                        break
+                    count += chunk.count(b'\n')
+            # Adjust: file might not end with newline, and we subtract header
+            return max(0, count - 1)
         except Exception as e:
             logger.warning(f"Could not count rows in {file_path.name}: {e}")
             return 0
@@ -202,14 +210,39 @@ class DatasetLoader:
         logger.info(f"[INFO] Using adaptive chunk size: {chunk_size:,} rows")
         
         try:
-            # If sampling, count total rows first for efficient sampling
-            sample_indices = None
+            # For very small sample ratios (< 0.01), use decimation approach (much faster)
             if sample_ratio < 1.0:
-                logger.info(f"[ACTION] Counting total rows for efficient sampling...")
-                total_rows = self._count_file_rows(file_path_obj)
-                if total_rows > 0:
-                    sample_indices = self._sample_rows_efficient(total_rows, sample_ratio, random_state)
-                    logger.info(f"[INFO] Will sample {len(sample_indices):,} rows from {total_rows:,} total")
+                if sample_ratio < 0.01:  # For very small ratios (< 1%), use decimation
+                    logger.info(f"[ACTION] Using optimized decimation sampling for {sample_ratio*100:.2f}%...")
+                    # Calculate decimation step (every Nth row)
+                    decimation_step = int(1.0 / sample_ratio)
+                    logger.info(f"[INFO] Reading every {decimation_step} row(s) (decimation step)")
+                    
+                    # Use pandas skiprows with function for efficient sampling
+                    def skip_func(row_idx):
+                        # Skip header (row 0) and sample based on decimation
+                        return row_idx > 0 and (row_idx % decimation_step != 0)
+                    
+                    # Read with decimation (much faster than loading all then sampling)
+                    df = pd.read_csv(file_path_obj, skiprows=skip_func, low_memory=False, 
+                                   nrows=int(1e6))  # Limit to 1M rows max for safety
+                    
+                    # If we got more than needed due to decimation step approximation, sample down
+                    target_size = max(100, int(len(df) * (sample_ratio / (1.0/decimation_step))))
+                    if len(df) > target_size:
+                        df = df.sample(n=target_size, random_state=random_state).reset_index(drop=True)
+                    
+                    logger.info(f"[OUTPUT] TON_IoT loaded with decimation: {df.shape[0]:,} rows, {df.shape[1]} columns")
+                    return df
+                else:
+                    # For larger ratios (>= 1%), use chunk-based sampling
+                    logger.info(f"[ACTION] Counting total rows for efficient sampling...")
+                    total_rows = self._count_file_rows(file_path_obj)
+                    if total_rows > 0:
+                        sample_indices = self._sample_rows_efficient(total_rows, sample_ratio, random_state)
+                        logger.info(f"[INFO] Will sample {len(sample_indices):,} rows from {total_rows:,} total")
+            else:
+                sample_indices = None
             
             # Load in chunks
             file_chunks = []
@@ -403,12 +436,31 @@ class DatasetLoader:
                 file_size_mb = csv_file.stat().st_size / (1024 * 1024)
                 logger.debug(f"[INFO] File size: {file_size_mb:.2f} MB")
                 
-                # Count rows for efficient sampling
+                # Optimized sampling for very small ratios
                 sample_indices = None
                 if sample_ratio < 1.0:
-                    total_rows = self._count_file_rows(csv_file)
-                    if total_rows > 0:
-                        sample_indices = self._sample_rows_efficient(total_rows, sample_ratio, random_state)
+                    if sample_ratio < 0.01:  # For very small ratios (< 1%), use decimation
+                        logger.info(f"[ACTION] Using optimized decimation sampling for {sample_ratio*100:.2f}%...")
+                        decimation_step = int(1.0 / sample_ratio)
+                        
+                        def skip_func(row_idx):
+                            return row_idx > 0 and (row_idx % decimation_step != 0)
+                        
+                        df_file = pd.read_csv(csv_file, skiprows=skip_func, low_memory=False, nrows=int(1e6))
+                        
+                        # Fine-tune sample size if needed
+                        target_size = max(100, int(len(df_file) * (sample_ratio / (1.0/decimation_step))))
+                        if len(df_file) > target_size:
+                            df_file = df_file.sample(n=target_size, random_state=random_state).reset_index(drop=True)
+                        
+                        all_chunks.append(df_file)
+                        logger.info(f"[OUTPUT] Loaded {csv_file.name}: {df_file.shape[0]:,} rows using decimation")
+                        continue  # Skip chunk-based loading for this file
+                    else:
+                        # For larger ratios, use chunk-based approach
+                        total_rows = self._count_file_rows(csv_file)
+                        if total_rows > 0:
+                            sample_indices = self._sample_rows_efficient(total_rows, sample_ratio, random_state)
                 
                 file_chunks = []
                 chunk_count = 0
