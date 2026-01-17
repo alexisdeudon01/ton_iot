@@ -126,12 +126,12 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
             optimizer_fn=self.optimizer_fn,
             optimizer_params=self.optimizer_params,
             scheduler_fn=self.scheduler_fn,
-            scheduler_params=self.scheduler_params,
+            scheduler_params=self.scheduler_params or {},
             mask_type=self.mask_type,
             n_shared=self.n_shared,
             n_independent=self.n_independent,
             momentum=self.momentum,
-            clip_value=self.clip_value,
+            clip_value=float(self.clip_value),
             seed=self.seed,
             verbose=self.verbose
         )

@@ -223,16 +223,18 @@ class ExplainabilityEvaluator:
 class Evaluation3D:
     """3D evaluation framework for DDoS detection algorithms"""
 
-    def __init__(self, feature_names: List[str] = None):
+    def __init__(self, feature_names: Optional[List[str]] = None):
         """
         Initialize 3D evaluator
 
         Args:
             feature_names: List of feature names for explainability
         """
-        self.feature_names = feature_names
-        self.explainability_evaluator = ExplainabilityEvaluator(feature_names)
-        self.results = []
+        self.feature_names = feature_names if feature_names is not None else []
+        self.explainability_evaluator = ExplainabilityEvaluator(self.feature_names)
+        self.results: List[Dict[str, Any]] = []
+        self.fold_results: List[Dict[str, Any]] = []
+        self.normalized_scores: List[Dict[str, Any]] = []
 
     def evaluate_model(self, model: Any, model_name: str,
                       X_train: np.ndarray, y_train: np.ndarray,
