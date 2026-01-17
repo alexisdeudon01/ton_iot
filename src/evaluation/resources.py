@@ -4,6 +4,7 @@ Dimension 2: Resource Metrics (training time, peak RAM, inference latency)
 """
 import time
 import numpy as np
+import pandas as pd
 import psutil
 import logging
 from typing import Dict, Optional
