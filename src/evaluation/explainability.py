@@ -4,7 +4,7 @@ Dimension 3: Explainability Metrics (native, SHAP, LIME)
 """
 import numpy as np
 import logging
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Any
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ def compute_lime_score(model, X_sample, y_sample, top_k: int = 10) -> Optional[f
 
 def compute_explainability_score(model_name: str, shap_score: Optional[float] = None,
                                   lime_score: Optional[float] = None,
-                                  weights=(0.5, 0.3, 0.2)) -> Dict[str, any]:
+                                  weights=(0.5, 0.3, 0.2)) -> Dict[str, Any]:
     """
     Compute explainability score with normalization if SHAP/LIME missing
 

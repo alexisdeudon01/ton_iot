@@ -456,7 +456,10 @@ class PreprocessingPipeline:
         logger.info("=" * 60)
 
         # Step 1: Data Cleaning
-        X_cleaned, y_cleaned_opt = self.clean_data(X, y)
+        res_clean = cast(Any, self.clean_data(X, y))
+        X_cleaned: pd.DataFrame = res_clean[0]
+        y_cleaned_opt: Optional[pd.Series] = res_clean[1]
+
         if y_cleaned_opt is None:
             raise ValueError("Target y cannot be None after cleaning")
         y_cleaned: pd.Series = y_cleaned_opt

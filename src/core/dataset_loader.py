@@ -4,34 +4,10 @@ Dataset loader for CIC-DDoS2019 and TON_IoT datasets
 Handles downloading and loading of datasets for the IRP research project
 Now with system monitoring, adaptive chunking, and incremental loading
 """
-import os
-import logging
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from typing import Tuple, Optional, List, Dict, Set, Callable, Any, Union, cast
-import warnings
-from tqdm import tqdm
-import gc  # Garbage collector for memory management
-import pickle
-from datetime import datetime
-
-try:
-    import sys
-    from pathlib import Path
-    _parent_path = Path(__file__).parent.parent.parent
-    if str(_parent_path) not in sys.path:
-        sys.path.insert(0, str(_parent_path))
-    from src.system_monitor import SystemMonitor
-except (ImportError, ModuleNotFoundError):
-    # Use a dummy class instead of Any to avoid instantiation errors
-    class SystemMonitor: # type: ignore
-        def __init__(self, *args, **kwargs): pass
-        def check_memory_safe(self): return True, ""
-        def get_memory_info(self): return {"used_percent": 0.0}
-        def start_progress_tracking(self): pass
-        def update_progress(self, *args, **kwargs): return {"eta_formatted": "00:00"}
-        def calculate_optimal_chunk_size(self, *args, **kwargs): return 100000
+from src.core.dependencies import (
+    os, logging, pd, np, Path, Tuple, Optional, List, Dict, Set, Callable, Any, Union, cast,
+    warnings, tqdm, gc, pickle, datetime, SystemMonitor, FeatureAnalyzer, IRPFeaturesRequirements
+)
 
 warnings.filterwarnings('ignore')
 
@@ -65,7 +41,7 @@ class DatasetLoader:
 
         # Initialize system monitor if not provided
         self.monitor = monitor
-        if self.monitor is None and SystemMonitor is not None:
+        if self.monitor is None:
             try:
                 self.monitor = SystemMonitor(max_memory_percent=90.0)
             except Exception as e:
@@ -231,13 +207,11 @@ class DatasetLoader:
         # Use FeatureAnalyzer to determine common features
         if result['sample_ton'] is not None and result['sample_cic'] is not None:
             try:
-                from feature_analyzer import FeatureAnalyzer
                 analyzer = FeatureAnalyzer()
                 common_features = analyzer.extract_common_features(result['sample_ton'], result['sample_cic'])
 
                 # Filter to only features necessary for IRP calculations (all numeric features)
                 try:
-                    from irp_features_requirements import IRPFeaturesRequirements
                     irp_req = IRPFeaturesRequirements()
                     filtered_features = irp_req.filter_features_for_irp(
                         common_features,
@@ -437,6 +411,7 @@ class DatasetLoader:
         logger.info(f"[INFO] Using adaptive chunk size: {chunk_size:,} rows")
 
         try:
+            sample_indices = None
             # For very small sample ratios (< 0.01), use decimation approach (much faster)
             if sample_ratio < 1.0:
                 if sample_ratio < 0.01:  # For very small ratios (< 1%), use decimation
@@ -468,8 +443,6 @@ class DatasetLoader:
                     if total_rows > 0:
                         sample_indices = self._sample_rows_efficient(total_rows, sample_ratio, random_state)
                         logger.info(f"[INFO] Will sample {len(sample_indices):,} rows from {total_rows:,} total")
-            else:
-                sample_indices = None
 
             # Load in chunks
             file_chunks = []
@@ -486,14 +459,13 @@ class DatasetLoader:
                 chunk_end_row = chunk_start_row + len(chunk)
 
                 # If sampling, filter rows within this chunk
-                if sample_indices is not None and next_sample_idx is not None:
+                if sample_indices is not None:
                     # Find indices that fall within this chunk
-                    # Cast to np.ndarray to satisfy Pylance
                     indices_arr = cast(np.ndarray, sample_indices)
                     chunk_sample_mask = (indices_arr >= chunk_start_row) & (indices_arr < chunk_end_row)
-                    chunk_sample_indices = cast(np.ndarray, indices_arr[chunk_sample_mask])
+                    chunk_sample_indices = indices_arr[chunk_sample_mask]
 
-                    if chunk_sample_indices.shape[0] > 0:
+                    if len(chunk_sample_indices) > 0:
                         # Convert global indices to local chunk indices
                         local_indices = chunk_sample_indices - chunk_start_row
                         chunk = chunk.iloc[local_indices].reset_index(drop=True)
@@ -704,7 +676,7 @@ class DatasetLoader:
         logger.info(f"[INFO] Using adaptive chunk size: {chunk_size:,} rows")
 
         # Use streaming concat: accumulate file DFs, concat in batches
-        dfs_files: List[pd.DataFrame] = []  # One DF per file (will be smaller than all_chunks)
+        dfs_files: List[Any] = []  # One DF per file (will be smaller than all_chunks)
         total_rows_loaded = 0
         CONCAT_BATCH_SIZE = 4  # Concat every N files to avoid memory spike
 
@@ -752,7 +724,7 @@ class DatasetLoader:
                         total_rows_loaded += len(df_file)
                         logger.info(f"[OUTPUT] Loaded {csv_file.name}: {df_file.shape[0]:,} rows using decimation")
 
-                        # Batch concat if needed (same as chunk-based path)
+                        # Batch concat: concat every N files to avoid memory spike
                         if len(dfs_files) >= CONCAT_BATCH_SIZE:
                             logger.info(f"[ACTION] Batch concat: combining {len(dfs_files)} files...")
                             df_batch = pd.concat(dfs_files, ignore_index=True)
@@ -771,7 +743,6 @@ class DatasetLoader:
                 file_chunks = []
                 chunk_count = 0
                 rows_in_file = 0
-                next_sample_idx = 0 if sample_indices is not None else None
 
                 try:
                     chunk_iterator = pd.read_csv(csv_file, low_memory=True, chunksize=chunk_size, encoding='utf-8-sig')
@@ -790,9 +761,8 @@ class DatasetLoader:
                             # Direct sampling per chunk (more memory-efficient than pre-computed indices)
                             chunk_sample_size = max(1, int(len(chunk) * sample_ratio))
                             chunk = chunk.sample(n=chunk_sample_size, random_state=random_state).reset_index(drop=True)
-                        elif sample_indices is not None and next_sample_idx is not None:
+                        elif sample_indices is not None:
                             # Use pre-computed indices (for larger ratios)
-                            # Cast to np.ndarray to satisfy Pylance
                             indices_arr = cast(np.ndarray, sample_indices)
                             chunk_sample_mask = (indices_arr >= chunk_start_row) & (indices_arr < chunk_end_row)
                             chunk_sample_indices = indices_arr[chunk_sample_mask]

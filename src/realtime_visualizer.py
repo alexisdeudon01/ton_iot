@@ -316,6 +316,7 @@ class RealTimeVisualizer:
         
         # Pipeline overview figure (for real-time updates)
         self.pipeline_overview_fig: Optional[plt.Figure] = None
+        self.pipeline_overview_axes: Optional[np.ndarray] = None
         self.pipeline_overview_update_count = 0
         
         logger.info(f"RealTimeVisualizer initialized (interactive: {self.enable_realtime})")
@@ -359,7 +360,7 @@ class RealTimeVisualizer:
                 logger.debug(f"[VIZ] Training update: {algorithm_name} - Fold {fold} - {metrics}")
             
             # Auto-save visualization every 5 updates
-            if len(viz.metrics_history.get('accuracy', [])) % 5 == 0:
+            if len(viz.timestamps) % 5 == 0:
                 self._update_algorithm_visualization(algorithm_name, viz)
                 # Update pipeline overview in real-time
                 self._update_pipeline_overview_realtime()
@@ -403,9 +404,10 @@ class RealTimeVisualizer:
                 return
             
             # Create or update pipeline overview
-            if self.pipeline_overview_fig is None:
+            if self.pipeline_overview_fig is None or self.pipeline_overview_axes is None:
                 # Create new figure
                 self.pipeline_overview_fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+                self.pipeline_overview_axes = axes
                 self.pipeline_overview_fig.suptitle('Pipeline Progress Overview (Live)', 
                                                     fontsize=16, fontweight='bold')
                 plt.ion()  # Turn on interactive mode
@@ -413,8 +415,8 @@ class RealTimeVisualizer:
                     plt.show(block=False)
             else:
                 # Clear existing axes
-                axes = self.pipeline_overview_fig.get_axes()
-                for ax in axes:
+                axes = self.pipeline_overview_axes
+                for ax in axes.flat:
                     ax.clear()
             
             # Data loading progress
@@ -537,6 +539,7 @@ class RealTimeVisualizer:
             except:
                 pass
             self.pipeline_overview_fig = None
+            self.pipeline_overview_axes = None
     
     def create_pipeline_overview(self, save_path: Optional[Path] = None):
         """Create overview visualization of entire pipeline"""

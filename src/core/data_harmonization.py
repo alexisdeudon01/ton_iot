@@ -3,12 +3,10 @@
 Data harmonization module for CIC-DDoS2019 and TON_IoT datasets
 Implements feature mapping and early fusion with statistical validation
 """
-import numpy as np
-import pandas as pd
-from scipy import stats
-from typing import Dict, List, Tuple, Optional
-import warnings
-import logging
+from src.core.dependencies import (
+    np, pd, stats, Dict, List, Tuple, Optional, warnings, logging,
+    FeatureAnalyzer, IRPFeaturesRequirements
+)
 
 warnings.filterwarnings('ignore')
 
@@ -52,7 +50,9 @@ class DataHarmonizer:
             return {'compatible': False, 'reason': 'Non-numeric or empty'}
 
         # Kolmogorov-Smirnov test
-        ks_stat, ks_pvalue = stats.ks_2samp(val1, val2)
+        ks_result = stats.ks_2samp(val1, val2)
+        ks_stat = float(ks_result[0])
+        ks_pvalue = float(ks_result[1])
 
         # Calculate statistics once to avoid redundant computations
         m1, m2 = val1.mean(), val2.mean()
@@ -102,7 +102,6 @@ class DataHarmonizer:
 
         # Try to use FeatureAnalyzer if available for intelligent matching
         try:
-            from feature_analyzer import FeatureAnalyzer
             analyzer = FeatureAnalyzer()
             common_features = analyzer.extract_common_features(df1, df2)
 
@@ -132,8 +131,6 @@ class DataHarmonizer:
 
             return mapping
 
-        except ImportError:
-            logger.warning("FeatureAnalyzer not available, using basic matching")
         except Exception as e:
             logger.warning(f"FeatureAnalyzer failed: {e}, using basic matching")
 
@@ -286,7 +283,6 @@ class DataHarmonizer:
 
         # Log IRP requirements
         try:
-            from irp_features_requirements import IRPFeaturesRequirements
             irp_req = IRPFeaturesRequirements()
             logger.info("[IRP FEATURES] Exigences selon IRP_EXACT_FORMULAS.md:")
             logger.info("  • Dimension 1: Toutes features numériques + label (pour entraîner modèles)")
@@ -539,14 +535,16 @@ class DataHarmonizer:
                 ton_values = df_ton_aligned[feature].dropna()
 
                 if len(cic_values) > 0 and len(ton_values) > 0:
-                    ks_stat, ks_pvalue = stats.ks_2samp(cic_values, ton_values)
+                    ks_result = stats.ks_2samp(cic_values, ton_values)
+                    ks_stat = float(ks_result[0])
+                    ks_pvalue = float(ks_result[1])
 
                     validation_results[feature] = {
                         'ks_statistic': ks_stat,
                         'ks_pvalue': ks_pvalue,
                         'compatible': bool(ks_pvalue > self.KS_PVALUE_THRESHOLD),
-                        'cic_mean': cic_values.mean(),
-                        'ton_mean': ton_values.mean()
+                        'cic_mean': float(cic_values.mean()),
+                        'ton_mean': float(ton_values.mean())
                     }
 
             self.statistical_tests = validation_results
@@ -575,7 +573,7 @@ class DataHarmonizer:
 
 def main():
     """Test the harmonization module"""
-    from dataset_loader import DatasetLoader
+    from src.core.dataset_loader import DatasetLoader
 
     loader = DatasetLoader()
 
