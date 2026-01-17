@@ -507,12 +507,9 @@ class PreprocessingPipeline:
             splits = self.split_data(
                 X_scaled, y_array, train_ratio, val_ratio, test_ratio
             )
-            train_split = splits["train"]
-            X_train, y_train = train_split[0], train_split[1]
-            val_split = splits["val"]
-            X_val, y_val = val_split[0], val_split[1]
-            test_split = splits["test"]
-            X_test, y_test = test_split[0], test_split[1]
+            X_train, y_train = splits["train"]
+            X_val, y_val = splits["val"]
+            X_test, y_test = splits["test"]
 
             # Step 6: Resampling (SMOTE) - ONLY on training data
             if apply_resampling:

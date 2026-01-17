@@ -131,7 +131,7 @@ def generate_performance_visualizations(
     ax.set_title('F1 Score by Algorithm (Mean ± Std)', fontsize=14, fontweight='bold')
     ax.set_xlabel('Algorithm', fontsize=12)
     ax.set_ylabel('F1 Score', fontsize=12)
-    ax.set_ylim([0, 1.1])
+    ax.set_ylim(0, 1.1)
     ax.grid(axis='y', alpha=0.3)
     plt.xticks(rotation=45, ha='right')
     for bar, mean, std in zip(bars, f1_means, f1_stds):
@@ -161,7 +161,7 @@ def generate_performance_visualizations(
     ax.set_xticks(x + width * 1.5)
     ax.set_xticklabels(algos, rotation=45, ha='right')
     ax.legend()
-    ax.set_ylim([0, 1.1])
+    ax.set_ylim(0, 1.1)
     ax.grid(axis='y', alpha=0.3)
     path = vis_dir / "perf_metrics_grouped_bar.png"
     save_fig(fig, path)
@@ -172,7 +172,8 @@ def generate_performance_visualizations(
         fig, ax = plt.subplots(figsize=(10, 6))
         algos_unique = metrics_by_fold_df['algo'].unique()
         data = [metrics_by_fold_df[metrics_by_fold_df['algo'] == algo]['f1'].values for algo in algos_unique]
-        bp = ax.boxplot(data, labels=algos_unique, patch_artist=True)
+        bp = ax.boxplot(data, patch_artist=True)
+        ax.set_xticklabels(algos_unique)
         for patch in bp['boxes']:
             patch.set_facecolor('steelblue')
             patch.set_alpha(0.7)
@@ -417,7 +418,7 @@ def generate_explainability_visualizations(
         ax.set_title('Explainability Score by Algorithm', fontsize=14, fontweight='bold')
         ax.set_xlabel('Algorithm', fontsize=12)
         ax.set_ylabel('Explainability Score', fontsize=12)
-        ax.set_ylim([0, 1.1])
+        ax.set_ylim(0, 1.1)
         ax.grid(axis='y', alpha=0.3)
         plt.xticks(rotation=45, ha='right')
         for bar, score in zip(bars, exp_scores):
@@ -560,7 +561,7 @@ def generate_3d_transversal_visualizations(
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
 
-        colors = plt.cm.tab10(np.linspace(0, 1, len(algos)))
+        colors = plt.get_cmap('tab10')(np.linspace(0, 1, len(algos)))
         for idx, (algo, perf, res, exp) in enumerate(zip(algos, perf_scores, res_scores, exp_scores)):
             values = [perf, res, exp]
             values += values[:1]
@@ -628,7 +629,7 @@ def generate_3d_transversal_visualizations(
         for algo, perf, res, exp in zip(algos, perf_scores, res_scores, exp_scores):
             table_data.append([algo, f'{perf:.3f}', f'{res:.3f}', f'{exp:.3f}'])
         table = ax.table(cellText=table_data, colLabels=['Algorithm', 'Performance', 'Resources', 'Explainability'],
-                        cellLoc='center', loc='center', bbox=[0, 0, 1, 1])
+                        cellLoc='center', loc='center', bbox=(0, 0, 1, 1))
         table.auto_set_font_size(False)
         table.set_fontsize(10)
         table.scale(1, 2)
