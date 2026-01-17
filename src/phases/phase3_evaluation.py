@@ -6,7 +6,7 @@ Phase 3: 3D Evaluation
 import logging
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -20,6 +20,13 @@ from src.evaluation_3d import Evaluation3D
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import mutual_info_classif
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import train_test_split
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 try:
     from src.models_cnn import CNNTabularClassifier, TORCH_AVAILABLE as CNN_AVAILABLE
@@ -169,6 +176,7 @@ class Phase3Evaluation:
 
         results_df = self._save_results(all_results)
         self._generate_outputs(results_df, evaluator)
+        self._evaluate_ratios_and_generate_outputs(df_processed)
 
         return {
             'evaluation_results': results_df,
@@ -429,3 +437,230 @@ class Phase3Evaluation:
             evaluator.generate_dimension_visualizations(self.results_dir)
         except Exception as exc:
             logger.warning("Error generating visualizations: %s", exc)
+
+    def _evaluate_ratios_and_generate_outputs(self, df: pd.DataFrame) -> None:
+        """Validate ratio features and generate KDE + significance analyses."""
+        metrics_dir = self.results_dir / "metrics"
+        visualizations_dir = self.results_dir / "visualizations"
+        metrics_dir.mkdir(parents=True, exist_ok=True)
+        visualizations_dir.mkdir(parents=True, exist_ok=True)
+
+        ratio_features = ["Flow_Bytes_s", "Flow_Packets_s", "Avg_Packet_Size"]
+        ratio_validation = self._validate_ratio_features(df, ratio_features)
+        ratio_validation_path = metrics_dir / "ratio_validation.json"
+        ratio_validation_path.write_text(json.dumps(ratio_validation, indent=2))
+        logger.info("Saved ratio validation to %s", ratio_validation_path)
+
+        label_series = df.get("label")
+        if label_series is None:
+            logger.warning("Label column missing; skipping KDE/MI/Permutation importance.")
+            self._write_index_files(metrics_dir, visualizations_dir, ratio_validation_path, None, None)
+            return
+
+        kde_paths = self._generate_kde_plots(df, ratio_features, visualizations_dir)
+        mi_path, perm_path = self._compute_feature_significance(df, ratio_features, metrics_dir)
+
+        self._write_index_files(metrics_dir, visualizations_dir, ratio_validation_path, mi_path, perm_path, kde_paths)
+
+    def _validate_ratio_features(self, df: pd.DataFrame, ratio_features: List[str]) -> Dict[str, Dict[str, float]]:
+        """Check ratio features for positivity and finite values."""
+        results = {}
+        for feature in ratio_features:
+            if feature not in df.columns:
+                results[feature] = {
+                    "present": False,
+                    "total": 0,
+                    "non_finite": 0,
+                    "non_positive": 0,
+                    "valid_ratio": 0.0
+                }
+                continue
+
+            values = pd.to_numeric(df[feature], errors="coerce")
+            total = int(values.shape[0])
+            finite_mask = np.isfinite(values)
+            non_finite = int(total - finite_mask.sum())
+            positive_mask = values > 0
+            valid_mask = finite_mask & positive_mask
+            non_positive = int((finite_mask & ~positive_mask).sum())
+            valid_ratio = float(valid_mask.sum() / total) if total else 0.0
+
+            results[feature] = {
+                "present": True,
+                "total": total,
+                "non_finite": non_finite,
+                "non_positive": non_positive,
+                "valid_ratio": valid_ratio
+            }
+
+        return results
+
+    def _generate_kde_plots(
+        self,
+        df: pd.DataFrame,
+        ratio_features: List[str],
+        visualizations_dir: Path
+    ) -> Dict[str, Path]:
+        """Generate KDE plots for ratio features separated by label."""
+        kde_paths = {}
+        labels = df["label"].unique()
+
+        for feature in ratio_features:
+            if feature not in df.columns:
+                logger.warning("Skipping KDE for missing feature: %s", feature)
+                continue
+
+            fig, ax = plt.subplots(figsize=(10, 6))
+            feature_values = pd.to_numeric(df[feature], errors="coerce")
+            valid_mask = np.isfinite(feature_values) & (feature_values > 0)
+
+            if not valid_mask.any():
+                plt.close(fig)
+                logger.warning("No valid data for KDE plot: %s", feature)
+                continue
+
+            x_min, x_max = feature_values[valid_mask].min(), feature_values[valid_mask].max()
+            x_grid = np.linspace(x_min, x_max, 200)
+
+            for label in labels:
+                label_mask = (df["label"] == label) & valid_mask
+                values = feature_values[label_mask].values
+                if values.size < 2:
+                    logger.warning("Not enough data for KDE (%s) label=%s", feature, label)
+                    continue
+                density = self._compute_kde(values, x_grid)
+                ax.plot(x_grid, density, label=f"Label {label}")
+
+            ax.set_title(f"KDE - {feature}", fontsize=14, fontweight="bold")
+            ax.set_xlabel(feature)
+            ax.set_ylabel("Density")
+            ax.grid(alpha=0.3)
+            ax.legend()
+
+            path = visualizations_dir / f"kde_{feature.lower()}.png"
+            fig.savefig(path, dpi=150, bbox_inches="tight")
+            plt.close(fig)
+            kde_paths[feature] = path
+            logger.info("Saved KDE plot to %s", path)
+
+        return kde_paths
+
+    def _compute_kde(self, values: np.ndarray, x_grid: np.ndarray) -> np.ndarray:
+        """Compute Gaussian KDE using numpy only."""
+        values = values.astype(float)
+        n = values.size
+        if n < 2:
+            return np.zeros_like(x_grid)
+        std = np.std(values, ddof=1)
+        if std == 0:
+            std = np.std(values, ddof=0) or 1.0
+        bandwidth = 1.06 * std * n ** (-1 / 5)
+        bandwidth = max(bandwidth, np.finfo(float).eps)
+        diff = (x_grid[:, None] - values[None, :]) / bandwidth
+        kernel = np.exp(-0.5 * diff ** 2) / np.sqrt(2 * np.pi)
+        density = kernel.mean(axis=1) / bandwidth
+        return density
+
+    def _compute_feature_significance(
+        self,
+        df: pd.DataFrame,
+        ratio_features: List[str],
+        metrics_dir: Path
+    ) -> Tuple[Path, Path]:
+        """Compute Mutual Information and Permutation Importance for ratio features."""
+        available_features = [f for f in ratio_features if f in df.columns]
+        mi_path = metrics_dir / "mutual_information.csv"
+        perm_path = metrics_dir / "permutation_importance.csv"
+        if not available_features:
+            logger.warning("No ratio features available for significance analysis.")
+            pd.DataFrame(columns=["feature", "mutual_information"]).to_csv(mi_path, index=False)
+            pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
+            return mi_path, perm_path
+
+        feature_df = df[available_features].apply(pd.to_numeric, errors="coerce")
+        label_series = df["label"]
+        y = pd.factorize(label_series)[0]
+
+        valid_mask = np.isfinite(feature_df).all(axis=1)
+        feature_df = feature_df[valid_mask]
+        y = y[valid_mask.values]
+
+        if feature_df.empty:
+            logger.warning("No valid data for significance analysis.")
+            pd.DataFrame(columns=["feature", "mutual_information"]).to_csv(mi_path, index=False)
+            pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
+            return mi_path, perm_path
+
+        if len(np.unique(y)) < 2:
+            logger.warning("Only one class available; skipping significance analysis.")
+            pd.DataFrame(columns=["feature", "mutual_information"]).to_csv(mi_path, index=False)
+            pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
+            return mi_path, perm_path
+
+        mi_scores = mutual_info_classif(feature_df.values, y, random_state=self.config.random_state)
+        mi_df = pd.DataFrame({"feature": available_features, "mutual_information": mi_scores})
+        mi_df.to_csv(mi_path, index=False)
+        logger.info("Saved mutual information to %s", mi_path)
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            feature_df.values,
+            y,
+            test_size=0.2,
+            random_state=self.config.random_state,
+            stratify=y if len(np.unique(y)) > 1 else None
+        )
+        model = RandomForestClassifier(n_estimators=200, random_state=self.config.random_state)
+        model.fit(X_train, y_train)
+        perm_results = permutation_importance(
+            model,
+            X_test,
+            y_test,
+            n_repeats=10,
+            random_state=self.config.random_state,
+            n_jobs=1
+        )
+        perm_df = pd.DataFrame({
+            "feature": available_features,
+            "importance_mean": perm_results.importances_mean,
+            "importance_std": perm_results.importances_std
+        })
+        perm_df.to_csv(perm_path, index=False)
+        logger.info("Saved permutation importance to %s", perm_path)
+
+        return mi_path, perm_path
+
+    def _write_index_files(
+        self,
+        metrics_dir: Path,
+        visualizations_dir: Path,
+        ratio_validation_path: Path,
+        mi_path: Path,
+        perm_path: Path,
+        kde_paths: Dict[str, Path] = None
+    ) -> None:
+        """Generate INDEX.md files for metrics and visualizations."""
+        metrics_entries = [
+            ("Ratio validation (JSON)", ratio_validation_path.name),
+        ]
+        if mi_path is not None:
+            metrics_entries.append(("Mutual Information (CSV)", mi_path.name))
+        if perm_path is not None:
+            metrics_entries.append(("Permutation Importance (CSV)", perm_path.name))
+
+        metrics_lines = ["# Phase 3 Ratio Metrics", ""]
+        metrics_lines.append("## Files")
+        for title, filename in metrics_entries:
+            metrics_lines.append(f"- **{title}**: `{filename}`")
+        metrics_dir.joinpath("INDEX.md").write_text("\n".join(metrics_lines))
+        logger.info("Generated metrics INDEX.md in %s", metrics_dir)
+
+        viz_lines = ["# Phase 3 Ratio Visualizations", ""]
+        if kde_paths:
+            viz_lines.append("## KDE Plots")
+            for feature, path in kde_paths.items():
+                viz_lines.append(f"- **{feature}**: `{path.name}`")
+        else:
+            viz_lines.append("No visualizations generated.")
+
+        visualizations_dir.joinpath("INDEX.md").write_text("\n".join(viz_lines))
+        logger.info("Generated visualizations INDEX.md in %s", visualizations_dir)
