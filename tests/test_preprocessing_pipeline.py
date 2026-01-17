@@ -285,3 +285,64 @@ def test_sanitize_numeric_values_integration_with_clean_data():
     # Verify shape is preserved
     assert X_cleaned.shape[0] == X_df.shape[0], "Number of rows changed"
     assert X_cleaned.shape[1] == X_df.shape[1], "Number of columns changed"
+
+
+def test_transform_test_requires_fitted_pipeline():
+    """
+    Test that transform_test() raises ValueError if pipeline is not fitted.
+    
+    Input:
+        - Unfitted PreprocessingPipeline
+        - Test data (both DataFrame and numpy array)
+    
+    Processing:
+        - Call transform_test() on unfitted pipeline
+        - Verify ValueError is raised with clear message
+    
+    Expected Output:
+        - ValueError raised for both DataFrame and numpy array inputs
+    
+    Method:
+        - Direct call to transform_test() on unfitted pipeline
+    """
+    pipeline = PreprocessingPipeline(random_state=42, n_features=5)
+    
+    # Verify pipeline is not fitted
+    assert not pipeline.is_fitted, "Pipeline should not be fitted initially"
+    
+    # Test 1: Unfitted pipeline with numpy array should raise ValueError
+    X_test_array = np.random.randn(10, 5).astype(np.float32)
+    with pytest.raises(ValueError, match="Pipeline must be fitted before transforming test data"):
+        pipeline.transform_test(X_test_array)
+    
+    # Test 2: Unfitted pipeline with DataFrame should raise ValueError
+    X_test_df = pd.DataFrame(np.random.randn(10, 5))
+    with pytest.raises(ValueError, match="Pipeline must be fitted before transforming test data"):
+        pipeline.transform_test(X_test_df)
+    
+    # Test 3: Fitted pipeline should work correctly
+    X_train = pd.DataFrame(np.random.randn(20, 5))
+    y_train = pd.Series(np.random.randint(0, 2, 20))
+    
+    # Fit pipeline
+    pipeline.prepare_data(
+        X_train,
+        y_train,
+        apply_encoding=False,
+        apply_feature_selection=False,
+        apply_scaling=True,
+        apply_resampling=False,
+        apply_splitting=False,
+        apply_imputation=True
+    )
+    
+    # Verify pipeline is now fitted
+    assert pipeline.is_fitted, "Pipeline should be fitted after prepare_data()"
+    
+    # Test with fitted pipeline (should not raise)
+    X_test_fitted = pd.DataFrame(np.random.randn(10, 5))
+    result = pipeline.transform_test(X_test_fitted)
+    
+    assert isinstance(result, np.ndarray), "Result should be numpy array"
+    assert result.shape[0] == 10, f"Expected 10 rows, got {result.shape[0]}"
+    assert result.shape[1] == 5, f"Expected 5 features, got {result.shape[1]}"

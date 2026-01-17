@@ -1,0 +1,2 @@
+Command 'ruff' not found, but can be installed with:
+sudo snap install ruff
