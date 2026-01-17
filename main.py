@@ -19,8 +19,56 @@ import sys
 import logging
 from pathlib import Path
 from datetime import datetime
+import torch
+import os
 
-# Setup logging first
+# Fonction pour vérifier la disponibilité du GPU
+def check_gpu_availability():
+    is_gpu_available = torch.cuda.is_available()
+    return is_gpu_available
+
+# Fonction pour générer le fichier req2.txt basé sur le matériel
+def generate_requirements(is_gpu_available):
+    base_requirements = [
+        "numpy>=1.21.0",
+        "pandas>=1.3.0",
+        "scipy>=1.7.0",
+        "scikit-learn>=1.0.0",
+        "imbalanced-learn>=0.10.0",
+        "shap>=0.41.0",
+        "lime>=0.2.0",
+        "psutil>=5.9.0",
+        "matplotlib>=3.4.0",
+        "seaborn>=0.11.0",
+        "tqdm>=4.64.0"
+    ]
+    
+    if is_gpu_available:
+        # Dépendances pour GPU
+        additional_requirements = [
+            "torch>=1.12.0+cu113",  # PyTorch avec CUDA 11.3
+            "pytorch-tabnet>=4.0",  # TabNet
+            "xgboost>=1.5.2"  # XGBoost avec support CUDA
+        ]
+    else:
+        # Dépendances pour CPU seulement
+        additional_requirements = [
+            "torch>=1.12.0",  # PyTorch CPU
+            "pytorch-tabnet>=4.0",  # TabNet CPU
+            "xgboost<3"  # XGBoost sans CUDA
+        ]
+    
+    # Fusionner les dépendances de base avec les dépendances spécifiques à la machine
+    all_requirements = base_requirements + additional_requirements
+    
+    # Sauvegarder dans un fichier req2.txt
+    with open("req2.txt", "w") as f:
+        for req in all_requirements:
+            f.write(req + "\n")
+    
+    print(f"Le fichier 'req2.txt' a été généré avec les dépendances adaptées.")
+
+# Fonction pour configurer le logging
 def setup_logging(output_dir: Path):
     """Setup logging configuration"""
     log_dir = output_dir / 'logs'
@@ -42,10 +90,23 @@ def setup_logging(output_dir: Path):
     logger.info(f"Logging initialized. Log file: {log_file}")
     return logger
 
+# Fonction pour vérifier les dépendances nécessaires
+def check_requirements():
+    """Check if required packages are installed"""
+    try:
+        import pandas
+        import numpy
+        import sklearn
+        import tqdm
+        return True
+    except ImportError as e:
+        print(f"❌ Missing required package: {e.name}")
+        print("Please install requirements: pip install -r requirements.txt")
+        return False
 
+# Fonction pour demander si on est en mode test
 def ask_test_mode() -> bool:
     """Ask user for test mode (only if interactive)"""
-    # Only ask if we're in a terminal (not in CI/automated run)
     if not sys.stdout.isatty():
         return False
     
@@ -68,31 +129,21 @@ def ask_test_mode() -> bool:
         # Tkinter not available, default to False
         return False
 
-
-def check_requirements():
-    """Check if required packages are installed"""
-    try:
-        import pandas
-        import numpy
-        import sklearn
-        import tqdm
-        return True
-    except ImportError as e:
-        print(f"❌ Missing required package: {e.name}")
-        print("Please install requirements: pip install -r requirements.txt")
-        return False
-
-
+# Fonction principale
 def main():
     """Main entry point"""
-    # Add src to path
+    # Ajouter le chemin src
     sys.path.insert(0, str(Path(__file__).parent / 'src'))
     
-    # Check requirements
+    # Vérifier les dépendances
     if not check_requirements():
         sys.exit(1)
     
-    # Parse CLI arguments
+    # Vérification GPU et génération du fichier req2.txt
+    is_gpu_available = check_gpu_availability()
+    generate_requirements(is_gpu_available)
+    
+    # Parser les arguments CLI
     from src.app.cli import parse_args, args_to_config
     
     args = parse_args()
@@ -101,7 +152,7 @@ def main():
     # Setup logging
     logger = setup_logging(Path(config.output_dir))
     
-    # Ask for test mode if not specified and interactive
+    # Demander si on veut être en mode test
     if not args.test_mode and not args.sample_ratio and config.interactive:
         test_mode = ask_test_mode()
         if test_mode:
@@ -111,7 +162,7 @@ def main():
             logger.info("⚠️  MODE TEST ACTIVÉ - Utilisation de 0.001% des données")
             logger.info("=" * 70)
     
-    # Initialize and run pipeline
+    # Initialiser et exécuter le pipeline
     try:
         from src.app.pipeline_runner import PipelineRunner
         
@@ -122,10 +173,10 @@ def main():
         logger.info(f"Output directory: {config.output_dir}")
         logger.info(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
-        # Determine phases to run
+        # Déterminer les phases à exécuter
         phases = [args.phase] if args.phase else None
         
-        # Create runner and execute
+        # Créer le runner et exécuter
         runner = PipelineRunner(config)
         results = runner.run(phases=phases)
         
