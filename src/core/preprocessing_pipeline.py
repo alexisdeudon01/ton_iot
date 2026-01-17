@@ -92,7 +92,7 @@ class PreprocessingPipeline:
         # Handle remaining NaN values with median imputation
         X_imputed = self.imputer.fit_transform(X_cleaned)
         X_cleaned = pd.DataFrame(
-            X_imputed,
+            cast(Any, X_imputed),
             columns=X_cleaned.columns,
             index=X_cleaned.index
         )
@@ -314,29 +314,29 @@ class PreprocessingPipeline:
 
         # First split: train + (val + test)
         # Use explicit indexing and Any cast to avoid Pylance tuple size mismatch confusion
-        res1: Any = train_test_split(
+        res1 = cast(Any, train_test_split(
             X, y,
             test_size=(val_ratio + test_ratio),
             stratify=y,
             random_state=self.random_state
-        )
-        X_train: np.ndarray = cast(np.ndarray, res1[0])
-        X_temp: np.ndarray = cast(np.ndarray, res1[1])
-        y_train: np.ndarray = cast(np.ndarray, res1[2])
-        y_temp: np.ndarray = cast(np.ndarray, res1[3])
+        ))
+        X_train: np.ndarray = res1[0]
+        X_temp: np.ndarray = res1[1]
+        y_train: np.ndarray = res1[2]
+        y_temp: np.ndarray = res1[3]
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
-        res2: Any = train_test_split(
+        res2 = cast(Any, train_test_split(
             X_temp, y_temp,
             test_size=(1 - val_size),
             stratify=y_temp,
             random_state=self.random_state
-        )
-        X_val: np.ndarray = cast(np.ndarray, res2[0])
-        X_test: np.ndarray = cast(np.ndarray, res2[1])
-        y_val: np.ndarray = cast(np.ndarray, res2[2])
-        y_test: np.ndarray = cast(np.ndarray, res2[3])
+        ))
+        X_val: np.ndarray = res2[0]
+        X_test: np.ndarray = res2[1]
+        y_val: np.ndarray = res2[2]
+        y_test: np.ndarray = res2[3]
 
         logger.info(f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})")
         logger.info(f"  Validation set: {X_val.shape[0]} samples (class distribution: {pd.Series(y_val).value_counts().to_dict()})")
@@ -429,7 +429,7 @@ class PreprocessingPipeline:
                 X_test_resampled, y_test_resampled = X_test, y_test
 
             # Update splits with resampled training data
-            splits = {
+            final_splits: Dict[str, Tuple[np.ndarray, np.ndarray]] = {
                 'train': (X_train_resampled, y_train_resampled),
                 'val': (X_val_resampled, y_val_resampled),
                 'test': (X_test_resampled, y_test_resampled)
@@ -438,7 +438,7 @@ class PreprocessingPipeline:
                 'X_processed': X_train_resampled,  # Return training data as main output
                 'y_processed': y_train_resampled,
                 'feature_names': self.selected_features,
-                'splits': splits,
+                'splits': final_splits,
                 'preprocessing_steps': {
                     'cleaning': True,
                     'encoding': apply_encoding,
