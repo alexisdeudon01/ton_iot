@@ -109,6 +109,20 @@ def generate_all_visualizations(
 # ============================================================================
 # DIM 1: PERFORMANCE VISUALIZATIONS (7)
 # ============================================================================
+def get_algo_names(df: pd.DataFrame) -> pd.Series:
+    """
+    Return algorithm names in a consistent way.
+    Enforces 'algo' as a first-class column.
+    """
+    if 'algo' in df.columns:
+        return df['algo'].astype(str)
+
+    if df.index.name == 'algo':
+        return df.index.astype(str).to_series(index=df.index)
+
+    raise ValueError(
+        "Algorithm names not found. Expected 'algo' column or index named 'algo'."
+    )
 
 def generate_performance_visualizations(
     metrics_df: pd.DataFrame,
@@ -549,6 +563,10 @@ def generate_3d_transversal_visualizations(
         return generated
 
     algos = scores_normalized_df['algo'] if 'algo' in scores_normalized_df.columns else scores_normalized_df.index
+    if len(algos) == 0:
+        logger.warning("No algorithms available for 3D visualizations")
+        return generated
+
     perf_scores = scores_normalized_df.get('perf_score', [])
     res_scores = scores_normalized_df.get('resource_score', [])
     exp_scores = scores_normalized_df.get('explain_score', [])
