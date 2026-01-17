@@ -4,23 +4,24 @@ Model Registry - Single source of truth for all models
 Handles optional dependencies (CNN, TabNet)
 """
 import logging
-from typing import Dict, Callable, Any, Optional
+from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
 # Import sklearn models (always available)
-from .sklearn_models import make_lr, make_dt, make_rf
+from .sklearn_models import make_dt, make_lr, make_rf
 
 # Try to import CNN (optional)
 try:
-    from .cnn import CNNTabularClassifier, TORCH_AVAILABLE as CNN_AVAILABLE
+    from .cnn import TORCH_AVAILABLE as CNN_AVAILABLE
+    from .cnn import CNNTabularClassifier
 except (ImportError, AttributeError):
     CNN_AVAILABLE = False
     CNNTabularClassifier = None
 
 # Try to import TabNet (optional)
 try:
-    from .tabnet import TabNetClassifierWrapper, TABNET_AVAILABLE
+    from .tabnet import TABNET_AVAILABLE, TabNetClassifierWrapper
 except (ImportError, AttributeError):
     TABNET_AVAILABLE = False
     TabNetClassifierWrapper = None
@@ -29,49 +30,62 @@ except (ImportError, AttributeError):
 def get_model_registry(config) -> Dict[str, Callable[[], Any]]:
     """
     Get model registry with all available models
-    
+
     Args:
         config: PipelineConfig instance
-        
+
     Returns:
         Dict mapping model names to builder functions
     """
     registry = {}
-    
+
     # Always available models
-    registry['Logistic_Regression'] = lambda: make_lr(random_state=config.random_state, max_iter=1000)
-    registry['Decision_Tree'] = lambda: make_dt(random_state=config.random_state)
-    registry['Random_Forest'] = lambda: make_rf(random_state=config.random_state, n_estimators=100)
-    
+    registry["Logistic_Regression"] = lambda: make_lr(
+        random_state=config.random_state, max_iter=1000
+    )
+    registry["Decision_Tree"] = lambda: make_dt(random_state=config.random_state)
+    registry["Random_Forest"] = lambda: make_rf(
+        random_state=config.random_state, n_estimators=100
+    )
+
     # Optional: CNN
-    if CNN_AVAILABLE and CNNTabularClassifier is not None:
+    if CNN_AVAILABLE:
         try:
-            registry['CNN'] = lambda: CNNTabularClassifier(
-                epochs=20,
-                batch_size=64,
-                random_state=config.random_state
-            )
-            logger.info("✓ CNN available in model registry")
+            # This check is for linters; CNN_AVAILABLE already ensures CNNTabularClassifier is not None
+            if CNNTabularClassifier is not None:
+                # Capture the class in a local variable to satisfy Pylance type narrowing in the lambda
+                cnn_cls = CNNTabularClassifier
+                registry["CNN"] = lambda: cnn_cls(
+                    epochs=20, batch_size=64, random_state=config.random_state
+                )
+                logger.info("✓ CNN available in model registry")
         except Exception as e:
             logger.warning(f"CNN builder failed: {e}. CNN will be skipped.")
     else:
-        logger.warning("CNN skipped (torch not available). Install via: pip install -r requirements-nn.txt")
-    
+        logger.warning(
+            "CNN skipped (torch not available). Install via: pip install -r requirements-nn.txt"
+        )
+
     # Optional: TabNet
-    if TABNET_AVAILABLE and TabNetClassifierWrapper is not None:
+    if TABNET_AVAILABLE:
         try:
-            registry['TabNet'] = lambda: TabNetClassifierWrapper(
-                max_epochs=50,
-                batch_size=1024,
-                seed=config.random_state,
-                verbose=0
-            )
-            logger.info("✓ TabNet available in model registry")
+            # This check is for linters; TABNET_AVAILABLE already ensures TabNetClassifierWrapper is not None
+            if TabNetClassifierWrapper is not None:
+                # Capture the class in a local variable to satisfy Pylance type narrowing in the lambda
+                tabnet_cls = TabNetClassifierWrapper
+                registry["TabNet"] = lambda: tabnet_cls(
+                    max_epochs=50, batch_size=1024, seed=config.random_state, verbose=0
+                )
+                logger.info("✓ TabNet available in model registry")
         except Exception as e:
             logger.warning(f"TabNet builder failed: {e}. TabNet will be skipped.")
     else:
-        logger.warning("TabNet skipped (pytorch-tabnet not available). Install via: pip install -r requirements-nn.txt")
-    
-    logger.info(f"Model registry initialized with {len(registry)} models: {list(registry.keys())}")
-    
+        logger.warning(
+            "TabNet skipped (pytorch-tabnet not available). Install via: pip install -r requirements-nn.txt"
+        )
+
+    logger.info(
+        f"Model registry initialized with {len(registry)} models: {list(registry.keys())}"
+    )
+
     return registry

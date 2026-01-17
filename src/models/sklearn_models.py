@@ -20,7 +20,8 @@ def make_lr(random_state: int = 42, max_iter: int = 1000, class_weight: Optional
     params = {
         'max_iter': max_iter,
         'random_state': random_state,
-        'n_jobs': -1
+        'n_jobs': -1,
+        'solver': 'lbfgs'  # Explicitly set solver to avoid warnings and ensure compatibility
     }
     if class_weight:
         params['class_weight'] = class_weight

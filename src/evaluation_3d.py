@@ -6,18 +6,25 @@ Evaluates algorithms across three dimensions:
 2. Resource Efficiency (training time, memory usage)
 3. Explainability (SHAP/LIME scores)
 """
+import logging
+import os
+import time
+import warnings
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
-import time
 import psutil
-import os
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score, confusion_matrix
-import warnings
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -28,6 +35,7 @@ VISUALIZATION_AVAILABLE = True  # Assume matplotlib is available (core dependenc
 # Try to import SHAP and LIME
 try:
     import shap
+
     SHAP_AVAILABLE = True
 except ImportError:
     SHAP_AVAILABLE = False
@@ -35,6 +43,7 @@ except ImportError:
 try:
     import lime
     import lime.lime_tabular
+
     LIME_AVAILABLE = True
 except ImportError:
     LIME_AVAILABLE = False
@@ -45,17 +54,18 @@ class ResourceMonitor:
 
     def __init__(self):
         self.process = psutil.Process(os.getpid())
-        self.start_memory = None
-        self.peak_memory = None
-        self.start_time = None
-        self.end_time = None
+        self.start_memory: Optional[float] = None
+        self.peak_memory: Optional[float] = None
+        self.start_time: Optional[float] = None
+        self.end_time: Optional[float] = None
         self.use_tracemalloc = False
         self.tracemalloc_current = None
-        self.tracemalloc_peak = None
+        self.tracemalloc_peak: Optional[float] = None
 
         # Try to use tracemalloc for more accurate peak memory tracking
         try:
             import tracemalloc
+
             self.use_tracemalloc = True
             self.tracemalloc_module = tracemalloc
         except ImportError:
@@ -77,7 +87,11 @@ class ResourceMonitor:
         """Update peak memory"""
         if self.use_tracemalloc:
             current_snapshot = self.tracemalloc_module.take_snapshot()
-            current_size = sum(stat.size for stat in current_snapshot.statistics('lineno')) / 1024 / 1024  # MB
+            current_size = (
+                sum(stat.size for stat in current_snapshot.statistics("lineno"))
+                / 1024
+                / 1024
+            )  # MB
             if self.tracemalloc_peak is None or current_size > self.tracemalloc_peak:
                 self.tracemalloc_peak = current_size
 
@@ -89,34 +103,42 @@ class ResourceMonitor:
     def stop(self) -> Dict[str, float]:
         """Stop monitoring and return results"""
         self.end_time = time.perf_counter()
+        peak_memory_mb: float = 0.0
 
         # Get peak memory (prefer tracemalloc if available)
         if self.use_tracemalloc:
             try:
                 final_snapshot = self.tracemalloc_module.take_snapshot()
-                final_size = sum(stat.size for stat in final_snapshot.statistics('lineno')) / 1024 / 1024  # MB
-                peak_memory_mb = max(self.tracemalloc_peak or 0, final_size)
+                final_size = (
+                    sum(stat.size for stat in final_snapshot.statistics("lineno"))
+                    / 1024
+                    / 1024
+                )  # MB
+                peak_memory_mb = max(self.tracemalloc_peak or 0.0, final_size)
                 self.tracemalloc_module.stop()
             except Exception:
                 # Fallback to psutil if tracemalloc fails
-                peak_memory_mb = self.peak_memory
+                peak_memory_mb = self.peak_memory or 0.0
         else:
-            peak_memory_mb = self.peak_memory
+            peak_memory_mb = self.peak_memory or 0.0
 
         final_memory = self.process.memory_info().rss / 1024 / 1024  # MB
 
+        start_time = self.start_time or self.end_time
+        start_memory = self.start_memory or 0.0
+
         return {
-            'training_time_seconds': self.end_time - self.start_time,
-            'memory_used_mb': peak_memory_mb - self.start_memory,
-            'peak_memory_mb': peak_memory_mb,
-            'start_memory_mb': self.start_memory
+            "training_time_seconds": self.end_time - start_time,
+            "memory_used_mb": peak_memory_mb - start_memory,
+            "peak_memory_mb": peak_memory_mb,
+            "start_memory_mb": start_memory,
         }
 
 
 class ExplainabilityEvaluator:
     """Evaluate model explainability using SHAP and LIME"""
 
-    def __init__(self, feature_names: List[str] = None):
+    def __init__(self, feature_names: Optional[List[str]] = None):
         """
         Initialize explainability evaluator
 
@@ -127,8 +149,9 @@ class ExplainabilityEvaluator:
         self.shap_values = None
         self.lime_explanations = None
 
-    def compute_shap_score(self, model: Any, X_sample: np.ndarray,
-                          max_samples: int = 100) -> Optional[float]:
+    def compute_shap_score(
+        self, model: Any, X_sample: np.ndarray, max_samples: int = 100
+    ) -> Optional[float]:
         """
         Compute SHAP explainability score
 
@@ -150,8 +173,12 @@ class ExplainabilityEvaluator:
                 X_sample = X_sample[indices]
 
             # Create SHAP explainer based on model type
-            if hasattr(model, 'predict_proba'):
-                explainer = shap.TreeExplainer(model) if hasattr(model, 'estimators_') or hasattr(model, 'tree_') else shap.KernelExplainer(model.predict_proba, X_sample[:50])
+            if hasattr(model, "predict_proba"):
+                explainer = (
+                    shap.TreeExplainer(model)
+                    if hasattr(model, "estimators_") or hasattr(model, "tree_")
+                    else shap.KernelExplainer(model.predict_proba, X_sample[:50])
+                )
             else:
                 explainer = shap.KernelExplainer(model.predict, X_sample[:50])
 
@@ -159,7 +186,11 @@ class ExplainabilityEvaluator:
 
             # Handle multi-class output
             if isinstance(shap_values, list):
-                shap_values = np.array(shap_values[0]) if len(shap_values) > 0 else np.array(shap_values)
+                shap_values = (
+                    np.array(shap_values[0])
+                    if len(shap_values) > 0
+                    else np.array(shap_values)
+                )
 
             # Calculate mean absolute SHAP values (higher = more explainable)
             shap_score = np.mean(np.abs(shap_values))
@@ -171,8 +202,13 @@ class ExplainabilityEvaluator:
             print(f"Warning: SHAP computation failed: {e}")
             return None
 
-    def compute_lime_score(self, model: Any, X_sample: np.ndarray,
-                          X_train: np.ndarray, max_samples: int = 10) -> Optional[float]:
+    def compute_lime_score(
+        self,
+        model: Any,
+        X_sample: np.ndarray,
+        X_train: np.ndarray,
+        max_samples: int = 10,
+    ) -> Optional[float]:
         """
         Compute LIME explainability score
 
@@ -197,16 +233,14 @@ class ExplainabilityEvaluator:
             explainer = lime.lime_tabular.LimeTabularExplainer(
                 X_train,
                 feature_names=self.feature_names,
-                mode='classification',
-                discretize_continuous=True
+                mode="classification",
+                discretize_continuous=True,
             )
 
             lime_scores = []
             for sample in X_sample:
                 explanation = explainer.explain_instance(
-                    sample,
-                    model.predict_proba,
-                    num_features=min(10, len(sample))
+                    sample, model.predict_proba, num_features=min(10, len(sample))
                 )
                 # Extract importance scores
                 importance = [abs(exp[1]) for exp in explanation.as_list()]
@@ -236,12 +270,18 @@ class Evaluation3D:
         self.fold_results: List[Dict[str, Any]] = []
         self.normalized_scores: List[Dict[str, Any]] = []
 
-    def evaluate_model(self, model: Any, model_name: str,
-                      X_train: np.ndarray, y_train: np.ndarray,
-                      X_test: np.ndarray, y_test: np.ndarray,
-                      compute_explainability: bool = True,
-                      shap_samples: int = 100,
-                      lime_samples: int = 10) -> Dict:
+    def evaluate_model(
+        self,
+        model: Any,
+        model_name: str,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        compute_explainability: bool = True,
+        shap_samples: int = 100,
+        lime_samples: int = 10,
+    ) -> Dict:
         """
         Evaluate a model across all three dimensions
 
@@ -265,6 +305,7 @@ class Evaluation3D:
 
         # Create a fresh, unfitted model instance to avoid state issues across folds
         from src.core.model_utils import fresh_model
+
         model_clone = fresh_model(model)
 
         # Train the model
@@ -276,8 +317,12 @@ class Evaluation3D:
         y_pred = model_clone.predict(X_test)
 
         # Use predict_proba if available
-        if hasattr(model_clone, 'predict_proba'):
-            y_pred_proba = model_clone.predict_proba(X_test)[:, 1] if len(np.unique(y_test)) == 2 else model_clone.predict_proba(X_test)
+        if hasattr(model_clone, "predict_proba"):
+            y_pred_proba = (
+                model_clone.predict_proba(X_test)[:, 1]
+                if len(np.unique(y_test)) == 2
+                else model_clone.predict_proba(X_test)
+            )
         else:
             y_pred_proba = y_pred
 
@@ -286,12 +331,18 @@ class Evaluation3D:
         # Using weighted average for multi-class problems as per CIC-DDoS2019 paper
         # Reference: "Developing Realistic Distributed Denial of Service (DDoS) Attack Dataset and Taxonomy"
         is_binary = len(np.unique(y_test)) == 2
-        avg_method = 'binary' if is_binary else 'weighted'
+        avg_method = "binary" if is_binary else "weighted"
 
-        f1 = f1_score(y_test, y_pred, average=avg_method)  # F1 Score (primary metric for Dimension 1)
+        f1 = f1_score(
+            y_test, y_pred, average=avg_method
+        )  # F1 Score (primary metric for Dimension 1)
         accuracy = accuracy_score(y_test, y_pred)  # Overall accuracy
-        precision = precision_score(y_test, y_pred, average=avg_method)  # Precision (Pr) from CIC-DDoS2019
-        recall = recall_score(y_test, y_pred, average=avg_method)  # Recall (Rc) from CIC-DDoS2019
+        precision = precision_score(
+            y_test, y_pred, average=avg_method
+        )  # Precision (Pr) from CIC-DDoS2019
+        recall = recall_score(
+            y_test, y_pred, average=avg_method
+        )  # Recall (Rc) from CIC-DDoS2019
 
         # Confusion Matrix - Detailed calculation
         cm = confusion_matrix(y_test, y_pred)
@@ -301,11 +352,11 @@ class Evaluation3D:
         if is_binary and cm.shape == (2, 2):
             tn, fp, fn, tp = cm.ravel()
             cm_details = {
-                'true_negatives': int(tn),
-                'false_positives': int(fp),
-                'false_negatives': int(fn),
-                'true_positives': int(tp),
-                'total_samples': int(cm.sum())
+                "true_negatives": int(tn),
+                "false_positives": int(fp),
+                "false_negatives": int(fn),
+                "true_positives": int(tp),
+                "total_samples": int(cm.sum()),
             }
         else:
             # Multi-class: compute total TP, TN, FP, FN
@@ -314,25 +365,25 @@ class Evaluation3D:
             fn = cm.sum(axis=1) - cm.diagonal()
             tp = cm.diagonal()
             cm_details = {
-                'confusion_matrix': cm.tolist(),
-                'total_samples': int(cm.sum()),
-                'class_wise_tp': tp.tolist() if hasattr(tp, 'tolist') else list(tp),
-                'class_wise_fp': fp.tolist() if hasattr(fp, 'tolist') else list(fp),
-                'class_wise_fn': fn.tolist() if hasattr(fn, 'tolist') else list(fn),
+                "confusion_matrix": cm.tolist(),
+                "total_samples": int(cm.sum()),
+                "class_wise_tp": tp.tolist() if hasattr(tp, "tolist") else list(tp),
+                "class_wise_fp": fp.tolist() if hasattr(fp, "tolist") else list(fp),
+                "class_wise_fn": fn.tolist() if hasattr(fn, "tolist") else list(fn),
             }
 
         # Measure inference latency (with warm-up for NN models)
-        is_nn = 'CNN' in model_name or 'TabNet' in model_name
+        is_nn = "CNN" in model_name or "TabNet" in model_name
         warmup_runs = 2 if is_nn else 0
         latency_runs = 50 if is_nn else 100  # Reduce for NN (slower)
 
         # Warm-up for NN models (avoid noise from first inference)
         if warmup_runs > 0 and len(X_test) > 0:
-            _ = model_clone.predict(X_test[:min(100, len(X_test))])
+            _ = model_clone.predict(X_test[: min(100, len(X_test))])
 
         # Measure inference latency (N runs)
         if len(X_test) > 0:
-            latency_subset = X_test[:min(100, len(X_test))]
+            latency_subset = X_test[: min(100, len(X_test))]
             latency_start = time.perf_counter()
             for _ in range(latency_runs):
                 _ = model_clone.predict(latency_subset)
@@ -349,50 +400,56 @@ class Evaluation3D:
                 shap_score = self.explainability_evaluator.compute_shap_score(
                     model_clone, X_test, max_samples=shap_samples
                 )
-                explainability_metrics['shap_score'] = shap_score
+                explainability_metrics["shap_score"] = shap_score
 
             # LIME score (use trained model_clone)
             if LIME_AVAILABLE:
                 lime_score = self.explainability_evaluator.compute_lime_score(
-                    model_clone, X_test[:lime_samples], X_train, max_samples=lime_samples
+                    model_clone,
+                    X_test[:lime_samples],
+                    X_train,
+                    max_samples=lime_samples,
                 )
-                explainability_metrics['lime_score'] = lime_score
+                explainability_metrics["lime_score"] = lime_score
 
         # Native interpretability (for tree-based models and LR - use trained model_clone)
-        if hasattr(model_clone, 'feature_importances_'):
+        if hasattr(model_clone, "feature_importances_"):
             native_interpretability = 1.0  # DT/RF
-        elif hasattr(model_clone, 'coef_'):
+        elif hasattr(model_clone, "coef_"):
             native_interpretability = 1.0  # LR
         else:
             native_interpretability = 0.0  # CNN/TabNet
 
         # Compile results with detailed confusion matrix information
         results = {
-            'model_name': model_name,
+            "model_name": model_name,
             # Dimension 1: Detection Performance
-            'f1_score': f1,
-            'accuracy': accuracy,
-            'precision': precision,
-            'recall': recall,
-            'confusion_matrix': cm.tolist() if hasattr(cm, 'tolist') else cm,
-            'confusion_matrix_details': cm_details,
+            "f1_score": f1,
+            "accuracy": accuracy,
+            "precision": precision,
+            "recall": recall,
+            "confusion_matrix": cm.tolist() if hasattr(cm, "tolist") else cm,
+            "confusion_matrix_details": cm_details,
             # Dimension 2: Resource Efficiency
-            'training_time_seconds': resource_metrics['training_time_seconds'],
-            'memory_used_mb': resource_metrics['memory_used_mb'],
-            'peak_memory_mb': resource_metrics['peak_memory_mb'],
-            'inference_latency_ms': inference_latency_ms,
+            "training_time_seconds": resource_metrics["training_time_seconds"],
+            "memory_used_mb": resource_metrics["memory_used_mb"],
+            "peak_memory_mb": resource_metrics["peak_memory_mb"],
+            "inference_latency_ms": inference_latency_ms,
             # Dimension 3: Explainability
-            'shap_score': explainability_metrics.get('shap_score'),
-            'lime_score': explainability_metrics.get('lime_score'),
-            'native_interpretability': native_interpretability,
-            'explainability_score': self._compute_combined_explainability(explainability_metrics, native_interpretability)
+            "shap_score": explainability_metrics.get("shap_score"),
+            "lime_score": explainability_metrics.get("lime_score"),
+            "native_interpretability": native_interpretability,
+            "explainability_score": self._compute_combined_explainability(
+                explainability_metrics, native_interpretability
+            ),
         }
 
         self.results.append(results)
         return results
 
-    def _compute_combined_explainability(self, explainability_metrics: Dict,
-                                        native_interpretability: float) -> float:
+    def _compute_combined_explainability(
+        self, explainability_metrics: Dict, native_interpretability: float
+    ) -> float:
         """
         Compute combined explainability score
 
@@ -409,20 +466,29 @@ class Evaluation3D:
         scores.append(native_interpretability * 0.5)
 
         # SHAP score (normalized, weight: 0.3)
-        if explainability_metrics.get('shap_score') is not None:
-            shap_score = explainability_metrics['shap_score']
+        if explainability_metrics.get("shap_score") is not None:
+            shap_score = explainability_metrics["shap_score"]
             # Normalize (assuming typical range 0-1, adjust if needed)
-            shap_norm = min(shap_score / 1.0, 1.0)  # Adjust denominator based on typical SHAP values
+            shap_norm = min(
+                shap_score / 1.0, 1.0
+            )  # Adjust denominator based on typical SHAP values
             scores.append(shap_norm * 0.3)
 
         # LIME score (normalized, weight: 0.2)
-        if explainability_metrics.get('lime_score') is not None:
-            lime_score = explainability_metrics['lime_score']
-            lime_norm = min(lime_score / 1.0, 1.0)  # Adjust denominator based on typical LIME values
+        if explainability_metrics.get("lime_score") is not None:
+            lime_score = explainability_metrics["lime_score"]
+            lime_norm = min(
+                lime_score / 1.0, 1.0
+            )  # Adjust denominator based on typical LIME values
             scores.append(lime_norm * 0.2)
 
-        return sum(scores) / sum([0.5, 0.3 if explainability_metrics.get('shap_score') else 0,
-                                  0.2 if explainability_metrics.get('lime_score') else 0])
+        return sum(scores) / sum(
+            [
+                0.5,
+                0.3 if explainability_metrics.get("shap_score") else 0,
+                0.2 if explainability_metrics.get("lime_score") else 0,
+            ]
+        )
 
     def get_results_df(self) -> pd.DataFrame:
         """Get all results as a DataFrame"""
@@ -440,41 +506,45 @@ class Evaluation3D:
         df = self.get_results_df()
 
         # Dimension 1: Detection Performance (F1 Score normalized)
-        f1_min = df['f1_score'].min()
-        f1_max = df['f1_score'].max()
+        f1_min = df["f1_score"].min()
+        f1_max = df["f1_score"].max()
         f1_range = f1_max - f1_min + 1e-10  # Avoid division by zero
-        dimension1_normalized = (df['f1_score'] - f1_min) / f1_range
+        dimension1_normalized = (df["f1_score"] - f1_min) / f1_range
 
         # Dimension 2: Resource Efficiency (0.6 * time + 0.4 * memory)
         # Normalize time and memory (inverse: less is better -> more is better)
-        time_min = df['training_time_seconds'].min()
-        time_max = df['training_time_seconds'].max()
+        time_min = df["training_time_seconds"].min()
+        time_max = df["training_time_seconds"].max()
         time_range = time_max - time_min + 1e-10
-        normalized_time = 1 - (df['training_time_seconds'] - time_min) / time_range
+        normalized_time = 1 - (df["training_time_seconds"] - time_min) / time_range
 
-        memory_min = df['memory_used_mb'].min()
-        memory_max = df['memory_used_mb'].max()
+        memory_min = df["memory_used_mb"].min()
+        memory_max = df["memory_used_mb"].max()
         memory_range = memory_max - memory_min + 1e-10
-        normalized_memory = 1 - (df['memory_used_mb'] - memory_min) / memory_range
+        normalized_memory = 1 - (df["memory_used_mb"] - memory_min) / memory_range
 
         # Combined Dimension 2: 0.6 * time + 0.4 * memory (IRP formula)
         dimension2_score = 0.6 * normalized_time + 0.4 * normalized_memory
 
         # Dimension 3: Explainability (already normalized in _compute_combined_explainability)
         # Using: 0.5 * native + 0.3 * normalized_SHAP + 0.2 * normalized_LIME
-        dimension3_normalized = df['explainability_score']
+        dimension3_normalized = df["explainability_score"]
 
         # Create normalized dimension scores DataFrame
-        dimension_scores = pd.DataFrame({
-            'model_name': df['model_name'],
-            'detection_performance': dimension1_normalized,  # F1 Score normalized
-            'resource_efficiency': dimension2_score,  # 0.6*time + 0.4*memory
-            'explainability': dimension3_normalized  # Already normalized (0.5*native + 0.3*SHAP + 0.2*LIME)
-        })
+        dimension_scores = pd.DataFrame(
+            {
+                "model_name": df["model_name"],
+                "detection_performance": dimension1_normalized,  # F1 Score normalized
+                "resource_efficiency": dimension2_score,  # 0.6*time + 0.4*memory
+                "explainability": dimension3_normalized,  # Already normalized (0.5*native + 0.3*SHAP + 0.2*LIME)
+            }
+        )
 
         return dimension_scores
 
-    def generate_algorithm_report(self, model_name: str, results: Dict, output_dir: Path) -> str:
+    def generate_algorithm_report(
+        self, model_name: str, results: Dict, output_dir: Path
+    ) -> Optional[str]:
         """
         Generate a detailed report for an algorithm explaining the 3 dimensions
 
@@ -484,9 +554,13 @@ class Evaluation3D:
             output_dir: Directory to save the report
 
         Returns:
-            Path to saved report file
+            Path to saved report file, or None on failure
         """
-        report_path = output_dir / 'algorithm_reports' / f'{model_name.replace(" ", "_")}_report.md'
+        report_path = (
+            output_dir
+            / "algorithm_reports"
+            / f'{model_name.replace(" ", "_")}_report.md'
+        )
 
         report = f"# Rapport d'Évaluation : {model_name}\n\n"
         report += "## Résumé\n\n"
@@ -496,12 +570,14 @@ class Evaluation3D:
 
         # Dimension 1
         report += "## Dimension 1: Detection Performance\n\n"
-        report += f"- **F1 Score**: {results.get('f1_score', 0):.4f} (métrique principale)\n"
+        report += (
+            f"- **F1 Score**: {results.get('f1_score', 0):.4f} (métrique principale)\n"
+        )
         report += f"- **Precision (Pr)**: {results.get('precision', 0):.4f}\n"
         report += f"- **Recall (Rc)**: {results.get('recall', 0):.4f}\n"
         report += f"- **Accuracy**: {results.get('accuracy', 0):.4f}\n\n"
 
-        f1 = results.get('f1_score', 0)
+        f1 = results.get("f1_score", 0)
         if f1 > 0.9:
             perf_interp = "Excellente performance de détection"
         elif f1 > 0.7:
@@ -534,7 +610,7 @@ class Evaluation3D:
         # Dimension 3
         report += "## Dimension 3: Explainability\n\n"
         report += f"- **Native Interpretability**: {results.get('native_interpretability', 0):.1f} "
-        if results.get('native_interpretability', 0) == 1.0:
+        if results.get("native_interpretability", 0) == 1.0:
             report += "(Modèle interprétable nativement - tree-based)\n"
         else:
             report += "(Pas d'interprétabilité native - boîte noire)\n"
@@ -542,7 +618,7 @@ class Evaluation3D:
         report += f"- **LIME Score**: {results.get('lime_score', 'N/A')}\n"
         report += f"- **Combined Explainability Score**: {results.get('explainability_score', 0):.4f}\n\n"
 
-        exp_score = results.get('explainability_score', 0)
+        exp_score = results.get("explainability_score", 0)
         if exp_score > 0.7:
             exp_interp = "Très explicable"
         elif exp_score > 0.4:
@@ -586,7 +662,7 @@ class Evaluation3D:
         # Save report
         try:
             report_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(report_path, 'w', encoding='utf-8') as f:
+            with open(report_path, "w", encoding="utf-8") as f:
                 f.write(report)
             logger.info(f"Generated algorithm report: {report_path}")
             return str(report_path)
@@ -594,7 +670,9 @@ class Evaluation3D:
             logger.error(f"Error saving algorithm report: {e}", exc_info=True)
             return None
 
-    def _calculate_resource_efficiency(self, results: Dict, all_results: Optional[List[Dict]] = None) -> float:
+    def _calculate_resource_efficiency(
+        self, results: Dict, all_results: Optional[List[Dict]] = None
+    ) -> float:
         """
         Calculate normalized resource efficiency score for a single model
 
@@ -610,26 +688,30 @@ class Evaluation3D:
         """
         # If all_results provided, use for normalization
         if all_results and len(all_results) > 1:
-            all_times = [float(r.get('training_time_seconds', 0)) for r in all_results]
-            all_mems = [float(r.get('memory_used_mb', 0)) for r in all_results]
+            all_times = [float(r.get("training_time_seconds", 0)) for r in all_results]
+            all_mems = [float(r.get("memory_used_mb", 0)) for r in all_results]
             time_min, time_max = float(min(all_times)), float(max(all_times))
             mem_min, mem_max = float(min(all_mems)), float(max(all_mems))
         else:
             # Single model: use self.results if available, otherwise use values directly
             if self.results and len(self.results) > 1:
                 df_temp = pd.DataFrame(self.results)
-                time_min, time_max = float(df_temp['training_time_seconds'].min()), float(df_temp['training_time_seconds'].max())
-                mem_min, mem_max = float(df_temp['memory_used_mb'].min()), float(df_temp['memory_used_mb'].max())
+                time_min, time_max = float(
+                    df_temp["training_time_seconds"].min()
+                ), float(df_temp["training_time_seconds"].max())
+                mem_min, mem_max = float(df_temp["memory_used_mb"].min()), float(
+                    df_temp["memory_used_mb"].max()
+                )
             else:
                 # Fallback: assume reasonable ranges if only one model
-                time_val = float(results.get('training_time_seconds', 0))
-                mem_val = float(results.get('memory_used_mb', 0))
+                time_val = float(results.get("training_time_seconds", 0))
+                mem_val = float(results.get("memory_used_mb", 0))
                 time_min, time_max = 0.0, float(max(time_val * 2, 1.0))
                 mem_min, mem_max = 0.0, float(max(mem_val * 2, 1.0))
 
         # Normalize time and memory (inverse: less is better -> more is better)
-        time_val = float(results.get('training_time_seconds', 0))
-        mem_val = float(results.get('memory_used_mb', 0))
+        time_val = float(results.get("training_time_seconds", 0))
+        mem_val = float(results.get("memory_used_mb", 0))
 
         time_range = time_max - time_min + 1e-10
         normalized_time = 1.0 - (time_val - time_min) / time_range
@@ -657,7 +739,9 @@ class Evaluation3D:
         try:
             from src.evaluation.visualizations import generate_all_visualizations
         except ImportError:
-            logger.warning("Visualization module not available - skipping visualizations")
+            logger.warning(
+                "Visualization module not available - skipping visualizations"
+            )
             return {}
 
         df = self.get_results_df()
@@ -669,12 +753,12 @@ class Evaluation3D:
         try:
             # Get per-fold metrics if available
             metrics_by_fold_df = None
-            if hasattr(self, 'fold_results') and self.fold_results:
+            if hasattr(self, "fold_results") and self.fold_results:
                 metrics_by_fold_df = pd.DataFrame(self.fold_results)
 
             # Get normalized scores if available
             scores_normalized_df = None
-            if hasattr(self, 'normalized_scores') and self.normalized_scores:
+            if hasattr(self, "normalized_scores") and self.normalized_scores:
                 scores_normalized_df = pd.DataFrame(self.normalized_scores)
 
             # Confusion matrices, ROC/PR curves (if available)
@@ -696,9 +780,11 @@ class Evaluation3D:
                 roc_curves=roc_curves if roc_curves else None,
                 pr_curves=pr_curves if pr_curves else None,
                 shap_values_dict=shap_values_dict if shap_values_dict else None,
-                lime_importances_dict=lime_importances_dict if lime_importances_dict else None,
+                lime_importances_dict=(
+                    lime_importances_dict if lime_importances_dict else None
+                ),
                 feature_names=feature_names,
-                output_dir=output_dir
+                output_dir=output_dir,
             )
 
             # Convert Path objects to strings for compatibility
@@ -711,9 +797,10 @@ class Evaluation3D:
 
 def main():
     """Test the 3D evaluation framework"""
+    from sklearn.ensemble import RandomForestClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.tree import DecisionTreeClassifier
-    from sklearn.ensemble import RandomForestClassifier
+
     from src.core.dataset_loader import DatasetLoader
     from src.core.preprocessing_pipeline import PreprocessingPipeline
 
@@ -722,39 +809,54 @@ def main():
 
     try:
         df = loader.load_ton_iot(sample_ratio=0.01)
-        X = df.drop(['label', 'type'] if 'type' in df.columns else ['label'], axis=1, errors='ignore')
-        y = df['label']
+        X = df.drop(
+            ["label", "type"] if "type" in df.columns else ["label"],
+            axis=1,
+            errors="ignore",
+        )
+        y = df["label"]
 
         result = pipeline.prepare_data(
-            X, y,
-            apply_resampling=True,
-            apply_scaling=True,
-            apply_splitting=False
+            X, y, apply_resampling=True, apply_scaling=True, apply_splitting=False
         )
-        X_processed = result['X_processed']
-        y_processed = result['y_processed']
+        X_processed = result["X_processed"]
+        y_processed = result["y_processed"]
 
         # Split
         from sklearn.model_selection import train_test_split
+
         X_train, X_test, y_train, y_test = train_test_split(
-            X_processed, y_processed, test_size=0.2, random_state=42, stratify=y_processed
+            X_processed,
+            y_processed,
+            test_size=0.2,
+            random_state=42,
+            stratify=y_processed,
         )
 
         # Initialize evaluator
-        evaluator = Evaluation3D(feature_names=[f'feature_{i}' for i in range(X_processed.shape[1])])
+        evaluator = Evaluation3D(
+            feature_names=[f"feature_{i}" for i in range(X_processed.shape[1])]
+        )
 
         # Test models
         models = {
-            'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
-            'Decision Tree': DecisionTreeClassifier(random_state=42),
-            'Random Forest': RandomForestClassifier(n_estimators=10, random_state=42)  # Reduced for speed
+            "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
+            "Decision Tree": DecisionTreeClassifier(random_state=42),
+            "Random Forest": RandomForestClassifier(
+                n_estimators=10, random_state=42
+            ),  # Reduced for speed
         }
 
         for name, model in models.items():
             print(f"\nEvaluating {name}...")
             results = evaluator.evaluate_model(
-                model, name, X_train, y_train, X_test, y_test,
-                compute_explainability=False  # Disable for speed
+                model,
+                name,
+                X_train,
+                y_train,
+                X_test,
+                y_test,
+                compute_explainability=False,  # Disable for speed
             )
             print(f"  F1 Score: {results['f1_score']:.4f}")
             print(f"  Training Time: {results['training_time_seconds']:.2f}s")
@@ -766,6 +868,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

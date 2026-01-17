@@ -93,7 +93,7 @@ class IRPPipeline:
 
         # Initialize real-time visualizer
         self.visualizer = None
-        if VISUALIZATION_AVAILABLE and RealTimeVisualizer is not None:
+        if VISUALIZATION_AVAILABLE and RealTimeVisualizer is not None and create_realtime_callback is not None:
             try:
                 viz_dir = self.results_dir / 'realtime_visualizations'
                 self.visualizer = RealTimeVisualizer(viz_dir, enable_realtime=True)
