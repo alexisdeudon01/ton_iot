@@ -12,7 +12,13 @@ from types import ModuleType
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent))
+
+from src.core.dependencies import (
+    IRPPipeline, Evaluation3D, ResourceMonitor, AHPTopsisFramework,
+    DatasetLoader, DataHarmonizer, StratifiedCrossValidator,
+    RealTimeVisualizer, ResultsVisualizer
+)
 
 
 def check_irp_compliance():
@@ -31,8 +37,6 @@ def check_irp_compliance():
     print("-" * 70)
 
     try:
-        from src.main_pipeline import IRPPipeline
-
         pipeline = IRPPipeline()
 
         # Vérifier harmonisation
@@ -62,8 +66,6 @@ def check_irp_compliance():
     print("-" * 70)
 
     try:
-        from src.evaluation_3d import Evaluation3D
-
         evaluator = Evaluation3D(feature_names=["test"])
 
         # Vérifier dimensions
@@ -78,8 +80,6 @@ def check_irp_compliance():
         checks_passed += 1
 
         # Vérifier ResourceMonitor
-        from src.evaluation_3d import ResourceMonitor
-
         print("  ✓ ResourceMonitor pour mesurer temps/mémoire")
         checks_passed += 1
 
@@ -103,8 +103,6 @@ def check_irp_compliance():
 
     try:
         # Vérifier dans main_pipeline
-        from src.main_pipeline import IRPPipeline
-
         pipeline = IRPPipeline()
 
         # Lire le code pour vérifier les algorithmes
@@ -130,8 +128,6 @@ def check_irp_compliance():
     print("-" * 70)
 
     try:
-        from src.ahp_topsis_framework import AHPTopsisFramework
-
         print("  ✓ Framework AHP-TOPSIS implémenté")
         checks_passed += 1
 
@@ -162,16 +158,12 @@ def check_irp_compliance():
     print("-" * 70)
 
     try:
-        from src.dataset_loader import DatasetLoader
-
         loader = DatasetLoader()
 
         print("  ✓ DatasetLoader pour CIC-DDoS2019 et TON_IoT")
         checks_passed += 1
 
         # Vérifier harmonisation
-        from src.data_harmonization import DataHarmonizer
-
         harmonizer = DataHarmonizer()
         print("  ✓ DataHarmonizer pour harmonisation et early fusion")
         checks_passed += 1
@@ -187,8 +179,6 @@ def check_irp_compliance():
     print("-" * 70)
 
     try:
-        from src.preprocessing_pipeline import StratifiedCrossValidator
-
         print("  ✓ StratifiedCrossValidator (5-fold CV)")
         checks_passed += 1
     except Exception as e:
@@ -202,12 +192,8 @@ def check_irp_compliance():
     print("-" * 70)
 
     try:
-        from src.realtime_visualizer import RealTimeVisualizer
-
         print("  ✓ Visualisations en temps réel")
         checks_passed += 1
-
-        from src.results_visualizer import ResultsVisualizer
 
         print("  ✓ Interface Tkinter pour visualisation des résultats")
         checks_passed += 1
