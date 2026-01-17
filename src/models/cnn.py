@@ -89,6 +89,13 @@ if TORCH_AVAILABLE:
             super().__init__()
             if hidden_dims is None:
                 hidden_dims = [64, 32, 16]
+            
+            # Validate hidden_dims is not empty
+            if not hidden_dims or len(hidden_dims) == 0:
+                raise ValueError(
+                    "hidden_dims cannot be empty. Provide at least one layer size "
+                    "(e.g., [64]) or use None for default [64, 32, 16]"
+                )
 
             self.input_dim = int(input_dim)
             self.num_classes = int(num_classes)
@@ -110,6 +117,7 @@ if TORCH_AVAILABLE:
             for _ in hidden_dims:
                 pooled_len = max(1, pooled_len // 2)
 
+            # Use last hidden dim for flattened size (safe since we validated non-empty)
             flattened_size = hidden_dims[-1] * pooled_len
 
             self.fc_layers = nn.Sequential(
@@ -146,7 +154,15 @@ if TORCH_AVAILABLE:
             device: Optional[str] = None,
             random_state: int = 42,
         ):
-            self.hidden_dims = hidden_dims if hidden_dims is not None else [64, 32, 16]
+            if hidden_dims is None:
+                self.hidden_dims = [64, 32, 16]
+            elif not hidden_dims or len(hidden_dims) == 0:
+                raise ValueError(
+                    "hidden_dims cannot be empty. Provide at least one layer size "
+                    "(e.g., [64]) or use None for default [64, 32, 16]"
+                )
+            else:
+                self.hidden_dims = hidden_dims
             self.learning_rate = float(learning_rate)
             self.batch_size = int(batch_size)
             self.epochs = int(epochs)
