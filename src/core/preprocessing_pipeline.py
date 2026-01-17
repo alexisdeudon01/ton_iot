@@ -62,17 +62,24 @@ class PreprocessingPipeline:
         self.is_fitted = False
 
     def clean_data(
-        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None,
+        impute: bool = True,
+        replace_inf_with_max: bool = False,
     ) -> Tuple[pd.DataFrame, Optional[pd.Series]]:
         """
         Step 1: Data Cleaning
         - Remove NaN and Infinity values
         - Convert to numeric
         - Drop columns that are all NaN
+        - Impute NaN with median (optional)
 
         Args:
             X: Feature dataframe
             y: Target series (optional)
+            impute: Whether to apply median imputation (fit_transform)
+            replace_inf_with_max: Whether to replace inf with max of column instead of NaN
 
         Returns:
             Tuple of (cleaned_X, cleaned_y)
@@ -84,8 +91,15 @@ class PreprocessingPipeline:
         for col in X_cleaned.columns:
             X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
 
-        # Remove Infinity values (replace with NaN)
-        X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
+        # Handle Infinity values
+        if replace_inf_with_max:
+            for col in X_cleaned.columns:
+                col_max = X_cleaned.loc[np.isfinite(X_cleaned[col]), col].max()
+                X_cleaned[col] = X_cleaned[col].replace([np.inf, -np.inf], col_max)
+            logger.info("  Replaced Infinity with column maximums")
+        else:
+            X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
+            logger.info("  Replaced Infinity with NaN")
 
         # Drop columns that are all NaN
         cols_before = len(X_cleaned.columns)
@@ -94,11 +108,15 @@ class PreprocessingPipeline:
         if cols_before != cols_after:
             logger.info(f"  Dropped {cols_before - cols_after} columns (all NaN)")
 
-        # Handle remaining NaN values with median imputation
-        X_imputed = self.imputer.fit_transform(X_cleaned)
-        X_cleaned = pd.DataFrame(
-            cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
-        )
+        # Handle remaining NaN values with median imputation if requested
+        if impute:
+            X_imputed = self.imputer.fit_transform(X_cleaned)
+            X_cleaned = pd.DataFrame(
+                cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
+            )
+            logger.info("  Applied median imputation (fitted on current data)")
+        else:
+            logger.info("  Skipped imputation (stateless mode)")
 
         self.feature_names = X_cleaned.columns.tolist()
         logger.info(
@@ -372,37 +390,25 @@ class PreprocessingPipeline:
 
         # First split: train + (val + test)
         # Use explicit indexing and Any cast to avoid Pylance tuple size mismatch confusion
-        res1 = cast(
-            Any,
-            train_test_split(
-                X,
-                y,
-                test_size=(val_ratio + test_ratio),
-                stratify=y,
-                random_state=self.random_state,
-            ),
-        )
-        X_train: np.ndarray = res1[0]
-        X_temp: np.ndarray = res1[1]
-        y_train: np.ndarray = res1[2]
-        y_temp: np.ndarray = res1[3]
+        res1 = cast(Any, train_test_split(
+            X,
+            y,
+            test_size=(val_ratio + test_ratio),
+            stratify=y,
+            random_state=self.random_state,
+        ))
+        X_train, X_temp, y_train, y_temp = res1
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
-        res2 = cast(
-            Any,
-            train_test_split(
-                X_temp,
-                y_temp,
-                test_size=(1 - val_size),
-                stratify=y_temp,
-                random_state=self.random_state,
-            ),
-        )
-        X_val: np.ndarray = res2[0]
-        X_test: np.ndarray = res2[1]
-        y_val: np.ndarray = res2[2]
-        y_test: np.ndarray = res2[3]
+        res2 = cast(Any, train_test_split(
+            X_temp,
+            y_temp,
+            test_size=(1 - val_size),
+            stratify=y_temp,
+            random_state=self.random_state,
+        ))
+        X_val, X_test, y_val, y_test = res2
 
         logger.info(
             f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})"
@@ -429,6 +435,7 @@ class PreprocessingPipeline:
         apply_scaling: bool = True,
         apply_resampling: bool = True,
         apply_splitting: bool = True,
+        apply_imputation: bool = True,
         train_ratio: float = 0.7,
         val_ratio: float = 0.15,
         test_ratio: float = 0.15,
@@ -444,6 +451,7 @@ class PreprocessingPipeline:
             apply_scaling: Whether to scale features
             apply_resampling: Whether to resample (SMOTE)
             apply_splitting: Whether to split into train/val/test
+            apply_imputation: Whether to apply median imputation
             train_ratio: Proportion for training set
             val_ratio: Proportion for validation set
             test_ratio: Proportion for test set
@@ -456,7 +464,7 @@ class PreprocessingPipeline:
         logger.info("=" * 60)
 
         # Step 1: Data Cleaning
-        res_clean = cast(Any, self.clean_data(X, y))
+        res_clean = cast(Any, self.clean_data(X, y, impute=apply_imputation))
         X_cleaned: pd.DataFrame = res_clean[0]
         y_cleaned_opt: Optional[pd.Series] = res_clean[1]
 
@@ -608,38 +616,45 @@ class PreprocessingPipeline:
 
         return X_scaled
 
-    def transform_test(self, X_test: np.ndarray) -> np.ndarray:
+    def transform_test(self, X_test: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
         """
-        Transform test data using fitted feature selection and scaling
-        (Assumes X_test is already cleaned and encoded from Phase2)
+        Transform test data using fitted feature selection and scaling.
+        Handles both DataFrame and numpy array.
 
         Args:
-            X_test: Test feature array (already cleaned/encoded, no dataframe)
+            X_test: Test features
 
         Returns:
-            Transformed test array with feature selection and scaling applied
-
-        Note:
-            - Feature selection: applied if selector was fitted
-            - Scaling: applied if scaler was fitted
-            - SMOTE: NOT applied (test data should not be resampled)
+            Transformed test array
         """
-        if not self.is_fitted:
-            raise ValueError("Pipeline must be fitted before transforming test data")
+        if isinstance(X_test, pd.DataFrame):
+            X_work = X_test.copy()
+            # Numeric coercion + inf to NaN
+            for col in X_work.columns:
+                X_work[col] = pd.to_numeric(X_work[col], errors="coerce")
+            X_work = X_work.replace([np.inf, -np.inf], np.nan)
+
+            # Impute using TRAIN-fitted imputer
+            X_imputed = self.imputer.transform(X_work)
+            X_test_arr = np.asarray(X_imputed)
+        else:
+            X_test_arr = X_test
 
         # Apply feature selection (if fitted)
         if self.feature_selector is not None:
-            X_test_selected = self.feature_selector.transform(X_test)
+            X_test_selected = self.feature_selector.transform(X_test_arr)
         else:
-            X_test_selected = X_test
+            X_test_selected = X_test_arr
 
         # Apply scaling (if fitted)
-        if self.scaler is not None and hasattr(self.scaler, "transform"):
-            X_test_scaled = self.scaler.transform(X_test_selected)
+        if self.is_fitted and self.scaler is not None and hasattr(self.scaler, "transform"):
+            try:
+                X_test_scaled = self.scaler.transform(X_test_selected)
+            except Exception as e:
+                logger.warning(f"Scaling failed in transform_test: {e}. Returning unscaled.")
+                X_test_scaled = X_test_selected
         else:
             X_test_scaled = X_test_selected
-
-        # Do NOT apply SMOTE on test data
 
         return cast(np.ndarray, X_test_scaled)
 

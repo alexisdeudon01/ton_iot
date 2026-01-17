@@ -6,7 +6,7 @@ Phase 3: 3D Evaluation
 import logging
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, cast
 
 import numpy as np
 import pandas as pd
@@ -55,8 +55,17 @@ class Phase3Evaluation:
         # Load dataset (from Phase2 if available, otherwise fallback)
         df_processed = self._load_and_prepare_dataset()
 
-        # Keep dataset_source as a feature if present
-        X = df_processed.drop(['label'], axis=1, errors='ignore')
+        # Handle dataset_source flag
+        use_ds = getattr(self.config, 'phase3_use_dataset_source', True)
+
+        drop_cols = ['label']
+        if not use_ds:
+            drop_cols.append('dataset_source')
+            logger.info("Flag phase3_use_dataset_source=False: dropping dataset_source feature.")
+        else:
+            logger.info("Flag phase3_use_dataset_source=True: keeping dataset_source feature.")
+
+        X = df_processed.drop(drop_cols, axis=1, errors='ignore')
         y = df_processed['label']
 
         # Get feature names (will be updated after preprocessing in each fold)
@@ -107,7 +116,7 @@ class Phase3Evaluation:
                     )
 
                     # Transform TEST with scaler/selector fitté on TRAIN
-                    X_test_prep = pipeline.transform_test(X_test_fold.values)
+                    X_test_prep = self._transform_test_fold(pipeline, X_test_fold, profile)
                     y_test_prep = y_test_fold.values
 
                     # Get fresh model instance for this fold
@@ -325,20 +334,58 @@ class Phase3Evaluation:
         )
 
         # Apply preprocessing according to profile
+        # Call prepare_data with apply_resampling=False and apply_splitting=False to avoid leakage/warnings
         result = pipeline.prepare_data(
             X_train,
             y_train,
             apply_encoding=False,  # Already encoded in Phase2
             apply_feature_selection=profile.get('apply_feature_selection', True),
             apply_scaling=profile.get('apply_scaling', True),
-            apply_resampling=profile.get('apply_resampling', True),
-            apply_splitting=False
+            apply_resampling=False,
+            apply_splitting=False,
+            apply_imputation=True
         )
 
         X_train_prep = result['X_processed']
         y_train_prep = result['y_processed']
 
+        # Apply resampling manually on TRAIN fold only if requested
+        if profile.get('apply_resampling', True):
+            X_train_prep, y_train_prep = pipeline.resample_data(X_train_prep, y_train_prep)
+
         return X_train_prep, y_train_prep, pipeline
+
+    def _transform_test_fold(self, pipeline: PreprocessingPipeline, X_test_df: pd.DataFrame, profile: Dict) -> np.ndarray:
+        """
+        Strict TEST fold transformation:
+        - Convert columns to numeric
+        - Replace ±inf with NaN
+        - Apply pipeline.imputer.transform (TRAIN-fitted)
+        - Apply pipeline.feature_selector.transform if fitted
+        - Apply pipeline.scaler.transform ONLY if profile.apply_scaling=True
+        - NEVER fit anything
+        - NEVER apply SMOTE
+        """
+        X_work = X_test_df.copy()
+
+        # Numeric coercion + inf to NaN
+        for col in X_work.columns:
+            X_work[col] = pd.to_numeric(X_work[col], errors="coerce")
+        X_work = X_work.replace([np.inf, -np.inf], np.nan)
+
+        # Impute using TRAIN-fitted imputer
+        X_imputed = pipeline.imputer.transform(X_work)
+        X_arr = np.asarray(X_imputed)
+
+        # Feature selection (if fitted)
+        if pipeline.feature_selector is not None:
+            X_arr = pipeline.feature_selector.transform(X_arr)
+
+        # Scaling (if enabled and fitted)
+        if profile.get('apply_scaling', True) and pipeline.is_fitted:
+            X_arr = pipeline.scaler.transform(X_arr)
+
+        return cast(np.ndarray, X_arr)
 
     def _build_models(self) -> Dict[str, object]:
         """Build model dictionary based on config and availability."""

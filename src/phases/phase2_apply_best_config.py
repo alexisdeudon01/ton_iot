@@ -154,8 +154,9 @@ class Phase2ApplyBestConfig:
             n_features=20,  # Not used for stateless preprocessing
         )
 
-        # Step 1: Clean data (NaN/Infinity removal, imputation)
-        X_cleaned, y_cleaned = pipeline.clean_data(X, y)
+        # Step 1: Clean data (NaN/Infinity removal, NO imputation here)
+        # Phase 2 requirement: Replace inf by max(colonne), Conserver NaN
+        X_cleaned, y_cleaned = pipeline.clean_data(X, y, impute=False, replace_inf_with_max=True)
 
         # Step 2: Encode features (categorical encoding)
         # Note: encode_features might be stateless if no categorical features
