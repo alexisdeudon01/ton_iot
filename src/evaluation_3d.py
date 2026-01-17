@@ -22,16 +22,8 @@ warnings.filterwarnings('ignore')
 # Setup logger
 logger = logging.getLogger(__name__)
 
-# Try to import matplotlib/seaborn for visualizations
-try:
-    import matplotlib
-    matplotlib.use('Agg')  # Non-interactive backend
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    VISUALIZATION_AVAILABLE = True
-except ImportError:
-    VISUALIZATION_AVAILABLE = False
-    logger.warning("Matplotlib/Seaborn not available. Visualizations will be disabled.")
+# Visualizations are handled by src/evaluation/visualizations.py (matplotlib only, no seaborn)
+VISUALIZATION_AVAILABLE = True  # Assume matplotlib is available (core dependency)
 
 # Try to import SHAP and LIME
 try:
@@ -586,35 +578,69 @@ class Evaluation3D:
     
     def generate_dimension_visualizations(self, output_dir: Path) -> Dict[str, str]:
         """
-        Generate visualizations for each of the 3 dimensions
+        Generate visualizations for each of the 3 dimensions using centralized module
         
-        Creates bar charts, scatter plots, and radar charts for:
-        - Dimension 1: Detection Performance (F1, Precision, Recall)
-        - Dimension 2: Resource Efficiency (Time, Memory)
-        - Dimension 3: Explainability (SHAP, LIME, Native)
-        - Combined 3D visualization (radar chart)
+        Uses src/evaluation/visualizations.py (matplotlib only, no seaborn)
         
         Args:
             output_dir: Directory to save visualizations
             
         Returns:
-            Dictionary mapping dimension names to file paths of saved visualizations
+            Dictionary mapping visualization names to file paths
         """
-        if not VISUALIZATION_AVAILABLE:
-            logger.warning("Visualizations not available (matplotlib/seaborn not installed)")
+        try:
+            from src.evaluation.visualizations import generate_all_visualizations
+        except ImportError:
+            logger.warning("Visualization module not available - skipping visualizations")
             return {}
-        
-        viz_dir = output_dir / 'visualizations'
-        viz_dir.mkdir(parents=True, exist_ok=True)
         
         df = self.get_results_df()
         if df.empty:
             logger.warning("No results available for visualization")
             return {}
         
-        saved_files = {}
-        
+        # Prepare data for visualizations
         try:
+            # Get per-fold metrics if available
+            metrics_by_fold_df = None
+            if hasattr(self, 'fold_results') and self.fold_results:
+                metrics_by_fold_df = pd.DataFrame(self.fold_results)
+            
+            # Get normalized scores if available
+            scores_normalized_df = None
+            if hasattr(self, 'normalized_scores') and self.normalized_scores:
+                scores_normalized_df = pd.DataFrame(self.normalized_scores)
+            
+            # Confusion matrices, ROC/PR curves (if available)
+            confusion_matrices = {}
+            roc_curves = {}
+            pr_curves = {}
+            
+            # SHAP/LIME values (if available)
+            shap_values_dict = {}
+            lime_importances_dict = {}
+            feature_names = None
+            
+            # Call centralized visualization generator
+            saved_files = generate_all_visualizations(
+                metrics_df=df,
+                metrics_by_fold_df=metrics_by_fold_df,
+                scores_normalized_df=scores_normalized_df,
+                confusion_matrices=confusion_matrices if confusion_matrices else None,
+                roc_curves=roc_curves if roc_curves else None,
+                pr_curves=pr_curves if pr_curves else None,
+                shap_values_dict=shap_values_dict if shap_values_dict else None,
+                lime_importances_dict=lime_importances_dict if lime_importances_dict else None,
+                feature_names=feature_names,
+                output_dir=output_dir
+            )
+            
+            # Convert Path objects to strings for compatibility
+            return {k: str(v) for k, v in saved_files.items()}
+            
+        except Exception as e:
+            logger.error(f"Error generating visualizations: {e}", exc_info=True)
+            return {}
             # Dimension 1: Detection Performance
             fig, axes = plt.subplots(2, 2, figsize=(14, 10))
             fig.suptitle('Dimension 1: Detection Performance', fontsize=16, fontweight='bold')
