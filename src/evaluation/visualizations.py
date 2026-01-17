@@ -69,6 +69,11 @@ def generate_all_visualizations(
     Returns:
         Dictionary mapping visualization names to file paths
     """
+    # Ensure 'algo' column exists in all DataFrames
+    metrics_df = ensure_algo_column(metrics_df)
+    metrics_by_fold_df = ensure_algo_column(metrics_by_fold_df)
+    scores_normalized_df = ensure_algo_column(scores_normalized_df)
+    
     vis_dir = output_dir / "visualizations"
     vis_dir.mkdir(parents=True, exist_ok=True)
 
@@ -113,6 +118,15 @@ def get_algo_names(df: pd.DataFrame) -> pd.Series:
     """
     Return algorithm names in a consistent way.
     Enforces 'algo' as a first-class column.
+    
+    Args:
+        df: DataFrame with 'algo' column or index named 'algo'
+    
+    Returns:
+        Series with algorithm names as strings
+    
+    Raises:
+        ValueError: If algorithm names not found
     """
     if 'algo' in df.columns:
         return df['algo'].astype(str)
@@ -123,6 +137,46 @@ def get_algo_names(df: pd.DataFrame) -> pd.Series:
     raise ValueError(
         "Algorithm names not found. Expected 'algo' column or index named 'algo'."
     )
+
+
+def ensure_algo_column(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+    """
+    Ensure DataFrame has 'algo' as a column (not index).
+    
+    Args:
+        df: DataFrame (may be None)
+    
+    Returns:
+        DataFrame with 'algo' column, or None if input is None
+    
+    Raises:
+        ValueError: If algorithm names cannot be found
+    """
+    if df is None:
+        return None
+    
+    if 'algo' in df.columns:
+        return df
+    
+    if df.index.name == 'algo':
+        return df.reset_index()
+    
+    raise ValueError(
+        "Algorithm names not found. Expected 'algo' column or index named 'algo'."
+    )
+
+
+def sanitize_algo_name(algo: str) -> str:
+    """
+    Sanitize algorithm name for use in filenames.
+    
+    Args:
+        algo: Algorithm name (e.g., "LR", "Decision Tree", "CNN/TabNet")
+    
+    Returns:
+        Sanitized name (e.g., "LR", "Decision_Tree", "CNN_TabNet")
+    """
+    return algo.strip().replace(" ", "_").replace("/", "_").replace("\\", "_")
 
 def generate_performance_visualizations(
     metrics_df: pd.DataFrame,
@@ -137,7 +191,7 @@ def generate_performance_visualizations(
 
     # 1. perf_f1_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
-    algos = metrics_df['algo'] if 'algo' in metrics_df.columns else metrics_df.index
+    algos = get_algo_names(metrics_df)
     f1_means = metrics_df['f1_mean'] if 'f1_mean' in metrics_df.columns else metrics_df.get('f1_score', [])
     f1_stds = metrics_df.get('f1_std', [0] * len(f1_means))
 
@@ -208,6 +262,7 @@ def generate_performance_visualizations(
             im = ax.imshow(cm, interpolation='nearest', cmap='Blues')
             ax.figure.colorbar(im, ax=ax)
             classes = range(cm.shape[0])
+            algo_sanitized = sanitize_algo_name(algo)
             ax.set(xticks=np.arange(cm.shape[1]), yticks=np.arange(cm.shape[0]),
                    xticklabels=classes, yticklabels=classes,
                    title=f'Confusion Matrix - {algo}', ylabel='True Label', xlabel='Predicted Label')
@@ -216,7 +271,7 @@ def generate_performance_visualizations(
                 for j in range(cm.shape[1]):
                     ax.text(j, i, format(cm[i, j], 'd'), ha="center", va="center",
                            color="white" if cm[i, j] > thresh else "black")
-            path = vis_dir / f"perf_confusion_matrix_{algo}.png"
+            path = vis_dir / f"perf_confusion_matrix_{algo_sanitized}.png"
             save_fig(fig, path)
             generated[f'perf_confusion_matrix_{algo}'] = path
 
@@ -230,7 +285,8 @@ def generate_performance_visualizations(
             ax.set_title(f'ROC Curve - {algo}', fontsize=14, fontweight='bold')
             ax.legend()
             ax.grid(alpha=0.3)
-            path = vis_dir / f"perf_roc_{algo}.png"
+            algo_sanitized = sanitize_algo_name(algo)
+            path = vis_dir / f"perf_roc_{algo_sanitized}.png"
             save_fig(fig, path)
             generated[f'perf_roc_{algo}'] = path
 
@@ -243,7 +299,8 @@ def generate_performance_visualizations(
             ax.set_title(f'Precision-Recall Curve - {algo}', fontsize=14, fontweight='bold')
             ax.legend()
             ax.grid(alpha=0.3)
-            path = vis_dir / f"perf_pr_{algo}.png"
+            algo_sanitized = sanitize_algo_name(algo)
+            path = vis_dir / f"perf_pr_{algo_sanitized}.png"
             save_fig(fig, path)
             generated[f'perf_pr_{algo}'] = path
 
@@ -280,7 +337,7 @@ def generate_resource_visualizations(
 ) -> Dict[str, Path]:
     """Generate all resource dimension visualizations"""
     generated = {}
-    algos = metrics_df['algo'] if 'algo' in metrics_df.columns else metrics_df.index
+    algos = get_algo_names(metrics_df)
 
     # 1. res_train_time_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -422,7 +479,7 @@ def generate_explainability_visualizations(
 ) -> Dict[str, Path]:
     """Generate all explainability dimension visualizations"""
     generated = {}
-    algos = metrics_df['algo'] if 'algo' in metrics_df.columns else metrics_df.index
+    algos = get_algo_names(metrics_df)
 
     # 1. exp_score_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
@@ -521,7 +578,8 @@ def generate_explainability_visualizations(
             ax.set_xlabel('Mean |SHAP Value|', fontsize=12)
             ax.set_title(f'Top {top_k} Features (SHAP) - {algo}', fontsize=14, fontweight='bold')
             ax.grid(axis='x', alpha=0.3)
-            path = vis_dir / f"exp_shap_top_features_{algo}.png"
+            algo_sanitized = sanitize_algo_name(algo)
+            path = vis_dir / f"exp_shap_top_features_{algo_sanitized}.png"
             save_fig(fig, path)
             generated[f'exp_shap_top_features_{algo}'] = path
 
@@ -539,7 +597,8 @@ def generate_explainability_visualizations(
                 ax.set_xlabel('Mean |LIME Importance|', fontsize=12)
                 ax.set_title(f'Top {top_k} Features (LIME) - {algo}', fontsize=14, fontweight='bold')
                 ax.grid(axis='x', alpha=0.3)
-                path = vis_dir / f"exp_lime_top_features_{algo}.png"
+                algo_sanitized = sanitize_algo_name(algo)
+                path = vis_dir / f"exp_lime_top_features_{algo_sanitized}.png"
                 save_fig(fig, path)
                 generated[f'exp_lime_top_features_{algo}'] = path
 
@@ -562,7 +621,7 @@ def generate_3d_transversal_visualizations(
         logger.warning("No normalized scores available for 3D visualizations")
         return generated
 
-    algos = scores_normalized_df['algo'] if 'algo' in scores_normalized_df.columns else scores_normalized_df.index
+    algos = get_algo_names(scores_normalized_df)
     if len(algos) == 0:
         logger.warning("No algorithms available for 3D visualizations")
         return generated

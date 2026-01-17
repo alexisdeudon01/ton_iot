@@ -74,11 +74,27 @@ class PipelineConfig:
             'use_class_weight': True,
             'class_weight': 'balanced'  # pour DT/RF
         },
-        'nn_profile': {
+        'cnn_profile': {
             'apply_scaling': True,
             'apply_feature_selection': False,
-            'apply_resampling': True,  # configurable
-            'scaling_method': 'RobustScaler'
+            'apply_resampling': True,
+            'scaling_method': 'RobustScaler',
+            'cnn_reshape': True,  # Reshape to (n, d, 1) for CNN
+            'use_class_weight': False
+        },
+        'tabnet_profile': {
+            'apply_scaling': False,
+            'apply_feature_selection': False,
+            'apply_resampling': False,
+            'use_class_weight': True,
+            'class_weight': 'balanced'
+        },
+        'nn_profile': {  # Legacy/fallback
+            'apply_scaling': True,
+            'apply_feature_selection': False,
+            'apply_resampling': True,
+            'scaling_method': 'RobustScaler',
+            'use_class_weight': False
         }
     })
     

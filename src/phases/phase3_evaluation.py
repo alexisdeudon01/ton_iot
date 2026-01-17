@@ -119,14 +119,24 @@ class Phase3Evaluation:
                     X_test_prep = self._transform_test_fold(pipeline, X_test_fold, profile)
                     y_test_prep = y_test_fold.values
 
+                    # CNN reshape: (n_samples, n_features) -> (n_samples, n_features, 1)
+                    if model_name == 'CNN' and profile.get('cnn_reshape', False):
+                        n_features_actual = X_train_prep.shape[1]
+                        X_train_prep = X_train_prep.reshape(-1, n_features_actual, 1)
+                        X_test_prep = X_test_prep.reshape(-1, n_features_actual, 1)
+                        logger.debug(f"Reshaped CNN data: train={X_train_prep.shape}, test={X_test_prep.shape}")
+
                     # Get fresh model instance for this fold
                     model_fold = fresh_model(model_template)
 
-                    # Apply class_weight if Tree profile
+                    # Apply class_weight if Tree/TabNet profile
                     if profile.get('use_class_weight', False):
                         class_weight = profile.get('class_weight', 'balanced')
                         if hasattr(model_fold, 'set_params'):
                             model_fold.set_params(class_weight=class_weight)
+                        elif hasattr(model_fold, '__init__'):
+                            # For TabNet or other models that need class_weight in constructor
+                            logger.debug(f"Class weight {class_weight} requested for {model_name}")
 
                     # Update evaluator with current feature names
                     if hasattr(pipeline, 'selected_features') and pipeline.selected_features:
@@ -302,15 +312,20 @@ class Phase3Evaluation:
         """Get preprocessing profile for a model with dynamic feature selection."""
         model_name_lower = model_name.lower()
 
-        # Determine profile type
-        if 'logistic' in model_name_lower or 'lr' in model_name_lower:
+        # Determine profile type (official labels: LR, DT, RF, CNN, TabNet)
+        if 'logistic' in model_name_lower or model_name_lower == 'lr':
             profile = self.config.preprocessing_profiles.get('lr_profile', {}).copy()
-        elif 'tree' in model_name_lower or 'forest' in model_name_lower or 'decision' in model_name_lower:
+        elif 'tree' in model_name_lower or model_name_lower in ['dt', 'decision tree']:
             profile = self.config.preprocessing_profiles.get('tree_profile', {}).copy()
-        elif 'cnn' in model_name_lower or 'tabnet' in model_name_lower:
-            profile = self.config.preprocessing_profiles.get('nn_profile', {}).copy()
+        elif 'forest' in model_name_lower or model_name_lower == 'rf' or model_name_lower == 'random forest':
+            profile = self.config.preprocessing_profiles.get('tree_profile', {}).copy()
+        elif model_name_lower == 'cnn':
+            profile = self.config.preprocessing_profiles.get('cnn_profile', {}).copy()
+        elif model_name_lower == 'tabnet':
+            profile = self.config.preprocessing_profiles.get('tabnet_profile', {}).copy()
         else:
             # Default to LR profile
+            logger.warning(f"Unknown model name '{model_name}', defaulting to lr_profile")
             profile = self.config.preprocessing_profiles.get('lr_profile', {}).copy()
 
         # Calculate feature_selection_k dynamically if needed
@@ -395,15 +410,15 @@ class Phase3Evaluation:
         def enabled(key: str) -> bool:
             return key.lower().replace("-", "_") in requested
 
-        if enabled('logistic_regression'):
-            models['Logistic Regression'] = LogisticRegression(
+        if enabled('logistic_regression') or enabled('lr'):
+            models['LR'] = LogisticRegression(
                 max_iter=1000,
                 random_state=self.config.random_state
             )
-        if enabled('decision_tree'):
-            models['Decision Tree'] = DecisionTreeClassifier(random_state=self.config.random_state)
-        if enabled('random_forest'):
-            models['Random Forest'] = RandomForestClassifier(
+        if enabled('decision_tree') or enabled('dt'):
+            models['DT'] = DecisionTreeClassifier(random_state=self.config.random_state)
+        if enabled('random_forest') or enabled('rf'):
+            models['RF'] = RandomForestClassifier(
                 n_estimators=100,
                 random_state=self.config.random_state
             )
