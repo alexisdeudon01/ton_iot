@@ -397,10 +397,10 @@ class PreprocessingPipeline:
             stratify=y,
             random_state=self.random_state,
         ))
-        X_train = cast(np.ndarray, res1[0])
-        X_temp = cast(np.ndarray, res1[1])
-        y_train = cast(np.ndarray, res1[2])
-        y_temp = cast(np.ndarray, res1[3])
+        X_train = res1[0]
+        X_temp = res1[1]
+        y_train = res1[2]
+        y_temp = res1[3]
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
@@ -411,10 +411,10 @@ class PreprocessingPipeline:
             stratify=y_temp,
             random_state=self.random_state,
         ))
-        X_val = cast(np.ndarray, res2[0])
-        X_test = cast(np.ndarray, res2[1])
-        y_val = cast(np.ndarray, res2[2])
-        y_test = cast(np.ndarray, res2[3])
+        X_val = res2[0]
+        X_test = res2[1]
+        y_val = res2[2]
+        y_test = res2[3]
 
         logger.info(
             f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})"
