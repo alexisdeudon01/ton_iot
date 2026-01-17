@@ -1,6 +1,6 @@
 # Evaluating the Performance of Machine Learning-Based Classification Models for IoT Intrusion Detection (2024 IEEE ORSS)
 
-<a href="https://doi-org.libpublic3.library.isu.edu/10.1109/ORSS62274.2024.10697949"><img src="https://img.shields.io/badge/-IEEE-00629B?&style=for-the-badge&logo=ieee&logoColor=white" /></a> 
+<a href="https://doi-org.libpublic3.library.isu.edu/10.1109/ORSS62274.2024.10697949"><img src="https://img.shields.io/badge/-IEEE-00629B?&style=for-the-badge&logo=ieee&logoColor=white" /></a>
 <a href="https://www.researchgate.net/publication/384580344_Evaluating_the_Performance_of_Machine_Learning-Based_Classification_Models_for_IoT_Intrusion_Detection"><img src="https://img.shields.io/badge/-ResearchGate-00CCBB?&style=for-the-badge&logo=researchgate&logoColor=white" /></a>
 
 <img src="https://img.shields.io/badge/-Python-3776AB?&style=for-the-badge&logo=Python&logoColor=white" alt="Python Badge" /> <img src="https://img.shields.io/badge/-OpenAI GYM-0081A5?&style=for-the-badge&logo=openaigym&logoColor=white" /> <img src="https://img.shields.io/badge/-TensorFlow-FF6F00?&style=for-the-badge&logo=tensorflow&logoColor=white" /> <img src="https://img.shields.io/badge/-Pandas-150458?&style=for-the-badge&logo=pandas&logoColor=white" /> <img src="https://img.shields.io/badge/-Keras-D00000?&style=for-the-badge&logo=keras&logoColor=white" /> <img src="https://img.shields.io/badge/-Pytorch-EE4C2C?&style=for-the-badge&logo=pytorch&logoColor=white" /> <img src="https://img.shields.io/badge/-scikit--learn-F7931E?&style=for-the-badge&logo=scikitlearn&logoColor=white" /> <img src="https://img.shields.io/badge/-Overleaf-47A141?&style=for-the-badge&logo=overleaf&logoColor=white" />
@@ -67,41 +67,37 @@ python main.py --synthetic        # Use synthetic dataset for Phase 3 (for testi
 - Chunk sizes are automatically capped (250k prod, 100k test) to prevent OOM
 - In test mode (sample_ratio < 1.0), only 3 files are loaded by default
 
-This will execute five phases:
-1. **Phase 1: Preprocessing Configuration Search** - Search through 108 preprocessing configurations
-2. **Phase 2: Apply Best Configuration** - Apply best config with stateless preprocessing (cleaning + encoding only)
-3. **Phase 3: Multi-Dimensional Algorithm Evaluation** - Evaluation across 3 dimensions with model-aware preprocessing
-4. **Phase 4: AHP Preferences** - Define weights for dimensions (optional)
-5. **Phase 5: AHP-TOPSIS Ranking** - Multi-criteria decision making for algorithm ranking
+This will execute the full IDS pipeline:
+1. **Phase 1: Preprocessing Configuration Search** - Search through 108 preprocessing configurations.
+2. **Phase 2: Apply Best Configuration** - Apply best config with **stateless preprocessing** (cleaning + encoding only).
+3. **Phase 3: Multi-Dimensional Algorithm Evaluation** - Evaluation across 3 dimensions with **fold-aware preprocessing**.
+4. **Phase 4: AHP Preferences** - Define weights for dimensions (optional).
+5. **Phase 5: AHP-TOPSIS Ranking** - Multi-criteria decision making for algorithm ranking.
 
-#### Phase 2: Apply Best Configuration
+### Scientific Correctness & Anti-Leakage Rules
 
-Phase 2 applies the best preprocessing configuration found in Phase 1 to the full dataset. **Important**: Phase 2 performs **stateless preprocessing only** (data cleaning, feature encoding) to prevent data leakage. Fit-dependent steps (scaling, feature selection, SMOTE) are applied in Phase 3 within each cross-validation fold.
+The pipeline implements a strict **zero-leakage** methodology:
+- **Stateless Phase 2**: Only cleaning (inf → max) and encoding are applied globally.
+- **Fold-Aware Phase 3**: All fit-dependent operations (Imputation, Scaling, Feature Selection, SMOTE) are fitted **ONLY on the TRAIN fold**.
+- **Strict Test Transformation**: The TEST fold is transformed using TRAIN-fitted objects and is **NEVER** resampled.
+- **Model-Aware Profiles**: Preprocessing steps are tailored to each model (e.g., no scaling for Trees, SMOTE for LR/NN).
 
-**Outputs**:
-- `best_preprocessed.parquet` (or `.csv.gz`): Preprocessed dataset with cleaned and encoded features
-- `feature_names.json`: List of feature names for reference
-- `phase2_summary.md`: Summary report with dataset statistics and preprocessing steps applied
+#### Phase 2: Stateless Feature Engineering
 
-**Key Features**:
-- Adds `dataset_source` feature during early fusion (0=CIC-DDoS2019, 1=TON_IoT)
-- Stateless preprocessing only: cleaning and encoding
-- Fit-dependent steps deferred to Phase 3 (per fold) to ensure zero data leakage
+Phase 2 produces a harmonized dataset ready for evaluation.
+- **Cleaning**: Remplacer `inf` par `max(colonne)`, conserver `NaN` (imputation par fold).
+- **Behavioral Features**: `Flow_Bytes_s`, `Flow_Packets_s`, `Avg_Packet_Size` computed with safe divisions.
+- **Early Fusion**: Adds `dataset_source` feature (0=CIC, 1=TON).
+- **Outputs**: `best_preprocessed.parquet`, `feature_names.json`, `phase2_summary.md`.
 
-#### Phase 3: Model-Aware Preprocessing
+#### Phase 3: 3D Evaluation (Performance / Resources / Explainability)
 
-Phase 3 evaluates algorithms with **model-aware preprocessing** applied within each cross-validation fold to ensure zero data leakage. Different preprocessing profiles are used based on the model type:
-
-**Preprocessing Profiles**:
-- **Logistic Regression (LR)**: Scaling + Feature Selection + SMOTE
-- **Tree-based (DT/RF)**: No scaling/FS/SMOTE, uses class_weight='balanced'
-- **Neural Networks (CNN/TabNet)**: Scaling + SMOTE, no feature selection
-
-**Key Features**:
-- Preprocessing applied **per fold** (scaler/selector fitted on TRAIN only)
-- Test data transformed with scaler/selector fitted on TRAIN (via `transform_test()`)
-- Loads preprocessed dataset from Phase 2 if available (otherwise loads directly)
-- Supports synthetic dataset mode (`--synthetic` flag) for testing
+Phase 3 evaluates 5 algorithms (LR, DT, RF, CNN, TabNet) using 5-fold Stratified CV.
+- **Performance**: F1-score (primary), Precision, Recall, Accuracy, ROC-AUC.
+- **Resources**: Training time, Peak RAM (`tracemalloc`), Inference latency.
+- **Explainability**: Native (feature importance/coef) + SHAP/LIME support.
+- **Ablation Study**: Mutual Information ranking, Permutation importance, KDE plots for ratio features.
+- **Synthetic Mode**: Run with `--synthetic` for fast pipeline verification.
 
 **Resource Metrics**:
 - Training time (seconds)
@@ -119,10 +115,10 @@ The preprocessing pipeline follows a structured workflow with 6 main steps:
 - **Output**: Harmonized datasets with unified feature schema
 
 **2. Label Alignment (Binary Classification)**
-- **CIC-DDoS2019**: 
+- **CIC-DDoS2019**:
   - Label column: Last column of CSV
   - Binary mapping: `Benign = 0`, all attacks (non-Benign) = `1`
-- **TON_IoT**: 
+- **TON_IoT**:
   - Label column: Last column of CSV
   - Filtering: Keep only rows with `type='normal'` or `type='ddos'`
   - Binary mapping: `normal = 0`, `ddos = 1`
@@ -180,17 +176,17 @@ Nous ajoutons des **ratios comportementaux** (features dérivées) avant l'early
 - **TON_IoT** : `bytes_in`, `bytes_out`, `pkts_in`, `pkts_out`, `duration`
 
 **Formules (nouvelles features) :**
-- `Flow_Bytes_s = (Total Fwd Bytes + Total Bwd Bytes) / (Flow Duration + eps)`  
+- `Flow_Bytes_s = (Total Fwd Bytes + Total Bwd Bytes) / (Flow Duration + eps)`
   (ou `Flow_Bytes_s = (bytes_in + bytes_out) / (duration + eps)` pour TON_IoT)
-- `Flow_Packets_s = (Total Fwd Packets + Total Bwd Packets) / (Flow Duration + eps)`  
+- `Flow_Packets_s = (Total Fwd Packets + Total Bwd Packets) / (Flow Duration + eps)`
   (ou `Flow_Packets_s = (pkts_in + pkts_out) / (duration + eps)` pour TON_IoT)
-- `Avg_Packet_Size = (Total Fwd Bytes + Total Bwd Bytes) / (Total Fwd Packets + Total Bwd Packets + eps)`  
+- `Avg_Packet_Size = (Total Fwd Bytes + Total Bwd Bytes) / (Total Fwd Packets + Total Bwd Packets + eps)`
   (ou `Avg_Packet_Size = (bytes_in + bytes_out) / (pkts_in + pkts_out + eps)` pour TON_IoT)
-- `Traffic_Direction_Ratio = Total Fwd Bytes / (Total Bwd Bytes + eps)`  
+- `Traffic_Direction_Ratio = Total Fwd Bytes / (Total Bwd Bytes + eps)`
   (ou `Traffic_Direction_Ratio = bytes_out / (bytes_in + eps)` pour TON_IoT)
 
 **Note early fusion (`dataset_source`) :**
-Lors de l'early fusion, une colonne **`dataset_source`** est ajoutée et **immédiatement encodée en entier** comme feature :  
+Lors de l'early fusion, une colonne **`dataset_source`** est ajoutée et **immédiatement encodée en entier** comme feature :
 - `0 = CIC-DDoS2019`
 - `1 = TON_IoT`
 
@@ -220,7 +216,7 @@ The framework evaluates algorithms across three dimensions:
 - **Interpretation**: Higher score = more efficient (faster training, less memory, lower latency)
 
 ##### Dimension 3: Explainability
-- **Components**: 
+- **Components**:
   - Native Interpretability (50%): Binary indicator for tree-based models (DT/RF) and Logistic Regression (coef_)
   - SHAP Score (30%): Mean Absolute SHAP Values
   - LIME Score (20%): Mean importance from LIME explanations
@@ -229,7 +225,7 @@ The framework evaluates algorithms across three dimensions:
 
 **Detailed calculations**: See `DIMENSIONS_CALCULATION.md` for complete formulas and visualizations.
 
-**Visual representations**: 
+**Visual representations**:
 - Bar charts for each dimension
 - Radar/spider charts for combined 3D visualization
 - Scatter plots for multi-dimensional comparison
@@ -359,8 +355,8 @@ Please do not hesitate to contribute to this project and cite us:
 ```
 @INPROCEEDINGS{10697949,
   author={Kaddour, Hamza and Das, Shaibal and Bajgai, Rishikesh and Sanchez, Amairanni and Sanchez, Jason and Chiu, Steve C. and Ashour, Ahmed F. and Fouda, Mostafa M.},
-  booktitle={2024 IEEE Opportunity Research Scholars Symposium (ORSS)}, 
-  title={Evaluating the Performance of Machine Learning-Based Classification Models for IoT Intrusion Detection}, 
+  booktitle={2024 IEEE Opportunity Research Scholars Symposium (ORSS)},
+  title={Evaluating the Performance of Machine Learning-Based Classification Models for IoT Intrusion Detection},
   year={2024},
   volume={},
   number={},

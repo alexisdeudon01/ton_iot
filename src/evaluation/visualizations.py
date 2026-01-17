@@ -53,7 +53,7 @@ def generate_all_visualizations(
 ) -> Dict[str, Path]:
     """
     Generate all 27 Phase 3 visualizations
-    
+
     Args:
         metrics_df: Aggregated metrics DataFrame (algo, f1_mean, precision_mean, etc.)
         metrics_by_fold_df: Per-fold metrics (algo, fold, f1, precision, etc.)
@@ -65,43 +65,43 @@ def generate_all_visualizations(
         lime_importances_dict: Dict mapping algo name to LIME importances (n_features,)
         feature_names: List of feature names (for SHAP/LIME)
         output_dir: Output directory for PNG files
-        
+
     Returns:
         Dictionary mapping visualization names to file paths
     """
     vis_dir = output_dir / "visualizations"
     vis_dir.mkdir(parents=True, exist_ok=True)
-    
+
     generated_files = {}
-    
+
     # DIM 1: PERFORMANCE (7 visualizations)
     logger.info("Generating Performance visualizations...")
     generated_files.update(generate_performance_visualizations(
         metrics_df, metrics_by_fold_df, confusion_matrices, roc_curves, pr_curves, vis_dir
     ))
-    
+
     # DIM 2: RESOURCES (7 visualizations)
     logger.info("Generating Resource visualizations...")
     generated_files.update(generate_resource_visualizations(
         metrics_df, scores_normalized_df, vis_dir
     ))
-    
+
     # DIM 3: EXPLAINABILITY (6 visualizations)
     logger.info("Generating Explainability visualizations...")
     generated_files.update(generate_explainability_visualizations(
         metrics_df, scores_normalized_df, shap_values_dict, lime_importances_dict,
         feature_names, vis_dir
     ))
-    
+
     # TRANSVERSAL 3D (7 visualizations)
     logger.info("Generating 3D transversal visualizations...")
     generated_files.update(generate_3d_transversal_visualizations(
         scores_normalized_df, metrics_df, vis_dir
     ))
-    
+
     # Generate INDEX.md
     generate_visualizations_index(generated_files, vis_dir)
-    
+
     logger.info(f"✅ Generated {len(generated_files)} visualizations in {vis_dir}")
     return generated_files
 
@@ -120,13 +120,13 @@ def generate_performance_visualizations(
 ) -> Dict[str, Path]:
     """Generate all performance dimension visualizations"""
     generated = {}
-    
+
     # 1. perf_f1_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
     algos = metrics_df['algo'] if 'algo' in metrics_df.columns else metrics_df.index
     f1_means = metrics_df['f1_mean'] if 'f1_mean' in metrics_df.columns else metrics_df.get('f1_score', [])
     f1_stds = metrics_df.get('f1_std', [0] * len(f1_means))
-    
+
     bars = ax.bar(algos, f1_means, yerr=f1_stds, capsize=5, color='steelblue', alpha=0.7)
     ax.set_title('F1 Score by Algorithm (Mean ± Std)', fontsize=14, fontweight='bold')
     ax.set_xlabel('Algorithm', fontsize=12)
@@ -141,7 +141,7 @@ def generate_performance_visualizations(
     path = vis_dir / "perf_f1_bar.png"
     save_fig(fig, path)
     generated['perf_f1_bar'] = path
-    
+
     # 2. perf_metrics_grouped_bar.png
     fig, ax = plt.subplots(figsize=(12, 6))
     x = np.arange(len(algos))
@@ -149,12 +149,12 @@ def generate_performance_visualizations(
     metrics_cols = ['f1_mean', 'precision_mean', 'recall_mean', 'accuracy']
     metric_labels = ['F1', 'Precision', 'Recall', 'Accuracy']
     colors = ['steelblue', 'coral', 'lightgreen', 'gold']
-    
+
     for i, (col, label, color) in enumerate(zip(metrics_cols, metric_labels, colors)):
         if col in metrics_df.columns:
             values = metrics_df[col]
             ax.bar(x + i*width, values, width, label=label, color=color, alpha=0.7)
-    
+
     ax.set_xlabel('Algorithm', fontsize=12)
     ax.set_ylabel('Score', fontsize=12)
     ax.set_title('Performance Metrics by Algorithm', fontsize=14, fontweight='bold')
@@ -166,7 +166,7 @@ def generate_performance_visualizations(
     path = vis_dir / "perf_metrics_grouped_bar.png"
     save_fig(fig, path)
     generated['perf_metrics_grouped_bar'] = path
-    
+
     # 3. perf_f1_boxplot.png
     if metrics_by_fold_df is not None and 'f1' in metrics_by_fold_df.columns:
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -184,7 +184,7 @@ def generate_performance_visualizations(
         path = vis_dir / "perf_f1_boxplot.png"
         save_fig(fig, path)
         generated['perf_f1_boxplot'] = path
-    
+
     # 4-6. Confusion matrices, ROC, PR curves per algo
     if confusion_matrices:
         for algo, cm in confusion_matrices.items():
@@ -204,7 +204,7 @@ def generate_performance_visualizations(
             path = vis_dir / f"perf_confusion_matrix_{algo}.png"
             save_fig(fig, path)
             generated[f'perf_confusion_matrix_{algo}'] = path
-    
+
     if roc_curves:
         for algo, (fpr, tpr, auc) in roc_curves.items():
             fig, ax = plt.subplots(figsize=(8, 6))
@@ -218,7 +218,7 @@ def generate_performance_visualizations(
             path = vis_dir / f"perf_roc_{algo}.png"
             save_fig(fig, path)
             generated[f'perf_roc_{algo}'] = path
-    
+
     if pr_curves:
         for algo, (precision, recall) in pr_curves.items():
             fig, ax = plt.subplots(figsize=(8, 6))
@@ -231,7 +231,7 @@ def generate_performance_visualizations(
             path = vis_dir / f"perf_pr_{algo}.png"
             save_fig(fig, path)
             generated[f'perf_pr_{algo}'] = path
-    
+
     # 7. perf_metrics_heatmap.png
     fig, ax = plt.subplots(figsize=(10, 6))
     perf_cols = ['f1_mean', 'precision_mean', 'recall_mean', 'accuracy']
@@ -250,7 +250,7 @@ def generate_performance_visualizations(
     path = vis_dir / "perf_metrics_heatmap.png"
     save_fig(fig, path)
     generated['perf_metrics_heatmap'] = path
-    
+
     return generated
 
 
@@ -266,7 +266,7 @@ def generate_resource_visualizations(
     """Generate all resource dimension visualizations"""
     generated = {}
     algos = metrics_df['algo'] if 'algo' in metrics_df.columns else metrics_df.index
-    
+
     # 1. res_train_time_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
     times = metrics_df.get('train_time_sec', metrics_df.get('training_time_seconds', []))
@@ -280,7 +280,7 @@ def generate_resource_visualizations(
     path = vis_dir / "res_train_time_bar.png"
     save_fig(fig, path)
     generated['res_train_time_bar'] = path
-    
+
     # 2. res_peak_ram_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
     rams = metrics_df.get('peak_ram_mb', metrics_df.get('memory_used_mb', []))
@@ -294,7 +294,7 @@ def generate_resource_visualizations(
     path = vis_dir / "res_peak_ram_bar.png"
     save_fig(fig, path)
     generated['res_peak_ram_bar'] = path
-    
+
     # 3. res_latency_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
     latencies = metrics_df.get('latency_ms', [])
@@ -309,7 +309,7 @@ def generate_resource_visualizations(
     path = vis_dir / "res_latency_bar.png"
     save_fig(fig, path)
     generated['res_latency_bar'] = path
-    
+
     # 4-5. Tradeoff scatter plots
     f1_scores = metrics_df.get('f1_mean', metrics_df.get('f1_score', []))
     if len(f1_scores) > 0 and len(times) > 0:
@@ -325,7 +325,7 @@ def generate_resource_visualizations(
         path = vis_dir / "res_tradeoff_f1_vs_time.png"
         save_fig(fig, path)
         generated['res_tradeoff_f1_vs_time'] = path
-        
+
         # F1 vs RAM
         if len(rams) > 0:
             fig, ax = plt.subplots(figsize=(8, 6))
@@ -339,7 +339,7 @@ def generate_resource_visualizations(
             path = vis_dir / "res_tradeoff_f1_vs_ram.png"
             save_fig(fig, path)
             generated['res_tradeoff_f1_vs_ram'] = path
-    
+
     # 6. res_pareto_frontier.png
     if len(f1_scores) > 0 and len(times) > 0 and len(rams) > 0:
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -359,7 +359,7 @@ def generate_resource_visualizations(
                         break
         ax.scatter(times, f1_scores, s=100, alpha=0.3, c='gray', label='Dominated')
         if not all(dominated):
-            ax.scatter(np.array(times)[~dominated], np.array(f1_scores)[~dominated], 
+            ax.scatter(np.array(times)[~dominated], np.array(f1_scores)[~dominated],
                       s=150, alpha=0.8, c='red', marker='*', label='Pareto Frontier')
         for algo, time, f1 in zip(algos, times, f1_scores):
             ax.annotate(algo, (time, f1), fontsize=9)
@@ -371,7 +371,7 @@ def generate_resource_visualizations(
         path = vis_dir / "res_pareto_frontier.png"
         save_fig(fig, path)
         generated['res_pareto_frontier'] = path
-    
+
     # 7. res_components_heatmap.png
     fig, ax = plt.subplots(figsize=(10, 6))
     res_cols = ['train_time_sec', 'peak_ram_mb', 'latency_ms']
@@ -389,7 +389,7 @@ def generate_resource_visualizations(
     path = vis_dir / "res_components_heatmap.png"
     save_fig(fig, path)
     generated['res_components_heatmap'] = path
-    
+
     return generated
 
 
@@ -408,7 +408,7 @@ def generate_explainability_visualizations(
     """Generate all explainability dimension visualizations"""
     generated = {}
     algos = metrics_df['algo'] if 'algo' in metrics_df.columns else metrics_df.index
-    
+
     # 1. exp_score_bar.png
     fig, ax = plt.subplots(figsize=(10, 6))
     exp_scores = metrics_df.get('explain_score', metrics_df.get('explainability_score', []))
@@ -426,7 +426,7 @@ def generate_explainability_visualizations(
     path = vis_dir / "exp_score_bar.png"
     save_fig(fig, path)
     generated['exp_score_bar'] = path
-    
+
     # 2. exp_components_stacked_bar.png
     fig, ax = plt.subplots(figsize=(12, 6))
     native = metrics_df.get('native_interpretability', [0] * len(algos))
@@ -435,10 +435,11 @@ def generate_explainability_visualizations(
     x = np.arange(len(algos))
     width = 0.6
     bottom = np.zeros(len(algos))
-    for comp, label, color in zip([native, shap_scores, lime_scores], 
+    for comp, label, color in zip([native, shap_scores, lime_scores],
                                    ['Native', 'SHAP', 'LIME'],
                                    ['steelblue', 'coral', 'lightgreen']):
-        if any(v > 0 for v in comp):
+        # Ensure v is not None before comparison
+        if any(v is not None and v > 0 for v in comp):
             ax.bar(x, comp, width, bottom=bottom, label=label, color=color, alpha=0.7)
             bottom += np.array(comp)
     ax.set_xlabel('Algorithm', fontsize=12)
@@ -451,7 +452,7 @@ def generate_explainability_visualizations(
     path = vis_dir / "exp_components_stacked_bar.png"
     save_fig(fig, path)
     generated['exp_components_stacked_bar'] = path
-    
+
     # 3. exp_tradeoff_f1_vs_explain.png
     f1_scores = metrics_df.get('f1_mean', metrics_df.get('f1_score', []))
     if len(f1_scores) > 0 and len(exp_scores) > 0:
@@ -466,7 +467,7 @@ def generate_explainability_visualizations(
         path = vis_dir / "exp_tradeoff_f1_vs_explain.png"
         save_fig(fig, path)
         generated['exp_tradeoff_f1_vs_explain'] = path
-    
+
     # 4. exp_components_heatmap.png
     fig, ax = plt.subplots(figsize=(10, 6))
     exp_components = ['native_interpretability', 'shap_score', 'lime_score']
@@ -483,7 +484,7 @@ def generate_explainability_visualizations(
     path = vis_dir / "exp_components_heatmap.png"
     save_fig(fig, path)
     generated['exp_components_heatmap'] = path
-    
+
     # 5-6. SHAP/LIME top features (if available)
     top_k = 15
     if SHAP_AVAILABLE and shap_values_dict and feature_names:
@@ -493,11 +494,11 @@ def generate_explainability_visualizations(
                 global_importance = np.abs(shap_vals).mean(axis=0)
             else:
                 global_importance = np.abs(shap_vals)
-            
+
             top_indices = np.argsort(global_importance)[-top_k:][::-1]
             top_features = [feature_names[i] if i < len(feature_names) else f'Feature_{i}' for i in top_indices]
             top_values = global_importance[top_indices]
-            
+
             fig, ax = plt.subplots(figsize=(10, 8))
             ax.barh(range(len(top_features)), top_values, color='coral', alpha=0.7)
             ax.set_yticks(range(len(top_features)))
@@ -508,14 +509,14 @@ def generate_explainability_visualizations(
             path = vis_dir / f"exp_shap_top_features_{algo}.png"
             save_fig(fig, path)
             generated[f'exp_shap_top_features_{algo}'] = path
-    
+
     if LIME_AVAILABLE and lime_importances_dict and feature_names:
         for algo, lime_imp in lime_importances_dict.items():
             if len(lime_imp) > 0:
                 top_indices = np.argsort(np.abs(lime_imp))[-top_k:][::-1]
                 top_features = [feature_names[i] if i < len(feature_names) else f'Feature_{i}' for i in top_indices]
                 top_values = np.abs(lime_imp[top_indices])
-                
+
                 fig, ax = plt.subplots(figsize=(10, 8))
                 ax.barh(range(len(top_features)), top_values, color='lightgreen', alpha=0.7)
                 ax.set_yticks(range(len(top_features)))
@@ -526,7 +527,7 @@ def generate_explainability_visualizations(
                 path = vis_dir / f"exp_lime_top_features_{algo}.png"
                 save_fig(fig, path)
                 generated[f'exp_lime_top_features_{algo}'] = path
-    
+
     return generated
 
 
@@ -541,16 +542,16 @@ def generate_3d_transversal_visualizations(
 ) -> Dict[str, Path]:
     """Generate all 3D transversal visualizations"""
     generated = {}
-    
+
     if scores_normalized_df is None or scores_normalized_df.empty:
         logger.warning("No normalized scores available for 3D visualizations")
         return generated
-    
+
     algos = scores_normalized_df['algo'] if 'algo' in scores_normalized_df.columns else scores_normalized_df.index
     perf_scores = scores_normalized_df.get('perf_score', [])
     res_scores = scores_normalized_df.get('resource_score', [])
     exp_scores = scores_normalized_df.get('explain_score', [])
-    
+
     # 1. dim3_radar.png
     if len(perf_scores) > 0 and len(res_scores) > 0 and len(exp_scores) > 0:
         fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
@@ -558,14 +559,14 @@ def generate_3d_transversal_visualizations(
         num_vars = len(categories)
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
-        
+
         colors = plt.cm.tab10(np.linspace(0, 1, len(algos)))
         for idx, (algo, perf, res, exp) in enumerate(zip(algos, perf_scores, res_scores, exp_scores)):
             values = [perf, res, exp]
             values += values[:1]
             ax.plot(angles, values, 'o-', linewidth=2, label=algo, color=colors[idx])
             ax.fill(angles, values, alpha=0.25, color=colors[idx])
-        
+
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(categories)
         ax.set_ylim(0, 1)
@@ -577,7 +578,7 @@ def generate_3d_transversal_visualizations(
         path = vis_dir / "dim3_radar.png"
         save_fig(fig, path)
         generated['dim3_radar'] = path
-    
+
     # 2-4. Scatter plots
     if len(perf_scores) > 0 and len(res_scores) > 0:
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -591,7 +592,7 @@ def generate_3d_transversal_visualizations(
         path = vis_dir / "dim3_scatter_perf_res.png"
         save_fig(fig, path)
         generated['dim3_scatter_perf_res'] = path
-    
+
     if len(perf_scores) > 0 and len(exp_scores) > 0:
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.scatter(exp_scores, perf_scores, s=100, alpha=0.6, c='coral')
@@ -604,7 +605,7 @@ def generate_3d_transversal_visualizations(
         path = vis_dir / "dim3_scatter_perf_exp.png"
         save_fig(fig, path)
         generated['dim3_scatter_perf_exp'] = path
-    
+
     if len(res_scores) > 0 and len(exp_scores) > 0:
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.scatter(exp_scores, res_scores, s=100, alpha=0.6, c='lightgreen')
@@ -617,7 +618,7 @@ def generate_3d_transversal_visualizations(
         path = vis_dir / "dim3_scatter_res_exp.png"
         save_fig(fig, path)
         generated['dim3_scatter_res_exp'] = path
-    
+
     # 5. dim3_scores_table.png (render table as image)
     if len(perf_scores) > 0:
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -635,24 +636,24 @@ def generate_3d_transversal_visualizations(
         path = vis_dir / "dim3_scores_table.png"
         save_fig(fig, path)
         generated['dim3_scores_table'] = path
-    
+
     return generated
 
 
 def generate_visualizations_index(generated_files: Dict[str, Path], vis_dir: Path):
     """Generate INDEX.md with all visualizations"""
     index_path = vis_dir / "INDEX.md"
-    
+
     categories = {
         'Performance': ['perf_'],
         'Resources': ['res_'],
         'Explainability': ['exp_'],
         '3D Transversal': ['dim3_']
     }
-    
+
     content = "# Phase 3 Visualizations Index\n\n"
     content += f"Total visualizations: {len(generated_files)}\n\n"
-    
+
     for cat_name, prefixes in categories.items():
         content += f"## {cat_name} Dimension\n\n"
         matching = {k: v for k, v in generated_files.items() if any(k.startswith(p) for p in prefixes)}
@@ -661,7 +662,7 @@ def generate_visualizations_index(generated_files: Dict[str, Path], vis_dir: Pat
             desc = get_visualization_description(name)
             content += f"- **{filename}**: {desc}\n"
         content += "\n"
-    
+
     index_path.write_text(content)
     logger.info(f"Generated INDEX.md: {index_path}")
 
@@ -695,7 +696,7 @@ def get_visualization_description(name: str) -> str:
         'dim3_scatter_res_exp': 'Scatter plot: Resource vs Explainability scores',
         'dim3_scores_table': 'Summary table of all 3D scores rendered as image'
     }
-    
+
     # Match prefix
     for key, desc in descriptions.items():
         if name.startswith(key) or key in name:
