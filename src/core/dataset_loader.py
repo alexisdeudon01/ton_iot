@@ -309,6 +309,8 @@ class DatasetLoader:
             elif dtype == 'int64':
                 try:
                     df[col] = pd.to_numeric(df[col], downcast='integer')
+                    if df[col].dtype in [np.int8, np.int16]:
+                        df[col] = df[col].astype(np.int32)
                 except:
                     pass
             
