@@ -47,7 +47,7 @@ class SystemMonitor:
             'process_mem_mb': process_mem * 1024
         }
     
-    def get_cpu_info(self) -> Dict[str, float]:
+    def get_cpu_info(self) -> Dict[str, Optional[float]]:
         """
         Get current CPU information
         
@@ -59,7 +59,7 @@ class SystemMonitor:
         
         return {
             'percent': cpu_percent,
-            'count': cpu_count
+            'count': float(cpu_count) if cpu_count is not None else None
         }
     
     def calculate_optimal_chunk_size(self, estimated_row_size_bytes: int = 500) -> int:

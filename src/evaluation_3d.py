@@ -27,21 +27,12 @@ logger = logging.getLogger(__name__)
 # Visualizations are handled by src/evaluation/visualizations.py (matplotlib only, no seaborn)
 VISUALIZATION_AVAILABLE = True  # Assume matplotlib is available (core dependency)
 
-# Try to import SHAP and LIME
-try:
-    import shap
+import shap
+import lime
+import lime.lime_tabular
 
-    SHAP_AVAILABLE = True
-except ImportError:
-    SHAP_AVAILABLE = False
-
-try:
-    import lime
-    import lime.lime_tabular
-
-    LIME_AVAILABLE = True
-except ImportError:
-    LIME_AVAILABLE = False
+SHAP_AVAILABLE = True
+LIME_AVAILABLE = True
 
 
 class ResourceMonitor:
@@ -156,11 +147,8 @@ class ExplainabilityEvaluator:
             max_samples: Maximum number of samples to use for SHAP
 
         Returns:
-            SHAP explainability score (mean absolute SHAP values) or None if SHAP unavailable
+            SHAP explainability score (mean absolute SHAP values)
         """
-        if not SHAP_AVAILABLE:
-            return None
-
         try:
             # Limit samples for performance
             if len(X_sample) > max_samples:
@@ -213,11 +201,8 @@ class ExplainabilityEvaluator:
             max_samples: Maximum number of samples to evaluate
 
         Returns:
-            LIME explainability score or None if LIME unavailable
+            LIME explainability score
         """
-        if not LIME_AVAILABLE:
-            return None
-
         try:
             if len(X_sample) > max_samples:
                 indices = np.random.choice(len(X_sample), max_samples, replace=False)
@@ -386,25 +371,23 @@ class Evaluation3D:
         else:
             inference_latency_ms = 0.0
 
-        # Dimension 3: Explaina bility
+        # Dimension 3: Explainability
         explainability_metrics = {}
         if compute_explainability:
             # SHAP score (use trained model_clone)
-            if SHAP_AVAILABLE:
-                shap_score = self.explainability_evaluator.compute_shap_score(
-                    model_clone, X_test, max_samples=shap_samples
-                )
-                explainability_metrics["shap_score"] = shap_score
+            shap_score = self.explainability_evaluator.compute_shap_score(
+                model_clone, X_test, max_samples=shap_samples
+            )
+            explainability_metrics["shap_score"] = shap_score
 
             # LIME score (use trained model_clone)
-            if LIME_AVAILABLE:
-                lime_score = self.explainability_evaluator.compute_lime_score(
-                    model_clone,
-                    X_test[:lime_samples],
-                    X_train,
-                    max_samples=lime_samples,
-                )
-                explainability_metrics["lime_score"] = lime_score
+            lime_score = self.explainability_evaluator.compute_lime_score(
+                model_clone,
+                X_test[:lime_samples],
+                X_train,
+                max_samples=lime_samples,
+            )
+            explainability_metrics["lime_score"] = lime_score
 
         # Native interpretability (for tree-based models and LR - use trained model_clone)
         if hasattr(model_clone, "feature_importances_"):

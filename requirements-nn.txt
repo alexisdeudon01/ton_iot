@@ -1,5 +1,0 @@
-# Neural Network and Explainability dependencies (Mandatory)
-torch>=1.12.0
-pytorch-tabnet>=4.0
-shap>=0.40.0
-lime>=0.2.0

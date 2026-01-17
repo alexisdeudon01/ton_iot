@@ -774,7 +774,7 @@ class ResultsVisualizer:
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
         
-        colors = plt.cm.tab10(np.linspace(0, 1, len(dim_scores)))
+        colors = plt.get_cmap('tab10')(np.linspace(0, 1, len(dim_scores)))
         
         for idx, row in dim_scores.iterrows():
             model_name = row.get('model_name', f'Model {idx}')

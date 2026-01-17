@@ -56,7 +56,8 @@ class PipelineRunner:
         self.results_dir.mkdir(parents=True, exist_ok=True)
 
         # Results from each phase
-        self.phase_results = {}
+        self.phase_results: Dict[int, Any] = {}
+        self.best_config: Optional[Dict[str, Any]] = None
 
         logger.info(f"PipelineRunner initialized (output_dir: {self.results_dir})")
 
@@ -100,7 +101,7 @@ class PipelineRunner:
             if Phase2ApplyBestConfig is None:
                 logger.warning("Phase 2 not available (module not found)")
             else:
-                if not hasattr(self, 'best_config'):
+                if self.best_config is None:
                     # Try to load from Phase 1 results
                     import json
                     best_config_file = self.results_dir / 'phase1_config_search' / 'best_config.json'
@@ -111,10 +112,13 @@ class PipelineRunner:
                     else:
                         raise ValueError("Phase 2 requires Phase 1 to run first or best_config.json")
 
-                logger.info("\n" + "=" * 70)
-                phase2 = Phase2ApplyBestConfig(self.config, self.best_config)
-                result2 = phase2.run()
-                self.phase_results[2] = result2
+                if self.best_config is not None:
+                    logger.info("\n" + "=" * 70)
+                    phase2 = Phase2ApplyBestConfig(self.config, self.best_config)
+                    result2 = phase2.run()
+                    self.phase_results[2] = result2
+                else:
+                    raise ValueError("best_config is still None after attempt to load")
 
         # Phase 3: Evaluation
         if 3 in phases:
