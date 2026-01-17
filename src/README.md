@@ -14,8 +14,7 @@ This directory contains all the core Python modules for the IRP Research Pipelin
   - **`models/cnn.py`** - CNN model for tabular data
   - **`models/tabnet.py`** - TabNet model wrapper
   - **`models/registry.py`** - Model registry (single source of truth)
-- **`models_cnn.py`** - DEPRECATED: Compatibility wrapper (use `models/cnn.py`)
-- **`models_tabnet.py`** - DEPRECATED: Compatibility wrapper (use `models/tabnet.py`)
+  - **`models/sklearn_models.py`** - Scikit-learn models (LR, DT, RF)
 
 ## Usage
 
@@ -38,6 +37,4 @@ src/
 │   ├── tabnet.py           # TabNet model
 │   ├── registry.py         # Model registry
 │   └── sklearn_models.py   # Scikit-learn models
-├── models_cnn.py           # DEPRECATED: Compatibility wrapper
-└── models_tabnet.py        # DEPRECATED: Compatibility wrapper
 ```
