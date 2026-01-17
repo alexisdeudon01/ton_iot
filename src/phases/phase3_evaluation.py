@@ -29,17 +29,21 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+# Import CNN (optional)
 try:
-    from src.models.cnn import CNNTabularClassifier, TORCH_AVAILABLE as CNN_AVAILABLE
-except ImportError:
-    CNNTabularClassifier = None
+    from src.models.cnn import TORCH_AVAILABLE as CNN_AVAILABLE
+    from src.models.cnn import CNNTabularClassifier
+except (ImportError, AttributeError):
     CNN_AVAILABLE = False
+    CNNTabularClassifier = None
 
+# Import TabNet (optional)
 try:
-    from src.models.tabnet import TabNetClassifierWrapper, TABNET_AVAILABLE
-except ImportError:
-    TabNetClassifierWrapper = None
+    from src.models.tabnet import TABNET_AVAILABLE
+    from src.models.tabnet import TabNetClassifierWrapper
+except (ImportError, AttributeError):
     TABNET_AVAILABLE = False
+    TabNetClassifierWrapper = None
 
 logger = logging.getLogger(__name__)
 

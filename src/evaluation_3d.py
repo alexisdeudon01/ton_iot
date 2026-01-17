@@ -16,13 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import psutil
-from sklearn.metrics import (
-    accuracy_score,
-    confusion_matrix,
-    f1_score,
-    precision_score,
-    recall_score,
-)
+from sklearn.metrics import (accuracy_score, confusion_matrix, f1_score,
+                             precision_score, recall_score)
 
 warnings.filterwarnings("ignore")
 
@@ -174,11 +169,10 @@ class ExplainabilityEvaluator:
 
             # Create SHAP explainer based on model type
             if hasattr(model, "predict_proba"):
-                explainer = (
-                    shap.TreeExplainer(model)
-                    if hasattr(model, "estimators_") or hasattr(model, "tree_")
-                    else shap.KernelExplainer(model.predict_proba, X_sample[:50])
-                )
+                if hasattr(model, "estimators_") or hasattr(model, "tree_"):
+                    explainer = shap.TreeExplainer(model)
+                else:
+                    explainer = shap.KernelExplainer(model.predict_proba, X_sample[:50])
             else:
                 explainer = shap.KernelExplainer(model.predict, X_sample[:50])
 
@@ -318,11 +312,11 @@ class Evaluation3D:
 
         # Use predict_proba if available
         if hasattr(model_clone, "predict_proba"):
-            y_pred_proba = (
-                model_clone.predict_proba(X_test)[:, 1]
-                if len(np.unique(y_test, return_counts=False)) == 2
-                else model_clone.predict_proba(X_test)
-            )
+            probs = model_clone.predict_proba(X_test)
+            if len(np.unique(y_test, return_counts=False)) == 2:
+                y_pred_proba = probs[:, 1] if probs.ndim > 1 else probs
+            else:
+                y_pred_proba = probs
         else:
             y_pred_proba = y_pred
 
@@ -392,7 +386,7 @@ class Evaluation3D:
         else:
             inference_latency_ms = 0.0
 
-        # Dimension 3: Explainability
+        # Dimension 3: Explaina bility
         explainability_metrics = {}
         if compute_explainability:
             # SHAP score (use trained model_clone)
@@ -737,7 +731,8 @@ class Evaluation3D:
             Dictionary mapping visualization names to file paths
         """
         try:
-            from src.evaluation.visualizations import generate_all_visualizations
+            from src.evaluation.visualizations import \
+                generate_all_visualizations
         except ImportError:
             logger.warning(
                 "Visualization module not available - skipping visualizations"

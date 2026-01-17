@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.feature_selection import mutual_info_classif, SelectKBest
 from imblearn.over_sampling import SMOTE
 from sklearn.impute import SimpleImputer
-from typing import Tuple, List, Optional, Dict
+from typing import Tuple, List, Optional, Dict, Any, Union, cast
 import warnings
 import logging
 
@@ -90,8 +90,9 @@ class PreprocessingPipeline:
             logger.info(f"  Dropped {cols_before - cols_after} columns (all NaN)")
 
         # Handle remaining NaN values with median imputation
+        X_imputed = self.imputer.fit_transform(X_cleaned)
         X_cleaned = pd.DataFrame(
-            self.imputer.fit_transform(X_cleaned),
+            X_imputed,
             columns=X_cleaned.columns,
             index=X_cleaned.index
         )
@@ -161,12 +162,13 @@ class PreprocessingPipeline:
         if fit:
             # Select top K features using Mutual Information (not default f_classif)
             self.feature_selector = SelectKBest(score_func=mutual_info_classif, k=min(self.n_features, len(X.columns)))
-            X_selected = self.feature_selector.fit_transform(X.values, y.values)
+            # Use np.asarray to satisfy Pylance's type checking for fit_transform
+            X_selected = self.feature_selector.fit_transform(np.asarray(X.values), np.asarray(y.values))
 
             # Calculate and log MI scores for selected features
             if self.feature_selector.scores_ is not None:
-                mi_scores = self.feature_selector.scores_
-                logger.debug(f"  Mutual Information scores calculated for {len(mi_scores)} features")
+                mi_scores = cast(np.ndarray, self.feature_selector.scores_)
+                logger.debug(f"  Mutual Information scores calculated for {mi_scores.shape[0]} features")
 
             # Get selected feature names
             selected_indices = self.feature_selector.get_support(indices=True)
@@ -175,12 +177,12 @@ class PreprocessingPipeline:
             logger.info(f"  Selected {len(self.selected_features)} features from {len(X.columns)}")
             logger.info(f"  Top features: {self.selected_features[:10]}{'...' if len(self.selected_features) > 10 else ''}")
 
-            return pd.DataFrame(X_selected, columns=self.selected_features, index=X.index)
+            return pd.DataFrame(cast(Any, X_selected), columns=self.selected_features, index=X.index)
         else:
             if self.feature_selector is None:
                 raise ValueError("Feature selector must be fitted before transforming test data")
-            X_selected = self.feature_selector.transform(X.values)
-            return pd.DataFrame(X_selected, columns=self.selected_features, index=X.index)
+            X_selected = self.feature_selector.transform(np.asarray(X.values))
+            return pd.DataFrame(cast(Any, X_selected), columns=self.selected_features, index=X.index)
 
     def scale_features(self, X: np.ndarray, fit: bool = False) -> np.ndarray:
         """
@@ -211,7 +213,7 @@ class PreprocessingPipeline:
 
     def _verify_scaled_features(self, X_scaled: np.ndarray, fit: bool = False) -> Dict:
         """Verify that features are properly normalized after scaling"""
-        if len(X_scaled) == 0:
+        if cast(np.ndarray, X_scaled).shape[0] == 0:
             return {}
 
         min_per_feature = X_scaled.min(axis=0)
@@ -258,7 +260,7 @@ class PreprocessingPipeline:
         min_samples_needed = default_n_neighbors + 1  # SMOTE needs at least n_neighbors+1
 
         # Find minority class count
-        minority_count = min(class_counts.values())
+        minority_count = int(min(class_counts.values()))
 
         if minority_count < min_samples_needed:
             logger.warning(
@@ -278,7 +280,9 @@ class PreprocessingPipeline:
 
             # Initialize SMOTE with adjusted k_neighbors
             self.smote = SMOTE(k_neighbors=k_neighbors, random_state=self.random_state)
-            X_resampled, y_resampled = self.smote.fit_resample(X, y)
+            resampled_X, resampled_y = self.smote.fit_resample(X, y)
+            X_resampled = cast(np.ndarray, resampled_X)
+            y_resampled = cast(np.ndarray, resampled_y)
 
         logger.info(f"  After resampling: {pd.Series(y_resampled).value_counts().to_dict()}")
         logger.info(f"  Shape: {X_resampled.shape[0]} rows, {X_resampled.shape[1]} features")
@@ -309,21 +313,30 @@ class PreprocessingPipeline:
             raise ValueError(f"Ratios must sum to 1.0, got {train_ratio + val_ratio + test_ratio}")
 
         # First split: train + (val + test)
-        X_train, X_temp, y_train, y_temp = train_test_split(
+        # Use explicit indexing and Any cast to avoid Pylance tuple size mismatch confusion
+        res1: Any = train_test_split(
             X, y,
             test_size=(val_ratio + test_ratio),
             stratify=y,
             random_state=self.random_state
         )
+        X_train: np.ndarray = cast(np.ndarray, res1[0])
+        X_temp: np.ndarray = cast(np.ndarray, res1[1])
+        y_train: np.ndarray = cast(np.ndarray, res1[2])
+        y_temp: np.ndarray = cast(np.ndarray, res1[3])
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
-        X_val, X_test, y_val, y_test = train_test_split(
+        res2: Any = train_test_split(
             X_temp, y_temp,
             test_size=(1 - val_size),
             stratify=y_temp,
             random_state=self.random_state
         )
+        X_val: np.ndarray = cast(np.ndarray, res2[0])
+        X_test: np.ndarray = cast(np.ndarray, res2[1])
+        y_val: np.ndarray = cast(np.ndarray, res2[2])
+        y_test: np.ndarray = cast(np.ndarray, res2[3])
 
         logger.info(f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})")
         logger.info(f"  Validation set: {X_val.shape[0]} samples (class distribution: {pd.Series(y_val).value_counts().to_dict()})")
@@ -367,7 +380,10 @@ class PreprocessingPipeline:
         logger.info("=" * 60)
 
         # Step 1: Data Cleaning
-        X_cleaned, y_cleaned = self.clean_data(X, y)
+        X_cleaned, y_cleaned_opt = self.clean_data(X, y)
+        if y_cleaned_opt is None:
+            raise ValueError("Target y cannot be None after cleaning")
+        y_cleaned: pd.Series = y_cleaned_opt
 
         # Step 2: Encoding
         if apply_encoding:
@@ -383,8 +399,8 @@ class PreprocessingPipeline:
             self.selected_features = list(X_selected.columns)
 
         # Convert to numpy for scaling
-        X_array = X_selected.values
-        y_array = y_cleaned.values
+        X_array = np.asarray(X_selected.values)
+        y_array = np.asarray(y_cleaned.values)
 
         # Step 4: Scaling
         if apply_scaling:
@@ -480,8 +496,10 @@ class PreprocessingPipeline:
         for col in X_cleaned.columns:
             X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors='coerce')
         X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
+        X_imputed = self.imputer.transform(X_cleaned)
+        # Use Any cast to satisfy Pylance's DataFrame constructor check
         X_cleaned = pd.DataFrame(
-            self.imputer.transform(X_cleaned),
+            cast(Any, X_imputed),
             columns=X_cleaned.columns,
             index=X_cleaned.index
         )
@@ -494,12 +512,12 @@ class PreprocessingPipeline:
 
         # Select features
         if self.feature_selector:
-            X_selected = self.feature_selector.transform(X_cleaned.values)
+            X_selected = self.feature_selector.transform(np.asarray(X_cleaned.values))
         else:
             X_selected = X_cleaned.values
 
         # Scale
-        X_scaled = self.scale_features(X_selected, fit=False)
+        X_scaled = self.scale_features(cast(np.ndarray, X_selected), fit=False)
 
         return X_scaled
 
@@ -536,7 +554,7 @@ class PreprocessingPipeline:
 
         # Do NOT apply SMOTE on test data
 
-        return X_test_scaled
+        return cast(np.ndarray, X_test_scaled)
 
 
 class StratifiedCrossValidator:

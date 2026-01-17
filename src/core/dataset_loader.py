@@ -9,7 +9,7 @@ import logging
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Tuple, Optional, List, Dict, Set, Callable
+from typing import Tuple, Optional, List, Dict, Set, Callable, Any, Union, cast
 import warnings
 from tqdm import tqdm
 import gc  # Garbage collector for memory management
@@ -19,12 +19,19 @@ from datetime import datetime
 try:
     import sys
     from pathlib import Path
-    _parent = Path(__file__).parent.parent.parent
-    if str(_parent) not in sys.path:
-        sys.path.insert(0, str(_parent))
+    _parent_path = Path(__file__).parent.parent.parent
+    if str(_parent_path) not in sys.path:
+        sys.path.insert(0, str(_parent_path))
     from src.system_monitor import SystemMonitor
-except ImportError:
-    SystemMonitor = None
+except (ImportError, ModuleNotFoundError):
+    # Use a dummy class instead of Any to avoid instantiation errors
+    class SystemMonitor: # type: ignore
+        def __init__(self, *args, **kwargs): pass
+        def check_memory_safe(self): return True, ""
+        def get_memory_info(self): return {"used_percent": 0.0}
+        def start_progress_tracking(self): pass
+        def update_progress(self, *args, **kwargs): return {"eta_formatted": "00:00"}
+        def calculate_optimal_chunk_size(self, *args, **kwargs): return 100000
 
 warnings.filterwarnings('ignore')
 
@@ -70,7 +77,7 @@ class DatasetLoader:
         self.loaded_files: Set[str] = self._load_file_cache()
 
         # Callback for real-time updates (can be set from outside)
-        self.progress_callback: Optional[Callable] = None
+        self.progress_callback: Optional[Callable[[Dict[str, Any]], None]] = None
 
     def _load_file_cache(self) -> Set[str]:
         """Load cache of previously loaded files"""
@@ -325,7 +332,7 @@ class DatasetLoader:
 
         return df
 
-    def _sample_rows_efficient(self, total_rows: int, sample_ratio: float, random_state: int) -> np.ndarray:
+    def _sample_rows_efficient(self, total_rows: int, sample_ratio: float, random_state: int) -> Optional[np.ndarray]:
         """
         Generate indices to sample efficiently without loading all data first
 
@@ -335,7 +342,7 @@ class DatasetLoader:
             random_state: Random seed
 
         Returns:
-            Array of row indices to keep (sorted for efficient reading)
+            Array of row indices to keep (sorted for efficient reading) or None if keeping all
         """
         if sample_ratio >= 1.0:
             return None  # Keep all rows
@@ -481,10 +488,12 @@ class DatasetLoader:
                 # If sampling, filter rows within this chunk
                 if sample_indices is not None and next_sample_idx is not None:
                     # Find indices that fall within this chunk
-                    chunk_sample_mask = (sample_indices >= chunk_start_row) & (sample_indices < chunk_end_row)
-                    chunk_sample_indices = sample_indices[chunk_sample_mask]
+                    # Cast to np.ndarray to satisfy Pylance
+                    indices_arr = cast(np.ndarray, sample_indices)
+                    chunk_sample_mask = (indices_arr >= chunk_start_row) & (indices_arr < chunk_end_row)
+                    chunk_sample_indices = cast(np.ndarray, indices_arr[chunk_sample_mask])
 
-                    if len(chunk_sample_indices) > 0:
+                    if chunk_sample_indices.shape[0] > 0:
                         # Convert global indices to local chunk indices
                         local_indices = chunk_sample_indices - chunk_start_row
                         chunk = chunk.iloc[local_indices].reset_index(drop=True)
@@ -550,7 +559,7 @@ class DatasetLoader:
             logger.error(f"[ERROR] Error loading TON_IoT dataset: {e}", exc_info=True)
             raise
 
-    def load_cic_ddos2019(self, dataset_path: Optional[str] = None, sample_ratio: float = 1.0,
+    def load_cic_ddos2019(self, dataset_path: Optional[Union[str, Path]] = None, sample_ratio: float = 1.0,
                           random_state: int = 42, incremental: bool = True,
                           detect_new_files: bool = True, max_files_in_test: int = 10,
                           max_files: Optional[int] = None, max_rows_per_file: Optional[int] = None) -> pd.DataFrame:
@@ -595,16 +604,17 @@ class DatasetLoader:
             get_dataset_info(): Get detailed information about the loaded dataset
             get_attack_types(): Get list of unique attack types found in the dataset
         """
+        actual_path: Path
         if dataset_path is None:
-            dataset_path = self.data_dir / 'cic_ddos2019'
+            actual_path = self.data_dir / 'cic_ddos2019'
             # Also check legacy location
             legacy_path = Path('data/raw/CIC-DDoS2019')
-            if legacy_path.exists() and not dataset_path.exists():
-                dataset_path = legacy_path
+            if legacy_path.exists() and not actual_path.exists():
+                actual_path = legacy_path
+        else:
+            actual_path = Path(dataset_path)
 
-        dataset_path = Path(dataset_path)
-
-        if not dataset_path.exists():
+        if not actual_path.exists():
             raise FileNotFoundError(
                 f"CIC-DDoS2019 dataset not found at {dataset_path}. "
                 "Please download the dataset from: "
@@ -613,10 +623,10 @@ class DatasetLoader:
             )
 
         # Find all CSV files (recursively)
-        all_csv_files = list(dataset_path.glob("*.csv"))
-        subdir_csv_files = []
+        all_csv_files = list(actual_path.glob("*.csv"))
+        subdir_csv_files: List[Path] = []
 
-        for subdir in dataset_path.iterdir():
+        for subdir in actual_path.iterdir():
             if subdir.is_dir() and not subdir.name.startswith('.'):
                 # First level subdirectories
                 subdir_csvs = list(subdir.glob("*.csv"))
@@ -638,7 +648,7 @@ class DatasetLoader:
 
         if not csv_files:
             raise FileNotFoundError(
-                f"No valid CSV files found in {dataset_path} or its subdirectories. "
+                f"No valid CSV files found in {actual_path} or its subdirectories. "
                 f"Please download the CIC-DDoS2019 dataset."
             )
 
@@ -694,7 +704,7 @@ class DatasetLoader:
         logger.info(f"[INFO] Using adaptive chunk size: {chunk_size:,} rows")
 
         # Use streaming concat: accumulate file DFs, concat in batches
-        dfs_files = []  # One DF per file (will be smaller than all_chunks)
+        dfs_files: List[pd.DataFrame] = []  # One DF per file (will be smaller than all_chunks)
         total_rows_loaded = 0
         CONCAT_BATCH_SIZE = 4  # Concat every N files to avoid memory spike
 
@@ -782,10 +792,12 @@ class DatasetLoader:
                             chunk = chunk.sample(n=chunk_sample_size, random_state=random_state).reset_index(drop=True)
                         elif sample_indices is not None and next_sample_idx is not None:
                             # Use pre-computed indices (for larger ratios)
-                            chunk_sample_mask = (sample_indices >= chunk_start_row) & (sample_indices < chunk_end_row)
-                            chunk_sample_indices = sample_indices[chunk_sample_mask]
+                            # Cast to np.ndarray to satisfy Pylance
+                            indices_arr = cast(np.ndarray, sample_indices)
+                            chunk_sample_mask = (indices_arr >= chunk_start_row) & (indices_arr < chunk_end_row)
+                            chunk_sample_indices = indices_arr[chunk_sample_mask]
 
-                            if len(chunk_sample_indices) > 0:
+                            if chunk_sample_indices.shape[0] > 0:
                                 local_indices = chunk_sample_indices - chunk_start_row
                                 chunk = chunk.iloc[local_indices].reset_index(drop=True)
                             else:
@@ -882,7 +894,7 @@ class DatasetLoader:
 
         try:
             # Progressive concat to avoid large intermediate objects
-            combined_df = None
+            combined_df: Optional[pd.DataFrame] = None
             for i, df_file in enumerate(dfs_files):
                 if combined_df is None:
                     combined_df = df_file.copy()
@@ -895,6 +907,10 @@ class DatasetLoader:
 
             del dfs_files
             self._check_memory_and_gc(force=True)
+
+            if combined_df is None:
+                logger.warning("[WARNING] No data loaded for CIC-DDoS2019")
+                return pd.DataFrame()
 
             logger.info(f"[OUTPUT] CIC-DDoS2019 loaded successfully: {combined_df.shape[0]:,} rows, {combined_df.shape[1]} columns")
             if len(combined_df) > 0:

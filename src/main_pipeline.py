@@ -40,17 +40,22 @@ except ImportError:
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
-try:
-    from src.models.cnn import CNNTabularClassifier, TORCH_AVAILABLE as CNN_AVAILABLE
-except ImportError:
-    CNNTabularClassifier = None
-    CNN_AVAILABLE = False
 
+# Import CNN (optional)
 try:
-    from src.models.tabnet import TabNetClassifierWrapper, TABNET_AVAILABLE
-except ImportError:
-    TabNetClassifierWrapper = None
+    from src.models.cnn import TORCH_AVAILABLE as CNN_AVAILABLE
+    from src.models.cnn import CNNTabularClassifier
+except (ImportError, AttributeError):
+    CNN_AVAILABLE = False
+    CNNTabularClassifier = None
+
+# Import TabNet (optional)
+try:
+    from src.models.tabnet import TABNET_AVAILABLE
+    from src.models.tabnet import TabNetClassifierWrapper
+except (ImportError, AttributeError):
     TABNET_AVAILABLE = False
+    TabNetClassifierWrapper = None
 from src.evaluation_3d import Evaluation3D
 from ahp_topsis_framework import AHPTopsisFramework
 
@@ -79,7 +84,7 @@ class IRPPipeline:
         self.sample_ratio = sample_ratio
 
         # Initialize system monitor
-        self.monitor = None
+        self.monitor: Any = None
         if SystemMonitor is not None:
             try:
                 self.monitor = SystemMonitor(max_memory_percent=90.0)
