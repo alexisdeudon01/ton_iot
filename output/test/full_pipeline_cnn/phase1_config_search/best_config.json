@@ -10,5 +10,5 @@
     "apply_resampling": true,
     "resampling_method": "SMOTE"
   },
-  "score": 0.7448656099241903
+  "score": 0.7406876593399021
 }
