@@ -397,10 +397,10 @@ class PreprocessingPipeline:
             stratify=y,
             random_state=self.random_state,
         ))
-        X_train = res1[0]
-        X_temp = res1[1]
-        y_train = res1[2]
-        y_temp = res1[3]
+        X_train = cast(np.ndarray, res1[0])
+        X_temp = cast(np.ndarray, res1[1])
+        y_train = cast(np.ndarray, res1[2])
+        y_temp = cast(np.ndarray, res1[3])
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
@@ -411,10 +411,10 @@ class PreprocessingPipeline:
             stratify=y_temp,
             random_state=self.random_state,
         ))
-        X_val = res2[0]
-        X_test = res2[1]
-        y_val = res2[2]
-        y_test = res2[3]
+        X_val = cast(np.ndarray, res2[0])
+        X_test = cast(np.ndarray, res2[1])
+        y_val = cast(np.ndarray, res2[2])
+        y_test = cast(np.ndarray, res2[3])
 
         logger.info(
             f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})"
@@ -507,12 +507,9 @@ class PreprocessingPipeline:
             splits = self.split_data(
                 X_scaled, y_array, train_ratio, val_ratio, test_ratio
             )
-            train_split = splits["train"]
-            X_train, y_train = train_split[0], train_split[1]
-            val_split = splits["val"]
-            X_val, y_val = val_split[0], val_split[1]
-            test_split = splits["test"]
-            X_test, y_test = test_split[0], test_split[1]
+            X_train, y_train = splits["train"]
+            X_val, y_val = splits["val"]
+            X_test, y_test = splits["test"]
 
             # Step 6: Resampling (SMOTE) - ONLY on training data
             if apply_resampling:
