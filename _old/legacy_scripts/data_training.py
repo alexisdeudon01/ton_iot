@@ -7,14 +7,16 @@ import math
 import seaborn as sns
 from sklearn.model_selection import train_test_split
 from datetime import datetime
+import sys
+from pathlib import Path
 
-# Path to the CSV file (local)
-file_path = 'train_test_network.csv'
+# Add project root to path to import src
+sys.path.append(str(Path(__file__).parent.parent.parent))
+from src.core.dataset_loader import DatasetLoader
 
-# Load CSV file into a DataFrame
-data = pd.read_csv(file_path)
-
-# data = pd.read_csv(file_path, sep=None, engine='python') # It's said that this method is more precise, but for my case, it gives the same result
+# Load CSV file using DatasetLoader
+loader = DatasetLoader(data_dir='datasets')
+data = loader.load_ton_iot()
 
 # Display the first few rows of the dataset to understand its structure
 print(data.head())
