@@ -50,7 +50,7 @@ try:
 except ImportError:
     TabNetClassifierWrapper = None
     TABNET_AVAILABLE = False
-from evaluation_3d import Evaluation3D
+from src.evaluation_3d import Evaluation3D
 from ahp_topsis_framework import AHPTopsisFramework
 
 # Set random seeds for reproducibility
