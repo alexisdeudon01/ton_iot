@@ -131,6 +131,35 @@ The fused dataset undergoes the following sub-steps:
 - 5-fold stratified cross-validation for model evaluation
 - Ensures robust performance estimation
 
+#### Feature Engineering comportemental
+
+Nous ajoutons des **ratios comportementaux** (features dérivées) avant l'early fusion afin d'exprimer la dynamique des flux. Ils sont calculés avec un petit `eps` pour éviter la division par zéro.
+
+**Colonnes attendues (avant harmonisation) :**
+- **CIC-DDoS2019** : `Total Fwd Bytes`, `Total Bwd Bytes`, `Total Fwd Packets`, `Total Bwd Packets`, `Flow Duration`
+- **TON_IoT** : `bytes_in`, `bytes_out`, `pkts_in`, `pkts_out`, `duration`
+
+**Formules (nouvelles features) :**
+- `Flow_Bytes_s = (Total Fwd Bytes + Total Bwd Bytes) / (Flow Duration + eps)`  
+  (ou `Flow_Bytes_s = (bytes_in + bytes_out) / (duration + eps)` pour TON_IoT)
+- `Flow_Packets_s = (Total Fwd Packets + Total Bwd Packets) / (Flow Duration + eps)`  
+  (ou `Flow_Packets_s = (pkts_in + pkts_out) / (duration + eps)` pour TON_IoT)
+- `Avg_Packet_Size = (Total Fwd Bytes + Total Bwd Bytes) / (Total Fwd Packets + Total Bwd Packets + eps)`  
+  (ou `Avg_Packet_Size = (bytes_in + bytes_out) / (pkts_in + pkts_out + eps)` pour TON_IoT)
+- `Traffic_Direction_Ratio = Total Fwd Bytes / (Total Bwd Bytes + eps)`  
+  (ou `Traffic_Direction_Ratio = bytes_out / (bytes_in + eps)` pour TON_IoT)
+
+**Note early fusion (`dataset_source`) :**
+Lors de l'early fusion, une colonne **`dataset_source`** est ajoutée et conservée comme feature :  
+`0 = CIC-DDoS2019`, `1 = TON_IoT`. Cette colonne est encodée avant l'harmonisation et reste disponible dans les phases suivantes.
+
+#### Validation des ratios (KDE + MI + Permutation)
+
+En Phase 3, les ratios comportementaux sont validés avec :
+- **KDE (Kernel Density Estimation)** : tracés par label pour visualiser la séparation de distributions.
+- **Mutual Information (MI)** : mesure de la dépendance non linéaire entre chaque ratio et le label.
+- **Permutation Importance** : importance basée sur la perte de performance d'un Random Forest lors de la permutation des ratios.
+
 #### Three-Dimensional Evaluation Framework
 
 The framework evaluates algorithms across three dimensions:
@@ -222,9 +251,18 @@ The pipeline uses **both TON_IoT and CIC-DDoS2019 datasets** through a process o
 
 Results are automatically generated in the `output/` directory:
 - `output/phase1_preprocessing/` - Preprocessed datasets, harmonization statistics
+- `output/phase2_apply_best_config/` - Stateless preprocessing outputs
+  - `best_preprocessed.parquet` (or `best_preprocessed.csv.gz`) - Dataset cleaned/encoded (no scaling/FS/SMOTE)
+  - `feature_names.json` - List of feature columns after stateless preprocessing
+  - `phase2_summary.md` - Summary with dataset_source/label distributions and config traceability
 - `output/phase3_evaluation/` - 3D evaluation metrics, algorithm reports, visualizations
   - `algorithm_reports/` - Detailed reports per algorithm
-  - `visualizations/` - Graphs and charts for each dimension
+  - `visualizations/` - Graphs/charts for each dimension + KDE plots for ratio features (`INDEX.md`)
+  - `metrics/` - Ratio validation and significance artifacts
+    - `ratio_validation.json`
+    - `mutual_information.csv`
+    - `permutation_importance.csv`
+    - `INDEX.md`
 - `output/phase5_ranking/` - AHP-TOPSIS ranking results, decision matrices
 - `output/logs/` - Log files for each phase
 
