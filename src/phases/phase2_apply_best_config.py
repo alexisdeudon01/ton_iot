@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 
 from src.core import DatasetLoader, DataHarmonizer, PreprocessingPipeline
+from src.core.feature_engineering import engineer_cic, engineer_ton
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,8 @@ class Phase2ApplyBestConfig:
             incremental=False
         )
         logger.info(f"TON_IoT loaded: {df_ton.shape}")
+        df_ton = engineer_ton(df_ton)
+        logger.info("TON_IoT feature engineering applied.")
         
         try:
             max_files = None
@@ -91,6 +94,8 @@ class Phase2ApplyBestConfig:
                 max_files_in_test=max_files
             )
             logger.info(f"CIC-DDoS2019 loaded: {df_cic.shape}")
+            df_cic = engineer_cic(df_cic)
+            logger.info("CIC-DDoS2019 feature engineering applied.")
         except FileNotFoundError:
             logger.warning("CIC-DDoS2019 not available. Using TON_IoT only.")
             df_cic = pd.DataFrame()
@@ -102,11 +107,16 @@ class Phase2ApplyBestConfig:
                 logger.info("Performing early fusion...")
                 df_processed, validation = self.harmonizer.early_fusion(df_cic_harm, df_ton_harm)
                 logger.info(f"Fused dataset: {df_processed.shape}")
+                if 'dataset_source' in df_processed.columns:
+                    logger.info("[INFO] Early fusion done with dataset_source encoded (CIC=0, TON=1)")
             except Exception as exc:
                 logger.warning("Harmonization failed, falling back to TON_IoT only: %s", exc)
                 df_processed = df_ton
         else:
             df_processed = df_ton
+
+        if 'dataset_source' not in df_processed.columns:
+            df_processed['dataset_source'] = 1
         
         # Ensure label column exists
         if 'label' not in df_processed.columns:
