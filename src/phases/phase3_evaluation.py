@@ -54,11 +54,9 @@ class Phase3Evaluation:
 
         # Load dataset (from Phase2 if available, otherwise fallback)
         df_processed = self._load_and_prepare_dataset()
-        X = df_processed.drop(
-            ['label', 'dataset_source'] if 'dataset_source' in df_processed.columns else ['label'],
-            axis=1,
-            errors='ignore'
-        )
+
+        # Keep dataset_source as a feature if present
+        X = df_processed.drop(['label'], axis=1, errors='ignore')
         y = df_processed['label']
 
         # Get feature names (will be updated after preprocessing in each fold)
@@ -142,6 +140,7 @@ class Phase3Evaluation:
                     fold_results.append(results)
                 except Exception as exc:
                     logger.warning("Fold %s failed for %s: %s", fold_idx + 1, model_name, exc)
+                    logger.debug("Full traceback for fold failure:", exc_info=True)
 
             if fold_results:
                 avg_results = {
