@@ -163,6 +163,9 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         self.label_encoder = LabelEncoder()
         self.input_dim: Optional[int] = None
         self.device_obj: Optional[torch.device] = None
+        
+        logger.info(f"CNNTabularClassifier initialized: hidden_dims={hidden_dims}, lr={learning_rate}, "
+                   f"batch_size={batch_size}, epochs={epochs}, device={device}, random_state={random_state}")
 
     def _set_random_state(self) -> None:
         torch.manual_seed(self.random_state)
@@ -171,6 +174,7 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
             torch.cuda.manual_seed_all(self.random_state)
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "CNNTabularClassifier":
+        logger.info(f"Starting CNN training: X.shape={X.shape}, y.shape={y.shape}, unique_classes={len(np.unique(y))}")
         self._set_random_state()
 
         if self.device is None:
@@ -179,14 +183,20 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
             )
         else:
             self.device_obj = torch.device(self.device)
+        
+        logger.info(f"Using device: {self.device_obj}")
 
         y_encoded = self.label_encoder.fit_transform(y)
         self.input_dim = int(X.shape[1])
         num_classes = int(len(np.unique(y_encoded)))
+        
+        logger.debug(f"Encoded labels: {len(np.unique(y_encoded))} classes, input_dim={self.input_dim}")
 
         hidden_dims = (
             self.hidden_dims if self.hidden_dims is not None else [64, 32, 16]
         )
+        
+        logger.debug(f"Creating TabularCNN with hidden_dims={hidden_dims}, num_classes={num_classes}")
 
         self.model = TabularCNN(
             input_dim=self.input_dim,
@@ -199,10 +209,13 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
 
         dataset = TabularDataset(X, cast(np.ndarray, y_encoded))
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        
+        logger.info(f"DataLoader created: batch_size={self.batch_size}, batches={len(dataloader)}")
 
         self.model.train()
         for epoch in range(self.epochs):
             epoch_loss = 0.0
+            n_batches = 0
             for batch_X, batch_y in dataloader:
                 batch_X = batch_X.to(self.device_obj)
                 batch_y = batch_y.to(self.device_obj)
@@ -214,12 +227,17 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
                 optimizer.step()
 
                 epoch_loss += float(loss.item())
+                n_batches += 1
 
-            if (epoch + 1) % 5 == 0:
-                avg_loss = epoch_loss / max(1, len(dataloader))
+            avg_loss = epoch_loss / max(1, n_batches)
+            if (epoch + 1) % 5 == 0 or (epoch + 1) == self.epochs:
                 logger.info(
-                    f"[CNN] Epoch {epoch+1}/{self.epochs} loss={avg_loss:.4f}"
+                    f"[CNN] Epoch {epoch+1}/{self.epochs} - avg_loss={avg_loss:.4f}, batches={n_batches}"
                 )
+            else:
+                logger.debug(f"[CNN] Epoch {epoch+1}/{self.epochs} - avg_loss={avg_loss:.4f}")
+        
+        logger.info(f"CNN training completed after {self.epochs} epochs")
 
         return self
 
@@ -227,6 +245,7 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         if self.model is None or self.device_obj is None:
             raise ValueError("Model must be fitted before prediction")
 
+        logger.debug(f"CNN predict: X.shape={X.shape}, batch_size={self.batch_size}")
         self.model.eval()
         dataset = TabularDataset(X)
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
@@ -240,12 +259,15 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
                 preds.extend(pred.cpu().numpy())
 
         preds = np.asarray(preds)
-        return self.label_encoder.inverse_transform(preds)
+        result = self.label_encoder.inverse_transform(preds)
+        logger.debug(f"CNN prediction completed: {len(result)} predictions, unique_classes={len(np.unique(result))}")
+        return result
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         if self.model is None or self.device_obj is None:
             raise ValueError("Model must be fitted before prediction")
 
+        logger.debug(f"CNN predict_proba: X.shape={X.shape}, batch_size={self.batch_size}")
         self.model.eval()
         dataset = TabularDataset(X)
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=False)
@@ -258,4 +280,6 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
                 probs = torch.softmax(logits, dim=1)
                 probs_all.extend(probs.cpu().numpy())
 
-        return np.asarray(probs_all)
+        result = np.asarray(probs_all)
+        logger.debug(f"CNN predict_proba completed: shape={result.shape}, probs_sum_range=[{result.sum(axis=1).min():.3f}, {result.sum(axis=1).max():.3f}]")
+        return result

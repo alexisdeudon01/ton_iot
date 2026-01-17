@@ -53,16 +53,30 @@ def compute_shap_score(model, X_sample, top_k: int = 10) -> Optional[float]:
     Returns:
         SHAP score (mean absolute importance)
     """
+    logger.debug(f"Computing SHAP score: X_sample.shape={X_sample.shape}, top_k={top_k}")
     try:
-        explainer = shap.TreeExplainer(model) if hasattr(model, 'tree_') else shap.KernelExplainer(model.predict_proba, X_sample[:100])
-        shap_values = explainer.shap_values(X_sample[:min(100, len(X_sample))])
+        # Choose explainer based on model type
+        if hasattr(model, 'tree_'):
+            logger.debug("Using TreeExplainer for tree-based model")
+            explainer = shap.TreeExplainer(model)
+        else:
+            logger.debug("Using KernelExplainer for non-tree model")
+            explainer = shap.KernelExplainer(model.predict_proba, X_sample[:100])
+        
+        sample_size = min(100, len(X_sample))
+        logger.debug(f"Computing SHAP values for {sample_size} samples")
+        shap_values = explainer.shap_values(X_sample[:sample_size])
+        
         if isinstance(shap_values, list):
+            logger.debug(f"SHAP values is a list (multiclass), using class index 1")
             shap_values = shap_values[1]  # Binary classification: use positive class
+        
         mean_abs = np.mean(np.abs(shap_values), axis=0)
         top_k_mean = np.mean(np.sort(mean_abs)[-top_k:])
+        logger.info(f"SHAP score computed successfully: {top_k_mean:.4f} (top_{top_k}_mean)")
         return float(top_k_mean)
     except Exception as e:
-        logger.warning(f"SHAP computation failed: {e}")
+        logger.warning(f"SHAP computation failed: {e}", exc_info=True)
         return None
 
 
@@ -79,17 +93,27 @@ def compute_lime_score(model, X_sample, y_sample, top_k: int = 10) -> Optional[f
     Returns:
         LIME score (mean absolute importance)
     """
+    logger.debug(f"Computing LIME score: X_sample.shape={X_sample.shape}, top_k={top_k}")
     try:
         explainer = lime.lime_tabular.LimeTabularExplainer(X_sample, mode='classification')
         importances = []
-        for i in range(min(10, len(X_sample))):
+        n_samples = min(10, len(X_sample))
+        logger.debug(f"Computing LIME explanations for {n_samples} samples")
+        
+        for i in range(n_samples):
             exp = explainer.explain_instance(X_sample[i], model.predict_proba)
             top_features = exp.as_list()[:top_k]
             abs_imp = [abs(v) for _, v in top_features]
             importances.extend(abs_imp)
-        return float(np.mean(importances)) if importances else None
+        
+        result = float(np.mean(importances)) if importances else None
+        if result is not None:
+            logger.info(f"LIME score computed successfully: {result:.4f} (mean_abs_importance, {len(importances)} features)")
+        else:
+            logger.warning("LIME score computation returned None (no importances collected)")
+        return result
     except Exception as e:
-        logger.warning(f"LIME computation failed: {e}")
+        logger.warning(f"LIME computation failed: {e}", exc_info=True)
         return None
 
 
@@ -109,8 +133,11 @@ def compute_explainability_score(model_name: str, shap_score: Optional[float] = 
         Dict with explain_score, native_score, shap_score, lime_score,
         weights_used, missing_components
     """
+    logger.debug(f"Computing explainability score for {model_name}: shap={shap_score}, lime={lime_score}, weights={weights}")
+    
     w_native, w_shap, w_lime = weights
     native_score = get_native_interpretability_score(model_name)
+    logger.debug(f"Native interpretability score for {model_name}: {native_score}")
 
     # Normalize weights if SHAP/LIME missing
     available_weights = {'native': w_native}
@@ -119,20 +146,25 @@ def compute_explainability_score(model_name: str, shap_score: Optional[float] = 
     if shap_score is None or np.isnan(shap_score):
         missing.append('shap')
         shap_score = None
+        logger.debug("SHAP score missing, will use native score only for that component")
     else:
         available_weights['shap'] = w_shap
+        logger.debug(f"SHAP score available: {shap_score}")
 
     if lime_score is None or np.isnan(lime_score):
         missing.append('lime')
         lime_score = None
+        logger.debug("LIME score missing, will use native score only for that component")
     else:
         available_weights['lime'] = w_lime
+        logger.debug(f"LIME score available: {lime_score}")
 
     # Renormalize weights
     total_weight = sum(available_weights.values())
     if total_weight > 0:
         for k in available_weights:
             available_weights[k] /= total_weight
+        logger.debug(f"Renormalized weights: {available_weights}")
 
     # Normalize SHAP/LIME to [0,1] if available (assume already in reasonable range, or min-max)
     # For simplicity, assume they're already normalized or need min-max scaling
@@ -145,7 +177,7 @@ def compute_explainability_score(model_name: str, shap_score: Optional[float] = 
     if lime_score is not None:
         score += available_weights.get('lime', 0) * min(lime_score, 1.0)
 
-    return {
+    result = {
         'explain_score': float(score),
         'native_score': float(native_score),
         'shap_score': float(shap_score) if shap_score is not None else np.nan,
@@ -153,3 +185,7 @@ def compute_explainability_score(model_name: str, shap_score: Optional[float] = 
         'weights_used': available_weights,
         'missing_components': missing
     }
+    
+    logger.info(f"Explainability score computed for {model_name}: {score:.4f} (missing: {missing})")
+    
+    return result

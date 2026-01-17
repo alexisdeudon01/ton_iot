@@ -4,6 +4,7 @@ TabNet model for tabular data (DDoS detection)
 Uses pytorch-tabnet library for implementation
 """
 import warnings
+import logging
 from typing import Optional
 
 import numpy as np
@@ -12,6 +13,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
 
 warnings.filterwarnings("ignore")
+logger = logging.getLogger(__name__)
 
 from pytorch_tabnet.tab_model import TabNetClassifier
 
@@ -95,6 +97,9 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         self.model = None
         self.label_encoder = LabelEncoder()
         self.input_dim = None
+        
+        logger.info(f"TabNetClassifierWrapper initialized: n_d={n_d}, n_a={n_a}, n_steps={n_steps}, "
+                   f"max_epochs={max_epochs}, batch_size={batch_size}, seed={seed}")
 
     def fit(self, X: np.ndarray, y: np.ndarray):
         """
@@ -107,11 +112,16 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         Returns:
             self
         """
+        logger.info(f"Starting TabNet training: X.shape={X.shape}, y.shape={y.shape}, unique_classes={len(np.unique(y))}")
+        
         # Encode labels if needed
         y_encoded = self.label_encoder.fit_transform(y)
         self.input_dim = X.shape[1]
+        
+        logger.debug(f"Encoded labels: {len(np.unique(y_encoded))} classes, input_dim={self.input_dim}")
 
         # Initialize TabNet model
+        logger.debug(f"Creating TabNetClassifier: n_d={self.n_d}, n_a={self.n_a}, n_steps={self.n_steps}")
         self.model = TabNetClassifier(
             n_d=self.n_d,
             n_a=self.n_a,
@@ -132,6 +142,8 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         )
 
         # Train model
+        logger.info(f"Training TabNet: max_epochs={self.max_epochs}, patience={self.patience}, "
+                   f"batch_size={self.batch_size}, virtual_batch_size={self.virtual_batch_size}")
         self.model.fit(
             X_train=X,
             y_train=y_encoded,
@@ -140,6 +152,8 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
             batch_size=self.batch_size,
             virtual_batch_size=self.virtual_batch_size,
         )
+        
+        logger.info(f"TabNet training completed after {self.max_epochs} max epochs")
 
         return self
 
@@ -156,11 +170,14 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         if self.model is None:
             raise ValueError("Model must be fitted before prediction")
 
+        logger.debug(f"TabNet predict: X.shape={X.shape}")
         predictions = self.model.predict(X)
         predictions = predictions.flatten()
 
         # Decode labels
-        return self.label_encoder.inverse_transform(predictions)
+        result = self.label_encoder.inverse_transform(predictions)
+        logger.debug(f"TabNet prediction completed: {len(result)} predictions, unique_classes={len(np.unique(result))}")
+        return result
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
@@ -175,7 +192,10 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         if self.model is None:
             raise ValueError("Model must be fitted before prediction")
 
+        logger.debug(f"TabNet predict_proba: X.shape={X.shape}")
         probabilities = self.model.predict_proba(X)
+        logger.debug(f"TabNet predict_proba completed: shape={probabilities.shape}, "
+                    f"probs_sum_range=[{probabilities.sum(axis=1).min():.3f}, {probabilities.sum(axis=1).max():.3f}]")
         return probabilities
 
 
