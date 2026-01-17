@@ -40,7 +40,7 @@ except ImportError:
     )
 
 
-if TORCH_AVAILABLE and torch is not None:
+if TORCH_AVAILABLE:
 
     class TabularDataset(Dataset):
         """PyTorch Dataset for tabular data."""

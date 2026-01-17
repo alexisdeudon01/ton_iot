@@ -3,18 +3,20 @@
 TabNet model for tabular data (DDoS detection)
 Uses pytorch-tabnet library for implementation
 """
+import warnings
+from typing import Optional
+
 import numpy as np
+import torch
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
-from typing import Optional
-import warnings
-import torch
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 # Try to import pytorch-tabnet, with fallback if not available
 try:
     from pytorch_tabnet.tab_model import TabNetClassifier
+
     TABNET_AVAILABLE = True
 except ImportError:
     TABNET_AVAILABLE = False
@@ -24,28 +26,33 @@ except ImportError:
 
 class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
     """
-    Scikit-learn compatible TabNet classifier wrapper
+    Scikit-learn compatible TabNet classifier wrapper.
+    If pytorch-tabnet is not installed, this class will raise an ImportError upon instantiation.
     """
 
-    def __init__(self, n_d: int = 8, n_a: int = 8,
-                 n_steps: int = 3,
-                 gamma: float = 1.5,
-                 lambda_sparse: float = 1e-3,
-                 optimizer_fn: Optional[object] = None,
-                 optimizer_params: Optional[dict] = None,
-                 scheduler_fn: Optional[object] = None,
-                 scheduler_params: Optional[dict] = None,
-                 mask_type: str = 'sparsemax',
-                 n_shared: int = 2,
-                 n_independent: int = 2,
-                 virtual_batch_size: int = 128,
-                 momentum: float = 0.02,
-                 clip_value: float = 2.0,
-                 verbose: int = 0,
-                 seed: int = 42,
-                 max_epochs: int = 100,
-                 patience: int = 15,
-                 batch_size: int = 1024):
+    def __init__(
+        self,
+        n_d: int = 8,
+        n_a: int = 8,
+        n_steps: int = 3,
+        gamma: float = 1.5,
+        lambda_sparse: float = 1e-3,
+        optimizer_fn: Optional[object] = None,
+        optimizer_params: Optional[dict] = None,
+        scheduler_fn: Optional[object] = None,
+        scheduler_params: Optional[dict] = None,
+        mask_type: str = "sparsemax",
+        n_shared: int = 2,
+        n_independent: int = 2,
+        virtual_batch_size: int = 128,
+        momentum: float = 0.02,
+        clip_value: float = 2.0,
+        verbose: int = 0,
+        seed: int = 42,
+        max_epochs: int = 100,
+        patience: int = 15,
+        batch_size: int = 1024,
+    ):
         """
         Initialize TabNet classifier
 
@@ -81,8 +88,8 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         self.n_steps = n_steps
         self.gamma = gamma
         self.lambda_sparse = lambda_sparse
-        self.optimizer_fn = optimizer_fn or torch.optim.Adam if TABNET_AVAILABLE else None
-        self.optimizer_params = optimizer_params or {'lr': 2e-2}
+        self.optimizer_fn = optimizer_fn or torch.optim.Adam
+        self.optimizer_params = optimizer_params or {"lr": 2e-2}
         self.scheduler_fn = scheduler_fn
         self.scheduler_params = scheduler_params
         self.mask_type = mask_type
@@ -131,9 +138,9 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
             n_shared=self.n_shared,
             n_independent=self.n_independent,
             momentum=self.momentum,
-            clip_value=float(self.clip_value),
+            clip_value=int(self.clip_value),
             seed=self.seed,
-            verbose=self.verbose
+            verbose=self.verbose,
         )
 
         # Train model
@@ -143,7 +150,7 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
             max_epochs=self.max_epochs,
             patience=self.patience,
             batch_size=self.batch_size,
-            virtual_batch_size=self.virtual_batch_size
+            virtual_batch_size=self.virtual_batch_size,
         )
 
         return self
@@ -184,17 +191,6 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         return probabilities
 
 
-# Fallback implementation if TabNet is not available
-if not TABNET_AVAILABLE:
-    class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
-        """Fallback TabNet classifier that raises error on use"""
-
-        def __init__(self, **kwargs):
-            raise ImportError(
-                "pytorch-tabnet is not installed. Install with: pip install pytorch-tabnet"
-            )
-
-
 def main():
     """Test the TabNet model"""
     if not TABNET_AVAILABLE:
@@ -203,34 +199,40 @@ def main():
 
     import sys
     from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    sys.path.insert(0, str(Path(__file__).parent.parent / 'core'))
 
-    from sklearn.model_selection import train_test_split
-    from sklearn.metrics import accuracy_score, f1_score
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    sys.path.insert(0, str(Path(__file__).parent.parent / "core"))
+
     from dataset_loader import DatasetLoader
     from preprocessing_pipeline import PreprocessingPipeline
+    from sklearn.metrics import accuracy_score, f1_score
+    from sklearn.model_selection import train_test_split
 
     loader = DatasetLoader()
     pipeline = PreprocessingPipeline(random_state=42)
 
     try:
         df = loader.load_ton_iot(sample_ratio=0.01)
-        X = df.drop(['label', 'type'] if 'type' in df.columns else ['label'], axis=1, errors='ignore')
-        y = df['label']
+        X = df.drop(
+            ["label", "type"] if "type" in df.columns else ["label"],
+            axis=1,
+            errors="ignore",
+        )
+        y = df["label"]
 
         result = pipeline.prepare_data(
-            X, y,
-            apply_resampling=True,
-            apply_scaling=True,
-            apply_splitting=False
+            X, y, apply_resampling=True, apply_scaling=True, apply_splitting=False
         )
-        X_processed = result['X_processed']
-        y_processed = result['y_processed']
+        X_processed = result["X_processed"]
+        y_processed = result["y_processed"]
 
         # Split
         X_train, X_test, y_train, y_test = train_test_split(
-            X_processed, y_processed, test_size=0.2, random_state=42, stratify=y_processed
+            X_processed,
+            y_processed,
+            test_size=0.2,
+            random_state=42,
+            stratify=y_processed,
         )
 
         print(f"Training TabNet on {X_train.shape[0]} samples...")
@@ -242,7 +244,7 @@ def main():
             patience=5,
             batch_size=1024,
             seed=42,
-            verbose=1
+            verbose=1,
         )
         tabnet.fit(X_train, y_train)
 
@@ -251,7 +253,7 @@ def main():
 
         # Evaluate
         accuracy = accuracy_score(y_test, y_pred)
-        f1 = f1_score(y_test, y_pred, average='binary')
+        f1 = f1_score(y_test, y_pred, average="binary")
 
         print(f"\nTabNet Results:")
         print(f"  Accuracy: {accuracy:.4f}")
@@ -260,6 +262,7 @@ def main():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

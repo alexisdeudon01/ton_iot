@@ -136,6 +136,10 @@ class AHP:
         if self.consistency_ratio is None:
             if self.weights is None:
                 self.compute_weights()
+        
+        if self.consistency_ratio is None:
+            raise ValueError("Consistency ratio could not be computed.")
+            
         return self.consistency_ratio <= threshold
 
 
@@ -143,7 +147,7 @@ class TOPSIS:
     """Technique for Order Preference by Similarity to Ideal Solution"""
 
     def __init__(self, decision_matrix: np.ndarray, weights: np.ndarray,
-                 criteria_types: List[str] = None):
+                 criteria_types: Optional[List[str]] = None):
         """
         Initialize TOPSIS
 
@@ -266,7 +270,7 @@ class TOPSIS:
 class AHPTopsisFramework:
     """Complete AHP-TOPSIS framework for multi-criteria decision making"""
 
-    def __init__(self, criteria_names: List[str], criteria_types: List[str] = None):
+    def __init__(self, criteria_names: List[str], criteria_types: Optional[List[str]] = None):
         """
         Initialize AHP-TOPSIS framework
 

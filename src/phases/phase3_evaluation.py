@@ -6,7 +6,7 @@ Phase 3: 3D Evaluation
 import logging
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -96,7 +96,7 @@ class Phase3Evaluation:
 
             for fold_idx, (train_idx, test_idx) in enumerate(
                 tqdm(
-                    cv.split(X.values, y.values),
+                    cv.split(X.to_numpy(), y.to_numpy()),
                     desc=f"  {model_name} CV folds",
                     total=self.config.phase3_cv_folds,
                     leave=False
@@ -226,11 +226,14 @@ class Phase3Evaluation:
             if self.config.test_mode and max_files is None:
                 max_files = 3
             
+            # Ensure max_files is an int, with -1 as default for no limit
+            max_files_int = int(max_files) if max_files is not None else -1
+
             df_cic = self.loader.load_cic_ddos2019(
                 sample_ratio=self.config.sample_ratio,
                 random_state=self.config.random_state,
                 incremental=False,
-                max_files_in_test=max_files
+                max_files_in_test=max_files_int
             )
             df_cic = engineer_cic(df_cic)
         except FileNotFoundError:
@@ -587,7 +590,7 @@ class Phase3Evaluation:
 
         valid_mask = np.isfinite(feature_df).all(axis=1)
         feature_df = feature_df[valid_mask]
-        y = y[valid_mask.values]
+        y = y[valid_mask]
 
         if feature_df.empty:
             logger.warning("No valid data for significance analysis.")
@@ -601,13 +604,13 @@ class Phase3Evaluation:
             pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
             return mi_path, perm_path
 
-        mi_scores = mutual_info_classif(feature_df.values, y, random_state=self.config.random_state)
+        mi_scores = mutual_info_classif(feature_df.to_numpy(), y, random_state=self.config.random_state)
         mi_df = pd.DataFrame({"feature": available_features, "mutual_information": mi_scores})
         mi_df.to_csv(mi_path, index=False)
         logger.info("Saved mutual information to %s", mi_path)
 
         X_train, X_test, y_train, y_test = train_test_split(
-            feature_df.values,
+            feature_df.to_numpy(),
             y,
             test_size=0.2,
             random_state=self.config.random_state,
@@ -625,8 +628,8 @@ class Phase3Evaluation:
         )
         perm_df = pd.DataFrame({
             "feature": available_features,
-            "importance_mean": perm_results.importances_mean,
-            "importance_std": perm_results.importances_std
+            "importance_mean": perm_results["importances_mean"],
+            "importance_std": perm_results["importances_std"]
         })
         perm_df.to_csv(perm_path, index=False)
         logger.info("Saved permutation importance to %s", perm_path)
@@ -638,9 +641,9 @@ class Phase3Evaluation:
         metrics_dir: Path,
         visualizations_dir: Path,
         ratio_validation_path: Path,
-        mi_path: Path,
-        perm_path: Path,
-        kde_paths: Dict[str, Path] = None
+        mi_path: Path | None,
+        perm_path: Path | None,
+        kde_paths: Optional[Dict[str, Path]] = None
     ) -> None:
         """Generate INDEX.md files for metrics and visualizations."""
         metrics_entries = [

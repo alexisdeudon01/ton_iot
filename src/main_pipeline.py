@@ -350,7 +350,7 @@ class IRPPipeline:
         # Return processed data with feature names
         return X_processed, y_processed, feature_names
 
-    def phase3_evaluation(self, X: np.ndarray, y: np.ndarray, feature_names: list = None):
+    def phase3_evaluation(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None):
         """
         Phase 3: Multi-Dimensional Algorithm Evaluation
         - Train and evaluate 5 algorithms
@@ -766,7 +766,7 @@ class IRPPipeline:
             X, y, feature_names = self.phase1_preprocessing()
 
             # Phase 3: Evaluation
-            evaluation_results = self.phase3_evaluation(X, y, feature_names)
+            evaluation_results = self.phase3_evaluation(X, y, feature_names if feature_names is not None else [])
 
             # Phase 5: Ranking
             ranking_results = self.phase5_ranking(evaluation_results)
