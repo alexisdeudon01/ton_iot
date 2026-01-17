@@ -61,18 +61,98 @@ class PreprocessingPipeline:
         self.selected_features = None
         self.is_fitted = False
 
+    def sanitize_numeric_values(
+        self,
+        X_num: pd.DataFrame,
+        *,
+        replace_inf_with_max: bool = False,
+        clip_quantiles: Optional[Tuple[float, float]] = (0.001, 0.999),
+        abs_cap: Optional[float] = None,
+    ) -> pd.DataFrame:
+        """
+        Utility function to sanitize problematic numeric values before imputation/scaling.
+
+        This function:
+        1. Replaces +inf/-inf:
+           - If replace_inf_with_max=True: replace by max/min finite values per column
+           - Otherwise: replace by NaN
+        2. Optionally clips outliers using quantiles:
+           - If clip_quantiles is not None: clip values outside quantile range per column
+        3. Optionally applies absolute cap:
+           - If abs_cap is not None: clip values to [-abs_cap, abs_cap]
+
+        Args:
+            X_num: DataFrame with numeric columns only
+            replace_inf_with_max: Whether to replace inf with max/min of column (else NaN)
+            clip_quantiles: Tuple (q_low, q_high) for quantile clipping (None to skip)
+            abs_cap: Absolute cap value for clipping (None to skip)
+
+        Returns:
+            DataFrame with same shape and columns, sanitized values
+        """
+        X_sanitized = X_num.copy()
+
+        # Step 1: Handle Infinity values
+        if replace_inf_with_max:
+            for col in X_sanitized.columns:
+                finite_values = X_sanitized.loc[np.isfinite(X_sanitized[col]), col]
+                if len(finite_values) > 0:
+                    col_max = finite_values.max()
+                    col_min = finite_values.min()
+                    X_sanitized[col] = X_sanitized[col].replace(
+                        [np.inf, -np.inf], [col_max, col_min]
+                    )
+                    logger.debug(f"  Replaced inf in {col} with max={col_max}, min={col_min}")
+                else:
+                    # All values are inf/nan, replace with 0
+                    X_sanitized[col] = X_sanitized[col].replace([np.inf, -np.inf], 0)
+                    logger.debug(f"  Replaced inf in {col} with 0 (no finite values)")
+        else:
+            X_sanitized = X_sanitized.replace([np.inf, -np.inf], np.nan)
+            logger.debug("  Replaced Infinity with NaN")
+
+        # Step 2: Optional quantile clipping (robust outlier clipping)
+        if clip_quantiles is not None:
+            q_low, q_high = clip_quantiles
+            for col in X_sanitized.columns:
+                finite_values = X_sanitized.loc[np.isfinite(X_sanitized[col]), col]
+                if len(finite_values) > 0:
+                    q_low_val = finite_values.quantile(q_low)
+                    q_high_val = finite_values.quantile(q_high)
+                    X_sanitized[col] = X_sanitized[col].clip(
+                        lower=q_low_val, upper=q_high_val
+                    )
+                    logger.debug(
+                        f"  Clipped {col} to quantiles [{q_low_val:.3f}, {q_high_val:.3f}]"
+                    )
+
+        # Step 3: Optional absolute cap
+        if abs_cap is not None:
+            X_sanitized = X_sanitized.clip(lower=-abs_cap, upper=abs_cap)
+            logger.debug(f"  Applied absolute cap: [-{abs_cap}, {abs_cap}]")
+
+        return X_sanitized
+
     def clean_data(
-        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+        self,
+        X: pd.DataFrame,
+        y: Optional[pd.Series] = None,
+        impute: bool = True,
+        replace_inf_with_max: bool = False,
     ) -> Tuple[pd.DataFrame, Optional[pd.Series]]:
         """
         Step 1: Data Cleaning
         - Remove NaN and Infinity values
         - Convert to numeric
+        - Sanitize numeric values (inf, outliers)
         - Drop columns that are all NaN
+        - Impute NaN with median (optional)
 
         Args:
             X: Feature dataframe
             y: Target series (optional)
+            impute: Whether to apply median imputation (fit_transform)
+            replace_inf_with_max: Whether to replace inf with max of column instead of NaN
 
         Returns:
             Tuple of (cleaned_X, cleaned_y)
@@ -84,8 +164,36 @@ class PreprocessingPipeline:
         for col in X_cleaned.columns:
             X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
 
-        # Remove Infinity values (replace with NaN)
-        X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
+        # Extract numeric columns only for sanitization
+        numeric_cols = X_cleaned.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            X_numeric = X_cleaned[numeric_cols]
+            # Sanitize numeric values (inf handling + optional quantile clipping)
+            X_sanitized = self.sanitize_numeric_values(
+                X_numeric,
+                replace_inf_with_max=replace_inf_with_max,
+                clip_quantiles=(0.001, 0.999),  # Robust outlier clipping
+                abs_cap=None,  # No absolute cap in clean_data
+            )
+            # Update numeric columns with sanitized values
+            X_cleaned[numeric_cols] = X_sanitized
+            logger.info("  Applied numeric value sanitization (inf removal + quantile clipping)")
+
+        # Handle Infinity values in non-numeric columns (fallback)
+        non_numeric_cols = X_cleaned.columns.difference(numeric_cols)
+        if len(non_numeric_cols) > 0:
+            if replace_inf_with_max:
+                for col in non_numeric_cols:
+                    finite_values = X_cleaned.loc[np.isfinite(X_cleaned[col]), col]
+                    if len(finite_values) > 0:
+                        col_max = finite_values.max()
+                        X_cleaned[col] = X_cleaned[col].replace([np.inf, -np.inf], col_max)
+                logger.info("  Replaced Infinity with column maximums (non-numeric)")
+            else:
+                X_cleaned[non_numeric_cols] = X_cleaned[non_numeric_cols].replace(
+                    [np.inf, -np.inf], np.nan
+                )
+                logger.info("  Replaced Infinity with NaN (non-numeric)")
 
         # Drop columns that are all NaN
         cols_before = len(X_cleaned.columns)
@@ -94,11 +202,15 @@ class PreprocessingPipeline:
         if cols_before != cols_after:
             logger.info(f"  Dropped {cols_before - cols_after} columns (all NaN)")
 
-        # Handle remaining NaN values with median imputation
-        X_imputed = self.imputer.fit_transform(X_cleaned)
-        X_cleaned = pd.DataFrame(
-            cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
-        )
+        # Handle remaining NaN values with median imputation if requested
+        if impute:
+            X_imputed = self.imputer.fit_transform(X_cleaned)
+            X_cleaned = pd.DataFrame(
+                cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
+            )
+            logger.info("  Applied median imputation (fitted on current data)")
+        else:
+            logger.info("  Skipped imputation (stateless mode)")
 
         self.feature_names = X_cleaned.columns.tolist()
         logger.info(
@@ -327,9 +439,9 @@ class PreprocessingPipeline:
 
             # Initialize SMOTE with adjusted k_neighbors
             self.smote = SMOTE(k_neighbors=k_neighbors, random_state=self.random_state)
-            resampled_X, resampled_y = self.smote.fit_resample(X, y)
-            X_resampled = cast(np.ndarray, resampled_X)
-            y_resampled = cast(np.ndarray, resampled_y)
+            res_smote = cast(Any, self.smote.fit_resample(X, y))
+            X_resampled = cast(np.ndarray, res_smote[0])
+            y_resampled = cast(np.ndarray, res_smote[1])
 
         logger.info(
             f"  After resampling: {pd.Series(y_resampled).value_counts().to_dict()}"
@@ -372,37 +484,31 @@ class PreprocessingPipeline:
 
         # First split: train + (val + test)
         # Use explicit indexing and Any cast to avoid Pylance tuple size mismatch confusion
-        res1 = cast(
-            Any,
-            train_test_split(
-                X,
-                y,
-                test_size=(val_ratio + test_ratio),
-                stratify=y,
-                random_state=self.random_state,
-            ),
-        )
-        X_train: np.ndarray = res1[0]
-        X_temp: np.ndarray = res1[1]
-        y_train: np.ndarray = res1[2]
-        y_temp: np.ndarray = res1[3]
+        res1 = cast(Any, train_test_split(
+            X,
+            y,
+            test_size=(val_ratio + test_ratio),
+            stratify=y,
+            random_state=self.random_state,
+        ))
+        X_train = cast(np.ndarray, res1[0])
+        X_temp = cast(np.ndarray, res1[1])
+        y_train = cast(np.ndarray, res1[2])
+        y_temp = cast(np.ndarray, res1[3])
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
-        res2 = cast(
-            Any,
-            train_test_split(
-                X_temp,
-                y_temp,
-                test_size=(1 - val_size),
-                stratify=y_temp,
-                random_state=self.random_state,
-            ),
-        )
-        X_val: np.ndarray = res2[0]
-        X_test: np.ndarray = res2[1]
-        y_val: np.ndarray = res2[2]
-        y_test: np.ndarray = res2[3]
+        res2 = cast(Any, train_test_split(
+            X_temp,
+            y_temp,
+            test_size=(1 - val_size),
+            stratify=y_temp,
+            random_state=self.random_state,
+        ))
+        X_val = cast(np.ndarray, res2[0])
+        X_test = cast(np.ndarray, res2[1])
+        y_val = cast(np.ndarray, res2[2])
+        y_test = cast(np.ndarray, res2[3])
 
         logger.info(
             f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})"
@@ -429,6 +535,7 @@ class PreprocessingPipeline:
         apply_scaling: bool = True,
         apply_resampling: bool = True,
         apply_splitting: bool = True,
+        apply_imputation: bool = True,
         train_ratio: float = 0.7,
         val_ratio: float = 0.15,
         test_ratio: float = 0.15,
@@ -444,6 +551,7 @@ class PreprocessingPipeline:
             apply_scaling: Whether to scale features
             apply_resampling: Whether to resample (SMOTE)
             apply_splitting: Whether to split into train/val/test
+            apply_imputation: Whether to apply median imputation
             train_ratio: Proportion for training set
             val_ratio: Proportion for validation set
             test_ratio: Proportion for test set
@@ -456,7 +564,7 @@ class PreprocessingPipeline:
         logger.info("=" * 60)
 
         # Step 1: Data Cleaning
-        res_clean = cast(Any, self.clean_data(X, y))
+        res_clean = cast(Any, self.clean_data(X, y, impute=apply_imputation))
         X_cleaned: pd.DataFrame = res_clean[0]
         y_cleaned_opt: Optional[pd.Series] = res_clean[1]
 
@@ -584,7 +692,26 @@ class PreprocessingPipeline:
         X_cleaned = X.copy()
         for col in X_cleaned.columns:
             X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
-        X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
+
+        # Sanitize numeric values (stateless: no quantile clipping, just inf handling)
+        numeric_cols = X_cleaned.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            X_numeric = X_cleaned[numeric_cols]
+            X_sanitized = self.sanitize_numeric_values(
+                X_numeric,
+                replace_inf_with_max=False,  # Replace with NaN for imputation
+                clip_quantiles=None,  # No quantile clipping in transform (stateless)
+                abs_cap=None,
+            )
+            X_cleaned[numeric_cols] = X_sanitized
+
+        # Handle non-numeric columns (fallback)
+        non_numeric_cols = X_cleaned.columns.difference(numeric_cols)
+        if len(non_numeric_cols) > 0:
+            X_cleaned[non_numeric_cols] = X_cleaned[non_numeric_cols].replace(
+                [np.inf, -np.inf], np.nan
+            )
+
         X_imputed = self.imputer.transform(X_cleaned)
         # Use Any cast to satisfy Pylance's DataFrame constructor check
         X_cleaned = pd.DataFrame(
@@ -608,38 +735,63 @@ class PreprocessingPipeline:
 
         return X_scaled
 
-    def transform_test(self, X_test: np.ndarray) -> np.ndarray:
+    def transform_test(self, X_test: Union[pd.DataFrame, np.ndarray]) -> np.ndarray:
         """
-        Transform test data using fitted feature selection and scaling
-        (Assumes X_test is already cleaned and encoded from Phase2)
+        Transform test data using fitted feature selection and scaling.
+        Handles both DataFrame and numpy array.
 
         Args:
-            X_test: Test feature array (already cleaned/encoded, no dataframe)
+            X_test: Test features
 
         Returns:
-            Transformed test array with feature selection and scaling applied
-
-        Note:
-            - Feature selection: applied if selector was fitted
-            - Scaling: applied if scaler was fitted
-            - SMOTE: NOT applied (test data should not be resampled)
+            Transformed test array
         """
-        if not self.is_fitted:
-            raise ValueError("Pipeline must be fitted before transforming test data")
+        if isinstance(X_test, pd.DataFrame):
+            X_work = X_test.copy()
+            # Numeric coercion
+            for col in X_work.columns:
+                X_work[col] = pd.to_numeric(X_work[col], errors="coerce")
+
+            # Sanitize numeric values (stateless: no quantile clipping, just inf handling)
+            numeric_cols = X_work.select_dtypes(include=[np.number]).columns
+            if len(numeric_cols) > 0:
+                X_numeric = X_work[numeric_cols]
+                X_sanitized = self.sanitize_numeric_values(
+                    X_numeric,
+                    replace_inf_with_max=False,  # Replace with NaN for imputation
+                    clip_quantiles=None,  # No quantile clipping in transform_test (stateless)
+                    abs_cap=None,
+                )
+                X_work[numeric_cols] = X_sanitized
+
+            # Handle non-numeric columns (fallback)
+            non_numeric_cols = X_work.columns.difference(numeric_cols)
+            if len(non_numeric_cols) > 0:
+                X_work[non_numeric_cols] = X_work[non_numeric_cols].replace(
+                    [np.inf, -np.inf], np.nan
+                )
+
+            # Impute using TRAIN-fitted imputer
+            X_imputed = self.imputer.transform(X_work)
+            X_test_arr = np.asarray(X_imputed)
+        else:
+            X_test_arr = X_test
 
         # Apply feature selection (if fitted)
         if self.feature_selector is not None:
-            X_test_selected = self.feature_selector.transform(X_test)
+            X_test_selected = self.feature_selector.transform(X_test_arr)
         else:
-            X_test_selected = X_test
+            X_test_selected = X_test_arr
 
         # Apply scaling (if fitted)
-        if self.scaler is not None and hasattr(self.scaler, "transform"):
-            X_test_scaled = self.scaler.transform(X_test_selected)
+        if self.is_fitted and self.scaler is not None and hasattr(self.scaler, "transform"):
+            try:
+                X_test_scaled = self.scaler.transform(X_test_selected)
+            except Exception as e:
+                logger.warning(f"Scaling failed in transform_test: {e}. Returning unscaled.")
+                X_test_scaled = X_test_selected
         else:
             X_test_scaled = X_test_selected
-
-        # Do NOT apply SMOTE on test data
 
         return cast(np.ndarray, X_test_scaled)
 

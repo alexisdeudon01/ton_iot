@@ -2,26 +2,26 @@
 
 ## Résumé
 
-- **F1 Score**: 0.9982
-- **Resource Efficiency Score**: 1.0000
+- **F1 Score**: 0.8546
+- **Resource Efficiency Score**: 0.6737
 - **Explainability Score**: 1.0000
 
 ## Dimension 1: Detection Performance
 
-- **F1 Score**: 0.9982 (métrique principale)
-- **Precision (Pr)**: 1.0000
-- **Recall (Rc)**: 0.9965
-- **Accuracy**: 0.9965
+- **F1 Score**: 0.8546 (métrique principale)
+- **Precision (Pr)**: 0.8561
+- **Recall (Rc)**: 0.8533
+- **Accuracy**: 0.8551
 
-**Interprétation**: Excellente performance de détection. Le modèle a un bon équilibre entre Precision et Recall.
+**Interprétation**: Bonne performance de détection. Le modèle a un bon équilibre entre Precision et Recall.
 
 ## Dimension 2: Resource Efficiency
 
-- **Training Time**: 0.00 seconds
-- **Memory Usage**: 0.05 MB
+- **Training Time**: 0.22 seconds
+- **Memory Usage**: -477.15 MB
 - **Peak Memory**: 0.00 MB
 
-**Interprétation**: Très efficace (rapide et peu de mémoire).
+**Interprétation**: Efficace.
 
 ## Dimension 3: Explainability
 
@@ -36,6 +36,5 @@
 
 **Forces**:
 - Excellente performance de détection (F1 > 0.85)
-- Entraînement rapide et efficace en mémoire
 - Modèle interprétable
 

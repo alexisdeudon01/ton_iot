@@ -39,9 +39,13 @@ def engineer_cic(df: pd.DataFrame, eps: float = 1e-8) -> pd.DataFrame:
         total_packets = engineered["Total Fwd Packets"] + engineered["Total Bwd Packets"]
         duration = engineered["Flow Duration"]
 
-        engineered["Flow_Bytes_s"] = total_bytes / (duration + eps)
-        engineered["Flow_Packets_s"] = total_packets / (duration + eps)
-        engineered["Avg_Packet_Size"] = total_bytes / (total_packets + eps)
+        # Use max(duration, eps) to avoid division by zero and ensure scientific correctness
+        safe_duration = duration.clip(lower=eps)
+        safe_packets = total_packets.clip(lower=eps)
+
+        engineered["Flow_Bytes_s"] = total_bytes / safe_duration
+        engineered["Flow_Packets_s"] = total_packets / safe_duration
+        engineered["Avg_Packet_Size"] = total_bytes / safe_packets
         engineered["Traffic_Direction_Ratio"] = engineered["Total Fwd Bytes"] / (
             engineered["Total Bwd Bytes"] + eps
         )
@@ -80,9 +84,13 @@ def engineer_ton(df: pd.DataFrame, eps: float = 1e-8) -> pd.DataFrame:
     total_packets = engineered[p_in] + engineered[p_out]
     duration = engineered["duration"]
 
-    engineered["Flow_Bytes_s"] = total_bytes / (duration + eps)
-    engineered["Flow_Packets_s"] = total_packets / (duration + eps)
-    engineered["Avg_Packet_Size"] = total_bytes / (total_packets + eps)
+    # Use max(duration, eps) to avoid division by zero and ensure scientific correctness
+    safe_duration = duration.clip(lower=eps)
+    safe_packets = total_packets.clip(lower=eps)
+
+    engineered["Flow_Bytes_s"] = total_bytes / safe_duration
+    engineered["Flow_Packets_s"] = total_packets / safe_duration
+    engineered["Avg_Packet_Size"] = total_bytes / safe_packets
     engineered["Traffic_Direction_Ratio"] = engineered[b_out] / (
         engineered[b_in] + eps
     )
