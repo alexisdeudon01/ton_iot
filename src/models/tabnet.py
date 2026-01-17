@@ -8,6 +8,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.preprocessing import LabelEncoder
 from typing import Optional
 import warnings
+import torch
 
 warnings.filterwarnings('ignore')
 
@@ -80,7 +81,7 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
         self.n_steps = n_steps
         self.gamma = gamma
         self.lambda_sparse = lambda_sparse
-        self.optimizer_fn = optimizer_fn
+        self.optimizer_fn = optimizer_fn or torch.optim.Adam if TABNET_AVAILABLE else None
         self.optimizer_params = optimizer_params or {'lr': 2e-2}
         self.scheduler_fn = scheduler_fn
         self.scheduler_params = scheduler_params

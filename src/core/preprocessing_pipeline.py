@@ -164,8 +164,9 @@ class PreprocessingPipeline:
             X_selected = self.feature_selector.fit_transform(X.values, y.values)
 
             # Calculate and log MI scores for selected features
-            mi_scores = self.feature_selector.scores_
-            logger.debug(f"  Mutual Information scores calculated for {len(mi_scores)} features")
+            if self.feature_selector.scores_ is not None:
+                mi_scores = self.feature_selector.scores_
+                logger.debug(f"  Mutual Information scores calculated for {len(mi_scores)} features")
 
             # Get selected feature names
             selected_indices = self.feature_selector.get_support(indices=True)

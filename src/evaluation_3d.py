@@ -608,32 +608,32 @@ class Evaluation3D:
         """
         # If all_results provided, use for normalization
         if all_results and len(all_results) > 1:
-            all_times = [r.get('training_time_seconds', 0) for r in all_results]
-            all_mems = [r.get('memory_used_mb', 0) for r in all_results]
-            time_min, time_max = min(all_times), max(all_times)
-            mem_min, mem_max = min(all_mems), max(all_mems)
+            all_times = [float(r.get('training_time_seconds', 0)) for r in all_results]
+            all_mems = [float(r.get('memory_used_mb', 0)) for r in all_results]
+            time_min, time_max = float(min(all_times)), float(max(all_times))
+            mem_min, mem_max = float(min(all_mems)), float(max(all_mems))
         else:
             # Single model: use self.results if available, otherwise use values directly
             if self.results and len(self.results) > 1:
                 df_temp = pd.DataFrame(self.results)
-                time_min, time_max = df_temp['training_time_seconds'].min(), df_temp['training_time_seconds'].max()
-                mem_min, mem_max = df_temp['memory_used_mb'].min(), df_temp['memory_used_mb'].max()
+                time_min, time_max = float(df_temp['training_time_seconds'].min()), float(df_temp['training_time_seconds'].max())
+                mem_min, mem_max = float(df_temp['memory_used_mb'].min()), float(df_temp['memory_used_mb'].max())
             else:
                 # Fallback: assume reasonable ranges if only one model
-                time_val = results.get('training_time_seconds', 0)
-                mem_val = results.get('memory_used_mb', 0)
-                time_min, time_max = 0, max(time_val * 2, 1)
-                mem_min, mem_max = 0, max(mem_val * 2, 1)
+                time_val = float(results.get('training_time_seconds', 0))
+                mem_val = float(results.get('memory_used_mb', 0))
+                time_min, time_max = 0.0, float(max(time_val * 2, 1.0))
+                mem_min, mem_max = 0.0, float(max(mem_val * 2, 1.0))
 
         # Normalize time and memory (inverse: less is better -> more is better)
-        time_val = results.get('training_time_seconds', 0)
-        mem_val = results.get('memory_used_mb', 0)
+        time_val = float(results.get('training_time_seconds', 0))
+        mem_val = float(results.get('memory_used_mb', 0))
 
         time_range = time_max - time_min + 1e-10
-        normalized_time = 1 - (time_val - time_min) / time_range
+        normalized_time = 1.0 - (time_val - time_min) / time_range
 
         mem_range = mem_max - mem_min + 1e-10
-        normalized_memory = 1 - (mem_val - mem_min) / mem_range
+        normalized_memory = 1.0 - (mem_val - mem_min) / mem_range
 
         # Combined Dimension 2: 0.6 * time + 0.4 * memory (IRP formula)
         resource_efficiency = 0.6 * normalized_time + 0.4 * normalized_memory
