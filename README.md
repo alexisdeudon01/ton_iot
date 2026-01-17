@@ -50,12 +50,16 @@ python main.py
 **Command-line options**:
 ```bash
 python main.py                    # Run complete pipeline
-python main.py --phase 1          # Run only Phase 1 (preprocessing)
+python main.py --phase 1          # Run only Phase 1 (config search)
+python main.py --phase 2          # Run only Phase 2 (apply best config)
 python main.py --phase 3          # Run only Phase 3 (evaluation)
+python main.py --phase 4          # Run only Phase 4 (AHP preferences)
 python main.py --phase 5          # Run only Phase 5 (ranking)
 python main.py --output-dir custom_output  # Custom output directory
 python main.py --test-mode        # Run with minimal data (0.1% sampling)
 python main.py --sample-ratio 0.001  # Use 0.1% of data (for testing)
+python main.py --cic-max-files 3  # Limit CIC-DDoS2019 files (default: 3 in test mode)
+python main.py --synthetic        # Use synthetic dataset for Phase 3 (for testing)
 ```
 
 **Memory-Safe Loading**:
@@ -63,12 +67,48 @@ python main.py --sample-ratio 0.001  # Use 0.1% of data (for testing)
 - Chunk sizes are automatically capped (250k prod, 100k test) to prevent OOM
 - In test mode (sample_ratio < 1.0), only 3 files are loaded by default
 
-This will execute three phases:
-1. **Phase 1: Preprocessing Configuration Selection** - Complete preprocessing pipeline with all sub-steps
-2. **Phase 3: Multi-Dimensional Algorithm Evaluation** - Evaluation across 3 dimensions (Performance, Resources, Explainability)
-3. **Phase 5: AHP-TOPSIS Ranking** - Multi-criteria decision making for algorithm ranking
+This will execute five phases:
+1. **Phase 1: Preprocessing Configuration Search** - Search through 108 preprocessing configurations
+2. **Phase 2: Apply Best Configuration** - Apply best config with stateless preprocessing (cleaning + encoding only)
+3. **Phase 3: Multi-Dimensional Algorithm Evaluation** - Evaluation across 3 dimensions with model-aware preprocessing
+4. **Phase 4: AHP Preferences** - Define weights for dimensions (optional)
+5. **Phase 5: AHP-TOPSIS Ranking** - Multi-criteria decision making for algorithm ranking
 
-#### Phase 1: Preprocessing Pipeline - Detailed Sub-steps
+#### Phase 2: Apply Best Configuration
+
+Phase 2 applies the best preprocessing configuration found in Phase 1 to the full dataset. **Important**: Phase 2 performs **stateless preprocessing only** (data cleaning, feature encoding) to prevent data leakage. Fit-dependent steps (scaling, feature selection, SMOTE) are applied in Phase 3 within each cross-validation fold.
+
+**Outputs**:
+- `best_preprocessed.parquet` (or `.csv.gz`): Preprocessed dataset with cleaned and encoded features
+- `feature_names.json`: List of feature names for reference
+- `phase2_summary.md`: Summary report with dataset statistics and preprocessing steps applied
+
+**Key Features**:
+- Adds `dataset_source` feature during early fusion (0=CIC-DDoS2019, 1=TON_IoT)
+- Stateless preprocessing only: cleaning and encoding
+- Fit-dependent steps deferred to Phase 3 (per fold) to ensure zero data leakage
+
+#### Phase 3: Model-Aware Preprocessing
+
+Phase 3 evaluates algorithms with **model-aware preprocessing** applied within each cross-validation fold to ensure zero data leakage. Different preprocessing profiles are used based on the model type:
+
+**Preprocessing Profiles**:
+- **Logistic Regression (LR)**: Scaling + Feature Selection + SMOTE
+- **Tree-based (DT/RF)**: No scaling/FS/SMOTE, uses class_weight='balanced'
+- **Neural Networks (CNN/TabNet)**: Scaling + SMOTE, no feature selection
+
+**Key Features**:
+- Preprocessing applied **per fold** (scaler/selector fitted on TRAIN only)
+- Test data transformed with scaler/selector fitted on TRAIN (via `transform_test()`)
+- Loads preprocessed dataset from Phase 2 if available (otherwise loads directly)
+- Supports synthetic dataset mode (`--synthetic` flag) for testing
+
+**Resource Metrics**:
+- Training time (seconds)
+- Peak memory usage (MB) - uses `tracemalloc` if available
+- Inference latency (ms) - with warm-up runs for neural networks
+
+#### Phase 1: Preprocessing Configuration Search - Detailed Sub-steps
 
 The preprocessing pipeline follows a structured workflow with 6 main steps:
 
@@ -150,8 +190,11 @@ Nous ajoutons des **ratios comportementaux** (features dérivées) avant l'early
   (ou `Traffic_Direction_Ratio = bytes_out / (bytes_in + eps)` pour TON_IoT)
 
 **Note early fusion (`dataset_source`) :**
-Lors de l'early fusion, une colonne **`dataset_source`** est ajoutée et conservée comme feature :  
-`0 = CIC-DDoS2019`, `1 = TON_IoT`. Cette colonne est encodée avant l'harmonisation et reste disponible dans les phases suivantes.
+Lors de l'early fusion, une colonne **`dataset_source`** est ajoutée et **immédiatement encodée en entier** comme feature :  
+- `0 = CIC-DDoS2019`
+- `1 = TON_IoT`
+
+Cette colonne est encodée numériquement dès la fusion (pas besoin d'encodage supplémentaire) et reste disponible dans les phases suivantes.
 
 #### Validation des ratios (KDE + MI + Permutation)
 
@@ -170,16 +213,19 @@ The framework evaluates algorithms across three dimensions:
 - **Formulas**: See `DIMENSIONS_CALCULATION.md` for detailed mathematical formulas
 
 ##### Dimension 2: Resource Efficiency
-- **Metrics**: Training time (seconds), Memory usage (MB)
+- **Metrics**: Training time (seconds), Peak memory usage (MB), Inference latency (ms)
 - **Calculation**: Normalized combination of time and memory (60% time, 40% memory)
-- **Interpretation**: Higher score = more efficient (faster training, less memory)
+- **Memory Measurement**: Uses `tracemalloc` if available for accurate peak RAM, falls back to `psutil`
+- **Inference Latency**: Measured with warm-up runs (2 runs for neural networks) and adaptive latency_runs (50 for NN, 100 for others)
+- **Interpretation**: Higher score = more efficient (faster training, less memory, lower latency)
 
 ##### Dimension 3: Explainability
 - **Components**: 
-  - Native Interpretability (50%): Binary indicator for tree-based models
+  - Native Interpretability (50%): Binary indicator for tree-based models (DT/RF) and Logistic Regression (coef_)
   - SHAP Score (30%): Mean Absolute SHAP Values
   - LIME Score (20%): Mean importance from LIME explanations
 - **Interpretation**: Higher score = more explainable model
+- **Native Support**: Tree-based models (feature_importances_) and Logistic Regression (coef_) have native interpretability = 1.0
 
 **Detailed calculations**: See `DIMENSIONS_CALCULATION.md` for complete formulas and visualizations.
 
