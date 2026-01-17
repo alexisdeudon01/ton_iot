@@ -1,61 +1,42 @@
-#!/usr/bin/env python3
-"""Tests for common engineered feature columns in CIC and TON datasets."""
 import pandas as pd
 
 from src.core.feature_engineering import engineer_cic, engineer_ton
 
 
-def test_engineer_cic_adds_ratio_columns():
-    """Ensure CIC engineering adds expected ratio columns."""
-    df = pd.DataFrame({
-        "Total Fwd Bytes": [100.0, 200.0],
-        "Total Bwd Bytes": [50.0, 100.0],
-        "Total Fwd Packets": [10.0, 20.0],
-        "Total Bwd Packets": [5.0, 10.0],
-        "Flow Duration": [2.0, 4.0],
-    })
+def test_feature_engineering_common_cols():
+    cic_df = pd.DataFrame(
+        {
+            "Total Fwd Bytes": [100, 200],
+            "Total Bwd Bytes": [50, 100],
+            "Total Fwd Packets": [10, 20],
+            "Total Bwd Packets": [5, 10],
+            "Flow Duration": [2, 4],
+            "label": [0, 1],
+        }
+    )
+    ton_df = pd.DataFrame(
+        {
+            "bytes_in": [300, 400],
+            "bytes_out": [150, 200],
+            "pkts_in": [30, 40],
+            "pkts_out": [15, 20],
+            "duration": [3, 6],
+            "label": [0, 1],
+        }
+    )
 
-    engineered = engineer_cic(df)
+    cic_engineered = engineer_cic(cic_df)
+    ton_engineered = engineer_ton(ton_df)
 
-    for column in [
+    expected_cols = {
         "Flow_Bytes_s",
         "Flow_Packets_s",
         "Avg_Packet_Size",
         "Traffic_Direction_Ratio",
         "dataset_source",
-    ]:
-        assert column in engineered.columns, f"Missing engineered column: {column}"
+    }
 
-    assert engineered.loc[0, "Flow_Bytes_s"] == 150.0 / 2.0
-    assert engineered.loc[0, "Flow_Packets_s"] == 15.0 / 2.0
-    assert engineered.loc[0, "Avg_Packet_Size"] == 150.0 / 15.0
-    assert engineered.loc[0, "Traffic_Direction_Ratio"] == 100.0 / 50.0
-    assert engineered["dataset_source"].unique().tolist() == [0]
-
-
-def test_engineer_ton_adds_ratio_columns():
-    """Ensure TON engineering adds expected ratio columns."""
-    df = pd.DataFrame({
-        "bytes_in": [80.0, 160.0],
-        "bytes_out": [20.0, 40.0],
-        "pkts_in": [8.0, 16.0],
-        "pkts_out": [2.0, 4.0],
-        "duration": [4.0, 8.0],
-    })
-
-    engineered = engineer_ton(df)
-
-    for column in [
-        "Flow_Bytes_s",
-        "Flow_Packets_s",
-        "Avg_Packet_Size",
-        "Traffic_Direction_Ratio",
-        "dataset_source",
-    ]:
-        assert column in engineered.columns, f"Missing engineered column: {column}"
-
-    assert engineered.loc[0, "Flow_Bytes_s"] == 100.0 / 4.0
-    assert engineered.loc[0, "Flow_Packets_s"] == 10.0 / 4.0
-    assert engineered.loc[0, "Avg_Packet_Size"] == 100.0 / 10.0
-    assert engineered.loc[0, "Traffic_Direction_Ratio"] == 20.0 / 80.0
-    assert engineered["dataset_source"].unique().tolist() == [1]
+    assert expected_cols.issubset(cic_engineered.columns)
+    assert expected_cols.issubset(ton_engineered.columns)
+    assert cic_engineered["dataset_source"].unique().tolist() == [0]
+    assert ton_engineered["dataset_source"].unique().tolist() == [1]

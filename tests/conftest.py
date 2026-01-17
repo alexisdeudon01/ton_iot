@@ -17,3 +17,9 @@ from src.config import PipelineConfig, TEST_CONFIG
 def config():
     """PipelineConfig fixture for testing"""
     return TEST_CONFIG
+
+
+@pytest.fixture
+def test_config():
+    """Backward-compatible fixture name for smoke tests."""
+    return TEST_CONFIG
