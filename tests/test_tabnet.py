@@ -19,13 +19,13 @@ def test_tabnet_classifier_init_default():
     """Test TabNetClassifierWrapper initialization with defaults"""
     clf = TabNetClassifierWrapper()
     
-    assert clf.n_d == 8
-    assert clf.n_a == 8
-    assert clf.n_steps == 3
-    assert clf.seed == 42
-    assert clf.max_epochs == 100
-    assert clf.model is None
-    assert clf.input_dim is None
+    assert clf.n_d == 8, f"n_d should be 8 (got {clf.n_d})"
+    assert clf.n_a == 8, f"n_a should be 8 (got {clf.n_a})"
+    assert clf.n_steps == 3, f"n_steps should be 3 (got {clf.n_steps})"
+    assert clf.seed == 42, f"seed should be 42 (got {clf.seed})"
+    assert clf.max_epochs == 100, f"max_epochs should be 100 (got {clf.max_epochs})"
+    assert clf.model is None, "Model should not be initialized before fit()"
+    assert clf.input_dim is None, "input_dim should be None before fit()"
 
 
 def test_tabnet_classifier_init_custom():
@@ -39,21 +39,18 @@ def test_tabnet_classifier_init_custom():
         max_epochs=50
     )
     
-    assert clf.n_d == 16
-    assert clf.n_a == 16
-    assert clf.n_steps == 5
-    assert clf.gamma == 2.0
-    assert clf.seed == 123
-    assert clf.max_epochs == 50
+    assert clf.n_d == 16, f"n_d should be 16 (got {clf.n_d})"
+    assert clf.n_a == 16, f"n_a should be 16 (got {clf.n_a})"
+    assert clf.n_steps == 5, f"n_steps should be 5 (got {clf.n_steps})"
+    assert clf.gamma == 2.0, f"gamma should be 2.0 (got {clf.gamma})"
+    assert clf.seed == 123, f"seed should be 123 (got {clf.seed})"
+    assert clf.max_epochs == 50, f"max_epochs should be 50 (got {clf.max_epochs})"
 
 
-def test_tabnet_classifier_fit_predict():
+def test_tabnet_classifier_fit_predict(synthetic_binary_data):
     """Test TabNetClassifierWrapper fit and predict"""
-    np.random.seed(42)
-    n_samples = 300
-    n_features = 10
-    X = np.random.randn(n_samples, n_features).astype(np.float32)
-    y = np.random.randint(0, 2, n_samples)
+    X, y = synthetic_binary_data
+    n_features = X.shape[1]
     
     clf = TabNetClassifierWrapper(
         n_d=8,
@@ -67,24 +64,20 @@ def test_tabnet_classifier_fit_predict():
     # Fit
     clf.fit(X, y)
     
-    assert clf.model is not None
-    assert clf.input_dim == n_features
-    assert hasattr(clf.label_encoder, 'classes_')
+    assert clf.model is not None, "Model should be created after fit()"
+    assert clf.input_dim == n_features, f"input_dim should be {n_features} (got {clf.input_dim})"
+    assert hasattr(clf.label_encoder, 'classes_'), "Label encoder should have classes_ after fit()"
     
     # Predict
     y_pred = clf.predict(X[:20])
     
-    assert len(y_pred) == 20
-    assert all(pred in clf.label_encoder.classes_ for pred in y_pred)
+    assert len(y_pred) == 20, f"Prediction length should be 20 (got {len(y_pred)})"
+    assert all(pred in clf.label_encoder.classes_ for pred in y_pred), "All predictions should be in label_encoder.classes_"
 
 
-def test_tabnet_classifier_predict_proba():
+def test_tabnet_classifier_predict_proba(synthetic_binary_data):
     """Test TabNetClassifierWrapper predict_proba"""
-    np.random.seed(42)
-    n_samples = 300
-    n_features = 10
-    X = np.random.randn(n_samples, n_features).astype(np.float32)
-    y = np.random.randint(0, 2, n_samples)
+    X, y = synthetic_binary_data
     
     clf = TabNetClassifierWrapper(
         max_epochs=5,
@@ -96,18 +89,14 @@ def test_tabnet_classifier_predict_proba():
     
     proba = clf.predict_proba(X[:20])
     
-    assert proba.shape == (20, 2)
-    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-5)
-    assert (proba >= 0).all() and (proba <= 1).all()
+    assert proba.shape == (20, 2), f"Probability shape should be (20, 2) (got {proba.shape})"
+    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-5), "Probabilities should sum to 1.0 per sample"
+    assert (proba >= 0).all() and (proba <= 1).all(), "All probabilities should be in [0, 1] range"
 
 
-def test_tabnet_classifier_multiclass():
+def test_tabnet_classifier_multiclass(synthetic_multiclass_data):
     """Test TabNetClassifierWrapper with multiclass classification"""
-    np.random.seed(42)
-    n_samples = 400
-    n_features = 10
-    X = np.random.randn(n_samples, n_features).astype(np.float32)
-    y = np.random.randint(0, 3, n_samples)  # 3 classes
+    X, y = synthetic_multiclass_data
     
     clf = TabNetClassifierWrapper(
         max_epochs=5,
@@ -120,9 +109,9 @@ def test_tabnet_classifier_multiclass():
     y_pred = clf.predict(X[:20])
     proba = clf.predict_proba(X[:20])
     
-    assert len(np.unique(y)) == 3
-    assert proba.shape == (20, 3)
-    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-5)
+    assert len(np.unique(y)) == 3, f"Should have 3 unique classes (got {len(np.unique(y))})"
+    assert proba.shape == (20, 3), f"Probability shape should be (20, 3) (got {proba.shape})"
+    assert np.allclose(proba.sum(axis=1), 1.0, atol=1e-5), "Probabilities should sum to 1.0 per sample"
 
 
 def test_tabnet_classifier_sklearn_interface():
@@ -130,15 +119,17 @@ def test_tabnet_classifier_sklearn_interface():
     clf = TabNetClassifierWrapper(max_epochs=1, verbose=0)
     
     # Basic sklearn interface checks
-    assert hasattr(clf, 'fit')
-    assert hasattr(clf, 'predict')
-    assert hasattr(clf, 'predict_proba')
-    assert hasattr(clf, 'get_params')
-    assert hasattr(clf, 'set_params')
+    assert hasattr(clf, 'fit'), "Classifier should have fit() method"
+    assert hasattr(clf, 'predict'), "Classifier should have predict() method"
+    assert hasattr(clf, 'predict_proba'), "Classifier should have predict_proba() method"
+    assert hasattr(clf, 'get_params'), "Classifier should have get_params() method"
+    assert hasattr(clf, 'set_params'), "Classifier should have set_params() method"
 
 
-def test_tabnet_classifier_parameters_preserved():
+def test_tabnet_classifier_parameters_preserved(synthetic_small_data):
     """Test that fit preserves all parameters"""
+    X, y = synthetic_small_data
+    
     clf = TabNetClassifierWrapper(
         n_d=16,
         n_a=16,
@@ -147,14 +138,10 @@ def test_tabnet_classifier_parameters_preserved():
         max_epochs=10
     )
     
-    np.random.seed(42)
-    X = np.random.randn(100, 10).astype(np.float32)
-    y = np.random.randint(0, 2, 100)
-    
     clf.fit(X, y)
     
     # Parameters should be preserved after fit
-    assert clf.n_d == 16
-    assert clf.n_a == 16
-    assert clf.gamma == 2.0
-    assert clf.seed == 99
+    assert clf.n_d == 16, f"n_d should be preserved as 16 (got {clf.n_d})"
+    assert clf.n_a == 16, f"n_a should be preserved as 16 (got {clf.n_a})"
+    assert clf.gamma == 2.0, f"gamma should be preserved as 2.0 (got {clf.gamma})"
+    assert clf.seed == 99, f"seed should be preserved as 99 (got {clf.seed})"

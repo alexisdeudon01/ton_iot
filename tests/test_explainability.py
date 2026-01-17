@@ -24,25 +24,32 @@ pytest.importorskip("lime", reason="lime not available")
 def test_get_native_interpretability_score():
     """Test get_native_interpretability_score for different models"""
     # Highly interpretable models
-    assert get_native_interpretability_score('Logistic_Regression') == 1.0
-    assert get_native_interpretability_score('Decision_Tree') == 1.0
-    assert get_native_interpretability_score('Random_Forest') == 1.0
+    score_lr = get_native_interpretability_score('Logistic_Regression')
+    assert score_lr == 1.0, f"Logistic_Regression should score 1.0 (got {score_lr})"
+    
+    score_dt = get_native_interpretability_score('Decision_Tree')
+    assert score_dt == 1.0, f"Decision_Tree should score 1.0 (got {score_dt})"
+    
+    score_rf = get_native_interpretability_score('Random_Forest')
+    assert score_rf == 1.0, f"Random_Forest should score 1.0 (got {score_rf})"
     
     # Black box models
-    assert get_native_interpretability_score('CNN') == 0.0
-    assert get_native_interpretability_score('TabNet') == 0.0
+    score_cnn = get_native_interpretability_score('CNN')
+    assert score_cnn == 0.0, f"CNN should score 0.0 (got {score_cnn})"
+    
+    score_tabnet = get_native_interpretability_score('TabNet')
+    assert score_tabnet == 0.0, f"TabNet should score 0.0 (got {score_tabnet})"
     
     # Unknown model
-    assert get_native_interpretability_score('UnknownModel') == 0.5
+    score_unknown = get_native_interpretability_score('UnknownModel')
+    assert score_unknown == 0.5, f"UnknownModel should score 0.5 (got {score_unknown})"
 
 
-def test_compute_shap_score_tree_model():
+def test_compute_shap_score_tree_model(synthetic_binary_data):
     """Test compute_shap_score with tree-based model"""
     from sklearn.ensemble import RandomForestClassifier
     
-    np.random.seed(42)
-    X = np.random.randn(200, 10)
-    y = np.random.randint(0, 2, 200)
+    X, y = synthetic_binary_data
     
     model = RandomForestClassifier(n_estimators=10, random_state=42)
     model.fit(X, y)
@@ -50,18 +57,16 @@ def test_compute_shap_score_tree_model():
     X_sample = X[:50]
     shap_score = compute_shap_score(model, X_sample, top_k=5)
     
-    assert shap_score is not None
-    assert isinstance(shap_score, float)
-    assert shap_score >= 0
+    assert shap_score is not None, "SHAP score should not be None"
+    assert isinstance(shap_score, float), f"SHAP score should be float (got {type(shap_score)})"
+    assert shap_score >= 0, f"SHAP score should be non-negative (got {shap_score})"
 
 
-def test_compute_shap_score_linear_model():
+def test_compute_shap_score_linear_model(synthetic_binary_data):
     """Test compute_shap_score with linear model (KernelExplainer)"""
     from sklearn.linear_model import LogisticRegression
     
-    np.random.seed(42)
-    X = np.random.randn(200, 10)
-    y = np.random.randint(0, 2, 200)
+    X, y = synthetic_binary_data
     
     model = LogisticRegression(random_state=42, max_iter=1000)
     model.fit(X, y)
@@ -69,9 +74,9 @@ def test_compute_shap_score_linear_model():
     X_sample = X[:50]
     shap_score = compute_shap_score(model, X_sample, top_k=5)
     
-    assert shap_score is not None
-    assert isinstance(shap_score, float)
-    assert shap_score >= 0
+    assert shap_score is not None, "SHAP score should not be None"
+    assert isinstance(shap_score, float), f"SHAP score should be float (got {type(shap_score)})"
+    assert shap_score >= 0, f"SHAP score should be non-negative (got {shap_score})"
 
 
 def test_compute_shap_score_failure_handling():
@@ -86,16 +91,14 @@ def test_compute_shap_score_failure_handling():
     
     shap_score = compute_shap_score(model, X_sample)
     
-    assert shap_score is None
+    assert shap_score is None, "SHAP score should be None when computation fails (error handling)"
 
 
-def test_compute_lime_score():
+def test_compute_lime_score(synthetic_binary_data):
     """Test compute_lime_score"""
     from sklearn.ensemble import RandomForestClassifier
     
-    np.random.seed(42)
-    X = np.random.randn(200, 10)
-    y = np.random.randint(0, 2, 200)
+    X, y = synthetic_binary_data
     
     model = RandomForestClassifier(n_estimators=10, random_state=42)
     model.fit(X, y)
@@ -105,9 +108,9 @@ def test_compute_lime_score():
     
     lime_score = compute_lime_score(model, X_sample, y_sample, top_k=5)
     
-    assert lime_score is not None
-    assert isinstance(lime_score, float)
-    assert lime_score >= 0
+    assert lime_score is not None, "LIME score should not be None"
+    assert isinstance(lime_score, float), f"LIME score should be float (got {type(lime_score)})"
+    assert lime_score >= 0, f"LIME score should be non-negative (got {lime_score})"
 
 
 def test_compute_lime_score_failure_handling():
@@ -122,7 +125,7 @@ def test_compute_lime_score_failure_handling():
     
     lime_score = compute_lime_score(model, X_sample, y_sample)
     
-    assert lime_score is None
+    assert lime_score is None, "LIME score should be None when computation fails (error handling)"
 
 
 def test_compute_explainability_score_all_components():
@@ -134,18 +137,18 @@ def test_compute_explainability_score_all_components():
         weights=(0.5, 0.3, 0.2)
     )
     
-    assert 'explain_score' in result
-    assert 'native_score' in result
-    assert 'shap_score' in result
-    assert 'lime_score' in result
-    assert 'weights_used' in result
-    assert 'missing_components' in result
+    assert 'explain_score' in result, "Result should contain 'explain_score' key"
+    assert 'native_score' in result, "Result should contain 'native_score' key"
+    assert 'shap_score' in result, "Result should contain 'shap_score' key"
+    assert 'lime_score' in result, "Result should contain 'lime_score' key"
+    assert 'weights_used' in result, "Result should contain 'weights_used' key"
+    assert 'missing_components' in result, "Result should contain 'missing_components' key"
     
-    assert result['native_score'] == 1.0
-    assert result['shap_score'] == 0.5
-    assert result['lime_score'] == 0.3
-    assert result['missing_components'] == []
-    assert 0 <= result['explain_score'] <= 1
+    assert result['native_score'] == 1.0, f"native_score should be 1.0 for Random_Forest (got {result['native_score']})"
+    assert result['shap_score'] == 0.5, f"shap_score should be 0.5 (got {result['shap_score']})"
+    assert result['lime_score'] == 0.3, f"lime_score should be 0.3 (got {result['lime_score']})"
+    assert result['missing_components'] == [], "No components should be missing (got {result['missing_components']})"
+    assert 0 <= result['explain_score'] <= 1, f"explain_score should be in [0, 1] (got {result['explain_score']})"
 
 
 def test_compute_explainability_score_missing_shap():
@@ -157,11 +160,11 @@ def test_compute_explainability_score_missing_shap():
         weights=(0.5, 0.3, 0.2)
     )
     
-    assert 'shap' in result['missing_components']
-    assert np.isnan(result['shap_score'])
-    assert result['lime_score'] == 0.4
+    assert 'shap' in result['missing_components'], "SHAP should be in missing_components"
+    assert np.isnan(result['shap_score']), "shap_score should be NaN when missing"
+    assert result['lime_score'] == 0.4, f"lime_score should be 0.4 (got {result['lime_score']})"
     # Weights should be renormalized (native + lime only)
-    assert sum(result['weights_used'].values()) == pytest.approx(1.0)
+    assert sum(result['weights_used'].values()) == pytest.approx(1.0), "Weights should sum to 1.0 after renormalization"
 
 
 def test_compute_explainability_score_missing_lime():
@@ -173,11 +176,11 @@ def test_compute_explainability_score_missing_lime():
         weights=(0.5, 0.3, 0.2)
     )
     
-    assert 'lime' in result['missing_components']
-    assert np.isnan(result['lime_score'])
-    assert result['shap_score'] == 0.5
-    assert result['native_score'] == 0.0
-    assert sum(result['weights_used'].values()) == pytest.approx(1.0)
+    assert 'lime' in result['missing_components'], "LIME should be in missing_components"
+    assert np.isnan(result['lime_score']), "lime_score should be NaN when missing"
+    assert result['shap_score'] == 0.5, f"shap_score should be 0.5 (got {result['shap_score']})"
+    assert result['native_score'] == 0.0, f"native_score should be 0.0 for CNN (got {result['native_score']})"
+    assert sum(result['weights_used'].values()) == pytest.approx(1.0), "Weights should sum to 1.0 after renormalization"
 
 
 def test_compute_explainability_score_native_only():
@@ -189,12 +192,12 @@ def test_compute_explainability_score_native_only():
         weights=(0.5, 0.3, 0.2)
     )
     
-    assert len(result['missing_components']) == 2
-    assert 'shap' in result['missing_components']
-    assert 'lime' in result['missing_components']
-    assert result['native_score'] == 1.0
+    assert len(result['missing_components']) == 2, f"Should have 2 missing components (got {len(result['missing_components'])})"
+    assert 'shap' in result['missing_components'], "SHAP should be in missing_components"
+    assert 'lime' in result['missing_components'], "LIME should be in missing_components"
+    assert result['native_score'] == 1.0, f"native_score should be 1.0 for Decision_Tree (got {result['native_score']})"
     # With only native, weight should be 1.0
-    assert result['weights_used']['native'] == pytest.approx(1.0)
+    assert result['weights_used']['native'] == pytest.approx(1.0), "Native weight should be 1.0 when only native available"
 
 
 def test_compute_explainability_score_nan_handling():
@@ -206,6 +209,6 @@ def test_compute_explainability_score_nan_handling():
         weights=(0.5, 0.3, 0.2)
     )
     
-    assert 'shap' in result['missing_components']
-    assert np.isnan(result['shap_score'])
-    assert result['lime_score'] == 0.3
+    assert 'shap' in result['missing_components'], "SHAP should be in missing_components when NaN"
+    assert np.isnan(result['shap_score']), "shap_score should be NaN when input is NaN"
+    assert result['lime_score'] == 0.3, f"lime_score should be 0.3 (got {result['lime_score']})"
