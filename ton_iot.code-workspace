@@ -5,50 +5,183 @@
 		}
 	],
 	"settings": {
+		// Python Interpreter & Environment
 		"python.defaultInterpreterPath": "${workspaceFolder}/.toniot/bin/python",
+		"python.terminal.activateEnvironment": true,
+		"python.requirementsPath": "./requirements.txt",
+
+		// Analysis & Type Checking
 		"python.analysis.autoImportCompletions": true,
 		"python.analysis.typeCheckingMode": "basic",
-		"python.linting.enabled": true,
-		"python.linting.pylintEnabled": false,
-		"python.linting.flake8Enabled": true,
-		"python.formatting.provider": "black",
+		"python.analysis.diagnosticMode": "workspace",
+		"python.analysis.inlayHints.variableTypes": true,
+		"python.analysis.inlayHints.functionReturnTypes": true,
+		"python.analysis.inlayHints.callArgumentNames": "partial",
+		"python.analysis.extraPaths": [
+			"${workspaceFolder}/src",
+			"${workspaceFolder}/src/core",
+			"${workspaceFolder}/src/models",
+			"${workspaceFolder}/src/app",
+			"${workspaceFolder}/src/evaluation",
+			"${workspaceFolder}/src/phases",
+			"${workspaceFolder}/src/config",
+			"${workspaceFolder}/src/ui"
+		],
+		"python.analysis.useLibraryCodeForTypes": true,
+
+		// Formatting & Linting (Modern approach)
+		"editor.formatOnSave": true,
+		"editor.codeActionsOnSave": {
+			"source.organizeImports": "explicit",
+			"source.fixAll": "explicit"
+		},
+		"ruff.importStrategy": "fromEnvironment",
+		"ruff.fixAll": true,
+		"ruff.organizeImports": true,
 		"python.formatting.blackArgs": [
 			"--line-length=100"
 		],
-		"editor.formatOnSave": true,
-		"editor.codeActionsOnSave": {
-			"source.organizeImports": "explicit"
-		},
+
+		// File Exclusions
 		"files.exclude": {
 			"**/__pycache__": true,
 			"**/*.pyc": true,
 			"**/.pytest_cache": true,
 			"**/.mypy_cache": true,
-			"**/.ruff_cache": true
+			"**/.ruff_cache": true,
+			"**/.ipynb_checkpoints": true
+		},
+		"search.exclude": {
+			"**/__pycache__": true,
+			"**/.pytest_cache": true,
+			"**/.mypy_cache": true,
+			"**/.ruff_cache": true,
+			"data/": true,
+			"datasets/": true,
+			"output/": true,
+			"_old/": true,
+			"Processed_datasets/": true,
+			"req2.txt": true
 		},
 		"files.associations": {
-			"*.py": "python"
+			"*.py": "python",
+			"*.md": "markdown"
 		},
-		"python.analysis.extraPaths": [],
-		"python.terminal.activateEnvironment": true,
-		"python.requirementsPath": "./requirements.txt",
-		"python.analysis.diagnosticMode": "workspace",
+
+		// Python Specific Editor Settings
 		"[python]": {
 			"editor.defaultFormatter": "ms-python.black-formatter",
 			"editor.tabSize": 4,
 			"editor.insertSpaces": true,
-			"editor.rulers": [100]
+			"editor.rulers": [100],
+			"editor.guideline.column": 100
 		},
+
+		// General File Settings
 		"files.trimTrailingWhitespace": true,
 		"files.insertFinalNewline": true,
-		"files.trimFinalNewlines": true
+		"files.trimFinalNewlines": true,
+		"explorer.compactFolders": false
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Python: Run Full Pipeline",
+				"type": "python",
+				"request": "launch",
+				"program": "${workspaceFolder}/main.py",
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
+			{
+				"name": "Python: Run Phase 1 (Config Search)",
+				"type": "python",
+				"request": "launch",
+				"program": "${workspaceFolder}/main.py",
+				"args": ["--phase", "1"],
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
+			{
+				"name": "Python: Run Phase 2 (Apply Best Config)",
+				"type": "python",
+				"request": "launch",
+				"program": "${workspaceFolder}/main.py",
+				"args": ["--phase", "2"],
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
+			{
+				"name": "Python: Run Phase 3 (Evaluation)",
+				"type": "python",
+				"request": "launch",
+				"program": "${workspaceFolder}/main.py",
+				"args": ["--phase", "3"],
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
+			{
+				"name": "Python: Run in Test Mode",
+				"type": "python",
+				"request": "launch",
+				"program": "${workspaceFolder}/main.py",
+				"args": ["--test-mode"],
+				"console": "integratedTerminal",
+				"justMyCode": true
+			},
+			{
+				"name": "Python: Current File",
+				"type": "python",
+				"request": "launch",
+				"program": "${file}",
+				"console": "integratedTerminal",
+				"justMyCode": true
+			}
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "Install Dependencies",
+				"type": "shell",
+				"command": "pip install -r requirements.txt",
+				"problemMatcher": [],
+				"group": "build"
+			},
+			{
+				"label": "Run Tests (Pytest)",
+				"type": "shell",
+				"command": "python -m pytest",
+				"group": {
+					"kind": "test",
+					"isDefault": true
+				},
+				"presentation": {
+					"reveal": "always",
+					"panel": "new"
+				},
+				"problemMatcher": []
+			},
+			{
+				"label": "Clean Python Cache",
+				"type": "shell",
+				"command": "find . -type d -name '__pycache__' -exec rm -rf {} +",
+				"problemMatcher": []
+			}
+		]
 	},
 	"extensions": {
 		"recommendations": [
 			"ms-python.python",
 			"ms-python.vscode-pylance",
 			"ms-python.black-formatter",
-			"ms-python.isort"
+			"ms-python.isort",
+			"charliermarsh.ruff",
+			"mechatroner.rainbow-csv",
+			"njpwerner.autodocstring",
+			"christian-kohler.path-intellisense"
 		]
 	}
 }
