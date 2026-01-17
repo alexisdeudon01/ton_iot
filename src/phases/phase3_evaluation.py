@@ -36,8 +36,7 @@ except ImportError:
     CNN_AVAILABLE = False
 
 try:
-    from src.models_tabnet import TabNetClassifierWrapper
-    TABNET_AVAILABLE = True
+    from src.models.tabnet import TabNetClassifierWrapper, TABNET_AVAILABLE
 except ImportError:
     TabNetClassifierWrapper = None
     TABNET_AVAILABLE = False
