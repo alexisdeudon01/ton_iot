@@ -11,6 +11,7 @@ import logging
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from typing import Tuple, List, Optional, Dict, Any
 import warnings
 from tqdm import tqdm
 
@@ -60,12 +61,12 @@ np.random.seed(RANDOM_STATE)
 
 class IRPPipeline:
     """Complete IRP research pipeline"""
-    
-    def __init__(self, results_dir: str = 'output', random_state: int = 42, sample_ratio: float = 1.0, 
+
+    def __init__(self, results_dir: str = 'output', random_state: int = 42, sample_ratio: float = 1.0,
                  interactive: bool = False):
         """
         Initialize pipeline
-        
+
         Args:
             results_dir: Directory for saving results (default: 'output')
             random_state: Random seed for reproducibility
@@ -76,7 +77,7 @@ class IRPPipeline:
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.random_state = random_state
         self.sample_ratio = sample_ratio
-        
+
         # Initialize system monitor
         self.monitor = None
         if SystemMonitor is not None:
@@ -84,12 +85,12 @@ class IRPPipeline:
                 self.monitor = SystemMonitor(max_memory_percent=90.0)
             except Exception as e:
                 logger.warning(f"Could not initialize SystemMonitor: {e}")
-        
+
         # Initialize loader with monitor
         self.loader = DatasetLoader(monitor=self.monitor)
         self.harmonizer = DataHarmonizer()
         self.pipeline = PreprocessingPipeline(random_state=random_state)
-        
+
         # Initialize real-time visualizer
         self.visualizer = None
         if VISUALIZATION_AVAILABLE and RealTimeVisualizer is not None:
@@ -101,7 +102,7 @@ class IRPPipeline:
                 logger.info("Real-time visualizer initialized")
             except Exception as e:
                 logger.warning(f"Could not initialize real-time visualizer: {e}")
-        
+
         # Create result subdirectories
         (self.results_dir / 'phase1_preprocessing').mkdir(parents=True, exist_ok=True)
         (self.results_dir / 'phase3_evaluation').mkdir(parents=True, exist_ok=True)
@@ -109,7 +110,7 @@ class IRPPipeline:
         (self.results_dir / 'phase3_evaluation' / 'visualizations').mkdir(parents=True, exist_ok=True)
         (self.results_dir / 'phase5_ranking').mkdir(parents=True, exist_ok=True)
         (self.results_dir / 'logs').mkdir(parents=True, exist_ok=True)
-        
+
         # Optional GUI callbacks (only used if interactive mode is enabled)
         self.interactive = interactive
         if interactive:
@@ -126,23 +127,23 @@ class IRPPipeline:
                 logger.warning("Interactive mode requested but GUI module not available - running in headless mode")
         else:
             self.features_popup_callback = None
-        
+
         logger.info(f"Pipeline initialized with output directory: {self.results_dir.absolute()}")
-    
-    def phase1_preprocessing(self) -> pd.DataFrame:
+
+    def phase1_preprocessing(self) -> Tuple[np.ndarray, np.ndarray, List[str]]:
         """
         Phase 1: Preprocessing Configuration Selection
         - Load and harmonize datasets (TON_IoT + CIC-DDoS2019)
         - Early fusion with statistical validation (Kolmogorov-Smirnov)
         - Preprocessing with SMOTE (class balancing) and RobustScaler (feature scaling)
-        
+
         Returns:
             Tuple of (X_processed, y_processed, feature_names)
         """
         logger.info("=" * 60)
         logger.info("PHASE 1: Preprocessing Configuration Selection")
         logger.info("=" * 60)
-        
+
         # Determine common features BEFORE loading datasets
         logger.info("\n1.0 Pre-analysis: Determining common features...")
         try:
@@ -157,7 +158,7 @@ class IRPPipeline:
         except Exception as e:
             logger.warning(f"   Pre-analysis failed: {e}. Continuing with full analysis.")
             self._precomputed_common_features = None
-        
+
         # Load datasets
         logger.info("\n1.1 Loading datasets...")
         if self.sample_ratio < 1.0:
@@ -175,11 +176,11 @@ class IRPPipeline:
         except Exception as e:
             logger.error(f"   Unexpected error loading TON_IoT: {e}", exc_info=True)
             raise
-        
+
         try:
             df_cic = self.loader.load_cic_ddos2019(sample_ratio=self.sample_ratio, random_state=self.random_state)
             logger.info(f"   CIC-DDoS2019: {df_cic.shape}")
-            
+
             # Harmonize and fuse
             logger.info("\n1.2 Harmonizing datasets...")
             logger.info("   Mapping features between TON_IoT and CIC-DDoS2019...")
@@ -190,14 +191,14 @@ class IRPPipeline:
                     precomputed_mapping = self._precomputed_common_features.get('common_features')
                     if precomputed_mapping:
                         logger.info(f"   Using {len(precomputed_mapping)} pre-determined common features from pre-analysis...")
-                
+
                 df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(
-                    df_cic, df_ton, 
+                    df_cic, df_ton,
                     precomputed_feature_mapping=precomputed_mapping
                 )
                 logger.info(f"   CIC-DDoS2019 harmonized: {df_cic_harm.shape}")
                 logger.info(f"   TON_IoT harmonized: {df_ton_harm.shape}")
-                
+
                 # Log common features details
                 common_features = self.harmonizer.common_features_found
                 if common_features:
@@ -205,20 +206,20 @@ class IRPPipeline:
                     logger.info(f"   Total features communes: {len(common_features)}")
                     logger.info(f"   Features CIC-DDoS2019 originales: {len(df_cic.columns)}")
                     logger.info(f"   Features TON_IoT originales: {len(df_ton.columns)}")
-                    
+
                     # Show common features in popup (if interactive mode enabled)
                     if self.features_popup_callback:
                         self.features_popup_callback(common_features, len(df_cic.columns), len(df_ton.columns))
                 else:
                     logger.warning("   ⚠ Aucune feature commune trouvée!")
-                
+
                 # Check if harmonization produced empty dataframes
                 if df_cic_harm.empty or df_ton_harm.empty or len(df_cic_harm.columns) == 0 or len(df_ton_harm.columns) == 0:
                     logger.warning("   Harmonization produced empty dataframes. Using original datasets directly.")
                     # Use original datasets but standardize label column
                     df_cic_processed = df_cic.copy()
                     df_ton_processed = df_ton.copy()
-                    
+
                     # Standardize label columns
                     cic_label_col = None
                     for col in ['Label', 'label', 'Attack', 'Class']:
@@ -227,9 +228,9 @@ class IRPPipeline:
                             break
                     if cic_label_col and cic_label_col != 'label':
                         df_cic_processed['label'] = df_cic_processed[cic_label_col]
-                    
+
                     ton_label_col = 'label' if 'label' in df_ton_processed.columns else None
-                    
+
                     # Use only TON_IoT if it has label, otherwise try CIC
                     if ton_label_col:
                         df_processed = df_ton_processed
@@ -250,17 +251,17 @@ class IRPPipeline:
                     except Exception as e:
                         logger.error(f"   Error during early fusion: {e}", exc_info=True)
                         raise
-                    
+
                     # Use fused dataset
                     df_processed = df_fused
-                    
+
             except Exception as e:
                 logger.error(f"   Error during harmonization: {e}", exc_info=True)
                 logger.warning("   Falling back to using original datasets...")
                 # Fallback: use original datasets
                 df_cic_processed = df_cic.copy()
                 df_ton_processed = df_ton.copy()
-                
+
                 # Standardize label columns
                 cic_label_col = None
                 for col in ['Label', 'label', 'Attack', 'Class']:
@@ -269,7 +270,7 @@ class IRPPipeline:
                         break
                 if cic_label_col and cic_label_col != 'label':
                     df_cic_processed['label'] = df_cic_processed[cic_label_col]
-                
+
                 # Prefer TON_IoT if it has label
                 if 'label' in df_ton_processed.columns:
                     df_processed = df_ton_processed
@@ -277,7 +278,7 @@ class IRPPipeline:
                     df_processed = df_cic_processed
                 else:
                     raise ValueError("Neither dataset has a valid label column after harmonization failure")
-            
+
         except FileNotFoundError:
             logger.warning("   CIC-DDoS2019 not available, using TON_IoT only")
             df_processed = df_ton
@@ -285,14 +286,14 @@ class IRPPipeline:
             logger.error(f"   Error processing CIC-DDoS2019: {e}", exc_info=True)
             logger.warning("   Falling back to TON_IoT only")
             df_processed = df_ton
-        
+
         # Prepare features and labels
         label_col = 'label' if 'label' in df_processed.columns else None
         if label_col is None:
             error_msg = "Label column not found in dataset"
             logger.error(error_msg)
             raise ValueError(error_msg)
-        
+
         try:
             X = df_processed.drop([label_col, 'dataset_source'] if 'dataset_source' in df_processed.columns else [label_col], axis=1, errors='ignore')
             y = df_processed[label_col]
@@ -300,7 +301,7 @@ class IRPPipeline:
         except Exception as e:
             logger.error(f"   Error preparing features/labels: {e}", exc_info=True)
             raise
-        
+
         logger.info("\n1.4 Preprocessing pipeline (cleaning, encoding, feature selection, scaling, resampling)...")
         try:
             # Use new preprocessing pipeline with all steps
@@ -312,12 +313,12 @@ class IRPPipeline:
                 apply_resampling=True,
                 apply_splitting=False  # We don't split here, it's done in Phase 3 with cross-validation
             )
-            
+
             # Extract processed data from result dictionary
             X_processed = preprocessing_result['X_processed']
             y_processed = preprocessing_result['y_processed']
             feature_names = preprocessing_result['feature_names']
-            
+
             logger.info(f"   Processed shape: {X_processed.shape}")
             logger.info(f"   Selected features: {len(feature_names)}")
             class_dist = pd.Series(y_processed).value_counts().to_dict()
@@ -329,7 +330,7 @@ class IRPPipeline:
         except Exception as e:
             logger.error(f"   Error during preprocessing: {e}", exc_info=True)
             raise
-        
+
         # Save preprocessed data
         try:
             # Create DataFrame with feature names (X_processed is numpy array after preprocessing)
@@ -345,30 +346,30 @@ class IRPPipeline:
         except Exception as e:
             logger.error(f"   Error saving preprocessed data: {e}", exc_info=True)
             raise
-        
+
         # Return processed data with feature names
         return X_processed, y_processed, feature_names
-    
+
     def phase3_evaluation(self, X: np.ndarray, y: np.ndarray, feature_names: list = None):
         """
         Phase 3: Multi-Dimensional Algorithm Evaluation
         - Train and evaluate 5 algorithms
         - Evaluate across 3 dimensions
-        
+
         Returns:
             Evaluation results DataFrame
         """
         print("\n" + "=" * 60)
         print("PHASE 3: Multi-Dimensional Algorithm Evaluation")
         print("=" * 60)
-        
+
         # Initialize models (according to IRP methodology)
         models = {
             'Logistic Regression': LogisticRegression(max_iter=1000, random_state=self.random_state),
             'Decision Tree': DecisionTreeClassifier(random_state=self.random_state),
             'Random Forest': RandomForestClassifier(n_estimators=100, random_state=self.random_state),
         }
-        
+
         # Add CNN if available
         if CNN_AVAILABLE and CNNTabularClassifier is not None:
             try:
@@ -377,7 +378,7 @@ class IRPPipeline:
                 logger.warning(f"   CNN not available: {e}. Install via: pip install -r requirements-nn.txt")
         else:
             logger.warning("   CNN skipped (torch not available). Install via: pip install -r requirements-nn.txt")
-        
+
         # Add TabNet if available
         if TABNET_AVAILABLE and TabNetClassifierWrapper is not None:
             try:
@@ -386,33 +387,33 @@ class IRPPipeline:
                 logger.warning(f"   TabNet not available: {e}. Install via: pip install -r requirements-nn.txt")
         else:
             logger.warning("   TabNet skipped (pytorch-tabnet not available). Install via: pip install -r requirements-nn.txt")
-        
+
         # Use stratified cross-validation
         cv = StratifiedCrossValidator(n_splits=5, random_state=self.random_state)
-        
+
         # Initialize 3D evaluator
         feature_names_list = feature_names or [f'feature_{i}' for i in range(X.shape[1])]
         evaluator = Evaluation3D(feature_names=feature_names_list)
-        
+
         logger.info(f"\n3.1 Evaluating {len(models)} algorithms with 5-fold CV...")
-        
+
         all_results = []
-        
+
         for model_name, model_template in tqdm(models.items(), desc="Evaluating algorithms"):
             logger.info(f"\n   Evaluating {model_name}...")
-            
+
             fold_results = []
             fold_level_results = []  # Store per-fold results for debugging
-            
+
             for fold_idx, (train_idx, test_idx) in enumerate(tqdm(cv.split(X, y), desc=f"  {model_name} CV folds", total=5, leave=False)):
                 X_train_fold, X_test_fold = X[train_idx], X[test_idx]
                 y_train_fold, y_test_fold = y[train_idx], y[test_idx]
-                
+
                 try:
                     # Create a fresh, unfitted model instance for each fold to avoid state contamination
                     from src.core.model_utils import fresh_model
                     model = fresh_model(model_template)
-                    
+
                     # Send training progress update to visualizer
                     if self.visualizer:
                         self.visualizer.callback_training_progress({
@@ -420,14 +421,14 @@ class IRPPipeline:
                             'fold': fold_idx + 1,
                             'metrics': {}
                         })
-                    
+
                     # Ensure model is fitted before evaluation (evaluate_model handles this internally)
                     results = evaluator.evaluate_model(
                         model, f"{model_name}_fold{fold_idx+1}",
                         X_train_fold, y_train_fold, X_test_fold, y_test_fold,
                         compute_explainability=False  # Disable for speed in CV
                     )
-                    
+
                     # Send evaluation metrics update to visualizer
                     if self.visualizer:
                         self.visualizer.callback_evaluation_progress({
@@ -442,14 +443,14 @@ class IRPPipeline:
                                 'memory': results.get('memory_used_mb', 0)
                             }
                         })
-                    
+
                     # Validate that required metrics are present
-                    required_keys = ['f1_score', 'accuracy', 'precision', 'recall', 
+                    required_keys = ['f1_score', 'accuracy', 'precision', 'recall',
                                    'training_time_seconds', 'memory_used_mb', 'explainability_score']
                     missing_keys = [k for k in required_keys if k not in results]
                     if missing_keys:
                         raise ValueError(f"Missing required metrics: {missing_keys}")
-                    
+
                     # Add fold information
                     results['fold'] = fold_idx + 1
                     fold_results.append(results)
@@ -458,15 +459,15 @@ class IRPPipeline:
                         'fold': fold_idx + 1,
                         **{k: v for k, v in results.items() if k in required_keys}
                     })
-                    
+
                     logger.debug(f"      Fold {fold_idx+1} - F1: {results['f1_score']:.4f}, "
                                f"Acc: {results['accuracy']:.4f}")
-                    
+
                 except Exception as e:
                     logger.warning(f"      Error in fold {fold_idx+1} for {model_name}: {e}")
                     logger.debug(f"      Full error traceback:", exc_info=True)
                     continue
-            
+
             # Only add averaged results if we have at least one successful fold
             if fold_results:
                 # Average results across folds
@@ -488,7 +489,7 @@ class IRPPipeline:
                            f"Successful folds: {len(fold_results)}/5")
             else:
                 logger.error(f"      {model_name} - All folds failed! Model not evaluated.")
-        
+
         # Create results DataFrame - ensure it's never empty
         try:
             if not all_results:
@@ -506,21 +507,21 @@ class IRPPipeline:
                     'n_successful_folds': 0
                 }]
                 logger.error("   Check logs above for errors preventing model evaluation.")
-            
+
             results_df = pd.DataFrame(all_results)
-            
+
             # Validate required columns are present
             required_columns = ['model_name', 'f1_score', 'accuracy', 'precision', 'recall']
             missing_cols = [col for col in required_columns if col not in results_df.columns]
             if missing_cols:
                 logger.error(f"   Missing required columns in results: {missing_cols}")
                 raise ValueError(f"Results DataFrame missing required columns: {missing_cols}")
-            
+
             output_file = self.results_dir / 'phase3_evaluation' / 'evaluation_results.csv'
             results_df.to_csv(output_file, index=False)
             logger.info(f"\n   Saved evaluation results to {output_file}")
             logger.info(f"   Total models evaluated: {len(results_df)}")
-            
+
             # Finalize algorithm visualizations
             if self.visualizer:
                 logger.info("\n3.3 Finalizing real-time visualizations...")
@@ -535,7 +536,7 @@ class IRPPipeline:
         except Exception as e:
             logger.error(f"   Error saving evaluation results: {e}", exc_info=True)
             raise
-        
+
         # Generate dimension scores
         try:
             dimension_scores = evaluator.get_dimension_scores()
@@ -544,21 +545,21 @@ class IRPPipeline:
             logger.info(f"   Saved dimension scores to {dimension_scores_file}")
         except Exception as e:
             logger.warning(f"   Error generating dimension scores: {e}")
-        
+
         # Generate algorithm reports
         logger.info("\n3.2 Generating algorithm reports...")
         try:
             for _, row in results_df.iterrows():
                 results_dict = row.to_dict()
                 evaluator.generate_algorithm_report(
-                    results_dict['model_name'], 
+                    results_dict['model_name'],
                     results_dict,
                     self.results_dir / 'phase3_evaluation'
                 )
             logger.info("   Algorithm reports generated")
         except Exception as e:
             logger.warning(f"   Error generating algorithm reports: {e}")
-        
+
         # Generate dimension visualizations using Evaluation3D method
         logger.info("\n3.3 Generating visualizations...")
         try:
@@ -580,9 +581,9 @@ class IRPPipeline:
                 logger.info("   Fallback visualizations generated")
             except Exception as e2:
                 logger.error(f"   Fallback visualization also failed: {e2}")
-        
+
         return results_df
-    
+
     def _generate_visualizations(self, results_df: pd.DataFrame, evaluator):
         """Generate visualizations for the 3 dimensions"""
         try:
@@ -590,10 +591,10 @@ class IRPPipeline:
             matplotlib.use('Agg')
             import matplotlib.pyplot as plt
             import seaborn as sns
-            
+
             viz_dir = self.results_dir / 'phase3_evaluation' / 'visualizations'
             viz_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Dimension 1: Performance metrics
             fig, ax = plt.subplots(figsize=(10, 6))
             x = range(len(results_df))
@@ -611,7 +612,7 @@ class IRPPipeline:
             plt.tight_layout()
             plt.savefig(viz_dir / 'dimension1_performance.png', dpi=150, bbox_inches='tight')
             plt.close()
-            
+
             # Dimension 2: Resource Efficiency
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
             ax1.bar(results_df['model_name'], results_df['training_time_seconds'], color='#d62728')
@@ -619,7 +620,7 @@ class IRPPipeline:
             ax1.set_title('Training Time by Algorithm')
             ax1.tick_params(axis='x', rotation=45)
             ax1.grid(axis='y', alpha=0.3)
-            
+
             ax2.bar(results_df['model_name'], results_df['memory_used_mb'], color='#9467bd')
             ax2.set_ylabel('Memory Usage (MB)')
             ax2.set_title('Memory Usage by Algorithm')
@@ -628,7 +629,7 @@ class IRPPipeline:
             plt.tight_layout()
             plt.savefig(viz_dir / 'dimension2_resources.png', dpi=150, bbox_inches='tight')
             plt.close()
-            
+
             # Dimension 3: Explainability
             fig, ax = plt.subplots(figsize=(10, 6))
             x = range(len(results_df))
@@ -650,7 +651,7 @@ class IRPPipeline:
             plt.tight_layout()
             plt.savefig(viz_dir / 'dimension3_explainability.png', dpi=150, bbox_inches='tight')
             plt.close()
-            
+
             # Combined radar chart (if dimension scores available)
             try:
                 dimension_scores = evaluator.get_dimension_scores()
@@ -659,7 +660,7 @@ class IRPPipeline:
                 num_vars = len(categories)
                 angles = [n / float(num_vars) * 2 * np.pi for n in range(num_vars)]
                 angles += angles[:1]
-                
+
                 for idx, row in dimension_scores.iterrows():
                     values = [
                         row['detection_performance'],
@@ -669,7 +670,7 @@ class IRPPipeline:
                     values += values[:1]
                     ax.plot(angles, values, 'o-', linewidth=2, label=row['model_name'])
                     ax.fill(angles, values, alpha=0.1)
-                
+
                 ax.set_xticks(angles[:-1])
                 ax.set_xticklabels(categories)
                 ax.set_ylim(0, 1)
@@ -681,35 +682,35 @@ class IRPPipeline:
                 plt.close()
             except Exception as e:
                 logger.debug(f"Could not generate radar chart: {e}")
-                
+
         except ImportError:
             logger.warning("Matplotlib/Seaborn not available. Skipping visualizations.")
         except Exception as e:
             logger.warning(f"Error generating visualizations: {e}", exc_info=True)
-    
+
     def phase5_ranking(self, evaluation_results: pd.DataFrame):
         """
         Phase 5: AHP-TOPSIS Ranking
-        
+
         Args:
             evaluation_results: DataFrame with evaluation results from Phase 3
-            
+
         Returns:
             Ranking results DataFrame
         """
         print("\n" + "=" * 60)
         print("PHASE 5: AHP-TOPSIS Ranking")
         print("=" * 60)
-        
+
         # Define criteria
         criteria = ['Detection Performance', 'Resource Efficiency', 'Explainability']
-        
+
         # Initialize framework
         framework = AHPTopsisFramework(
             criteria_names=criteria,
             criteria_types=['max', 'max', 'max']
         )
-        
+
         # Set AHP comparisons (example - can be adjusted)
         print("\n5.1 Setting AHP pairwise comparisons...")
         comparisons = {
@@ -718,12 +719,12 @@ class IRPPipeline:
             ('Resource Efficiency', 'Explainability'): 0.5  # Explainability slightly more important
         }
         framework.set_ahp_comparisons(comparisons)
-        
+
         print("\n5.2 AHP Weights:")
         weights_df = framework.get_weights()
         print(weights_df)
         weights_df.to_csv(self.results_dir / 'phase5_ranking' / 'ahp_weights.csv', index=False)
-        
+
         # Prepare decision matrix from evaluation results
         print("\n5.3 Preparing decision matrix...")
         decision_matrix = np.array([
@@ -731,45 +732,45 @@ class IRPPipeline:
             1 / (1 + evaluation_results['training_time_seconds'].values / evaluation_results['training_time_seconds'].max()),  # Dimension 2: Resource Efficiency (normalized, higher is better)
             evaluation_results['explainability_score'].values  # Dimension 3: Explainability
         ]).T
-        
+
         # Normalize to [0, 1] scale
         for j in range(decision_matrix.shape[1]):
             col = decision_matrix[:, j]
             col_min, col_max = col.min(), col.max()
             if col_max > col_min:
                 decision_matrix[:, j] = (col - col_min) / (col_max - col_min)
-        
+
         framework.set_decision_matrix(decision_matrix, evaluation_results['model_name'].tolist())
-        
+
         # Perform ranking
         print("\n5.4 Computing TOPSIS ranking...")
         ranking_results = framework.rank_alternatives()
-        
+
         print("\n5.5 Final Ranking:")
         print(ranking_results)
-        
+
         ranking_results.to_csv(self.results_dir / 'phase5_ranking' / 'ranking_results.csv', index=False)
         print(f"\n   Saved ranking results to {self.results_dir / 'phase5_ranking' / 'ranking_results.csv'}")
-        
+
         return ranking_results
-    
+
     def run(self):
         """Run complete pipeline"""
         print("\n" + "=" * 60)
         print("IRP RESEARCH PIPELINE")
         print("AI-Powered Log Analysis for Smarter Threat Detection")
         print("=" * 60)
-        
+
         try:
             # Phase 1: Preprocessing
             X, y, feature_names = self.phase1_preprocessing()
-            
+
             # Phase 3: Evaluation
             evaluation_results = self.phase3_evaluation(X, y, feature_names)
-            
+
             # Phase 5: Ranking
             ranking_results = self.phase5_ranking(evaluation_results)
-            
+
             print("\n" + "=" * 60)
             print("PIPELINE COMPLETED SUCCESSFULLY")
             print("=" * 60)
@@ -777,7 +778,7 @@ class IRPPipeline:
             print("  - Phase 1: preprocessing/")
             print("  - Phase 3: evaluation/")
             print("  - Phase 5: ranking/")
-            
+
         except Exception as e:
             print(f"\nError in pipeline: {e}")
             import traceback

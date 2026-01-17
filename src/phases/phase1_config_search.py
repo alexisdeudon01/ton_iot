@@ -138,7 +138,7 @@ class Phase1ConfigSearch:
         df_cic = self.loader.load_cic_ddos2019(
             sample_ratio=self.config.sample_ratio,
             random_state=self.config.random_state,
-            max_files_in_test=10 if self.config.test_mode else None
+            max_files_in_test=10 if self.config.test_mode else self.config.cic_max_files
         )
 
         # Harmonize
@@ -201,9 +201,9 @@ class Phase1ConfigSearch:
         # Evaluate
         score = model.score(X_test, y_test)
 
-        return score
+        return float(score)
 
-    def _save_results(self, best_config: Dict, best_config_id: int, best_score: float):
+    def _save_results(self, best_config: Optional[Dict], best_config_id: Optional[int], best_score: float):
         """Save Phase 1 results"""
         # Save best config
         import json
@@ -212,7 +212,7 @@ class Phase1ConfigSearch:
             json.dump({
                 'config_id': best_config_id,
                 'config': best_config,
-                'score': best_score
+                'score': float(best_score)
             }, f, indent=2)
 
         # Save all results as CSV

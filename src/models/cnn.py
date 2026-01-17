@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Optional, List
+from typing import List, Optional
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -24,7 +24,7 @@ try:
     import torch
     import torch.nn as nn
     import torch.optim as optim
-    from torch.utils.data import Dataset, DataLoader
+    from torch.utils.data import DataLoader, Dataset
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -40,7 +40,7 @@ except ImportError:
     )
 
 
-if TORCH_AVAILABLE:
+if TORCH_AVAILABLE and torch is not None:
 
     class TabularDataset(Dataset):
         """PyTorch Dataset for tabular data."""
@@ -67,7 +67,6 @@ if TORCH_AVAILABLE:
                 return self.X[idx], self.y[idx]
             return self.X[idx]
 
-
     class TabularCNN(nn.Module):
         """
         CNN adapted for tabular data:
@@ -89,7 +88,7 @@ if TORCH_AVAILABLE:
             super().__init__()
             if hidden_dims is None:
                 hidden_dims = [64, 32, 16]
-            
+
             # Validate hidden_dims is not empty
             if not hidden_dims or len(hidden_dims) == 0:
                 raise ValueError(
@@ -134,11 +133,10 @@ if TORCH_AVAILABLE:
             Returns:
                 logits: (batch_size, num_classes)
             """
-            x = x.unsqueeze(1)          # (batch, 1, features)
-            x = self.conv_layers(x)     # (batch, channels, length)
+            x = x.unsqueeze(1)  # (batch, 1, features)
+            x = self.conv_layers(x)  # (batch, channels, length)
             x = x.reshape(x.size(0), -1)
             return self.fc_layers(x)
-
 
     class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         """
@@ -154,28 +152,17 @@ if TORCH_AVAILABLE:
             device: Optional[str] = None,
             random_state: int = 42,
         ):
-            if hidden_dims is None:
-                self.hidden_dims = [64, 32, 16]
-            elif not hidden_dims or len(hidden_dims) == 0:
-                raise ValueError(
-                    "hidden_dims cannot be empty. Provide at least one layer size "
-                    "(e.g., [64]) or use None for default [64, 32, 16]"
-                )
-            else:
-                self.hidden_dims = hidden_dims
-            self.learning_rate = float(learning_rate)
-            self.batch_size = int(batch_size)
-            self.epochs = int(epochs)
-            self.random_state = int(random_state)
-
-            if device is None:
-                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            else:
-                self.device = torch.device(device)
+            self.hidden_dims = hidden_dims
+            self.learning_rate = learning_rate
+            self.batch_size = batch_size
+            self.epochs = epochs
+            self.device = device
+            self.random_state = random_state
 
             self.model: Optional[TabularCNN] = None
             self.label_encoder = LabelEncoder()
             self.input_dim: Optional[int] = None
+            self.device_obj: Optional[torch.device] = None
 
         def _set_random_state(self) -> None:
             torch.manual_seed(self.random_state)
@@ -184,17 +171,27 @@ if TORCH_AVAILABLE:
                 torch.cuda.manual_seed_all(self.random_state)
 
         def fit(self, X: np.ndarray, y: np.ndarray):
+            if not TORCH_AVAILABLE or torch is None or nn is None or optim is None:
+                raise ImportError("torch is not available")
+
             self._set_random_state()
+
+            if self.device is None:
+                self.device_obj = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            else:
+                self.device_obj = torch.device(self.device)
 
             y_encoded = self.label_encoder.fit_transform(y)
             self.input_dim = int(X.shape[1])
             num_classes = int(len(np.unique(y_encoded)))
 
+            hidden_dims = self.hidden_dims if self.hidden_dims is not None else [64, 32, 16]
+
             self.model = TabularCNN(
                 input_dim=self.input_dim,
                 num_classes=num_classes,
-                hidden_dims=self.hidden_dims,
-            ).to(self.device)
+                hidden_dims=hidden_dims,
+            ).to(self.device_obj)
 
             criterion = nn.CrossEntropyLoss()
             optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -206,8 +203,8 @@ if TORCH_AVAILABLE:
             for epoch in range(self.epochs):
                 epoch_loss = 0.0
                 for batch_X, batch_y in dataloader:
-                    batch_X = batch_X.to(self.device)
-                    batch_y = batch_y.to(self.device)
+                    batch_X = batch_X.to(self.device_obj)
+                    batch_y = batch_y.to(self.device_obj)
 
                     optimizer.zero_grad()
                     logits = self.model(batch_X)
@@ -219,12 +216,14 @@ if TORCH_AVAILABLE:
 
                 if (epoch + 1) % 5 == 0:
                     avg_loss = epoch_loss / max(1, len(dataloader))
-                    logger.info(f"[CNN] Epoch {epoch+1}/{self.epochs} loss={avg_loss:.4f}")
+                    logger.info(
+                        f"[CNN] Epoch {epoch+1}/{self.epochs} loss={avg_loss:.4f}"
+                    )
 
             return self
 
         def predict(self, X: np.ndarray) -> np.ndarray:
-            if self.model is None:
+            if self.model is None or self.device_obj is None:
                 raise ValueError("Model must be fitted before prediction")
 
             self.model.eval()
@@ -234,7 +233,7 @@ if TORCH_AVAILABLE:
             preds = []
             with torch.no_grad():
                 for batch_X in dataloader:
-                    batch_X = batch_X.to(self.device)
+                    batch_X = batch_X.to(self.device_obj)
                     logits = self.model(batch_X)
                     pred = torch.argmax(logits, dim=1)
                     preds.extend(pred.cpu().numpy())
@@ -243,7 +242,7 @@ if TORCH_AVAILABLE:
             return self.label_encoder.inverse_transform(preds)
 
         def predict_proba(self, X: np.ndarray) -> np.ndarray:
-            if self.model is None:
+            if self.model is None or self.device_obj is None:
                 raise ValueError("Model must be fitted before prediction")
 
             self.model.eval()
@@ -253,18 +252,19 @@ if TORCH_AVAILABLE:
             probs_all = []
             with torch.no_grad():
                 for batch_X in dataloader:
-                    batch_X = batch_X.to(self.device)
+                    batch_X = batch_X.to(self.device_obj)
                     logits = self.model(batch_X)
                     probs = torch.softmax(logits, dim=1)
                     probs_all.extend(probs.cpu().numpy())
 
             return np.asarray(probs_all)
 
-
 else:
     # Stubs when torch is not available (so imports don't crash)
     class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         def __init__(self, *args, **kwargs):
+            pass
+        def fit(self, X, y):
             raise ImportError(
                 "CNNTabularClassifier requires torch. "
                 "Install via: pip install -r requirements.txt"
