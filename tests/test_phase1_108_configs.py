@@ -3,6 +3,7 @@ Test Phase 1 generates exactly 108 configurations
 """
 import sys
 from pathlib import Path
+import pytest
 
 _project_root = Path(__file__).parent.parent
 if str(_project_root) not in sys.path:
@@ -14,7 +15,7 @@ from src.config import generate_108_configs
 def test_108_configs_generated():
     """Test that generate_108_configs returns exactly 108 configs"""
     configs = generate_108_configs()
-    assert len(configs) == 108, f"Expected 108 configs, got {len(configs)}"
+    assert len(configs) == 108, f"Expected exactly 108 configs (got {len(configs)})"
 
 
 def test_configs_have_required_keys():
@@ -23,6 +24,6 @@ def test_configs_have_required_keys():
     required_keys = ['apply_encoding', 'apply_feature_selection', 'apply_scaling', 
                      'apply_resampling', 'apply_cleaning']
     
-    for config in configs:
+    for idx, config in enumerate(configs):
         for key in required_keys:
-            assert key in config, f"Config missing key: {key}"
+            assert key in config, f"Config {idx} missing required key: {key} (available keys: {list(config.keys())})"

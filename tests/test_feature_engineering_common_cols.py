@@ -1,9 +1,20 @@
+"""
+Tests for feature engineering - common columns and dataset_source
+"""
+import sys
+from pathlib import Path
+import pytest
 import pandas as pd
+
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from src.core.feature_engineering import engineer_cic, engineer_ton
 
 
 def test_feature_engineering_common_cols():
+    """Test that engineer_cic and engineer_ton add common columns including dataset_source"""
     cic_df = pd.DataFrame(
         {
             "Total Fwd Bytes": [100, 200],
@@ -36,7 +47,15 @@ def test_feature_engineering_common_cols():
         "dataset_source",
     }
 
-    assert expected_cols.issubset(cic_engineered.columns)
-    assert expected_cols.issubset(ton_engineered.columns)
-    assert cic_engineered["dataset_source"].unique().tolist() == [0]
-    assert ton_engineered["dataset_source"].unique().tolist() == [1]
+    assert expected_cols.issubset(cic_engineered.columns), \
+        f"CIC engineered columns missing expected columns. Expected: {expected_cols}, Got: {set(cic_engineered.columns)}"
+    assert expected_cols.issubset(ton_engineered.columns), \
+        f"TON engineered columns missing expected columns. Expected: {expected_cols}, Got: {set(ton_engineered.columns)}"
+    
+    cic_dataset_source = cic_engineered["dataset_source"].unique().tolist()
+    assert cic_dataset_source == [0], \
+        f"CIC dataset_source should be [0] (got {cic_dataset_source})"
+    
+    ton_dataset_source = ton_engineered["dataset_source"].unique().tolist()
+    assert ton_dataset_source == [1], \
+        f"TON dataset_source should be [1] (got {ton_dataset_source})"

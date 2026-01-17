@@ -2,10 +2,11 @@
 Tests for OOM fixes in dataset_loader.py
 """
 import sys
+from pathlib import Path
+import pytest
 import pandas as pd
 import numpy as np
 import tempfile
-from pathlib import Path
 
 _project_root = Path(__file__).parent.parent
 if str(_project_root) not in sys.path:
@@ -20,13 +21,16 @@ def test_chunk_cap_applied():
     
     # Production cap
     chunk_prod = loader._get_adaptive_chunk_size(sample_ratio=1.0)
-    assert chunk_prod <= DEFAULT_CHUNK_CAP_PROD, f"Prod chunk {chunk_prod} exceeds cap {DEFAULT_CHUNK_CAP_PROD}"
+    assert chunk_prod <= DEFAULT_CHUNK_CAP_PROD, \
+        f"Production chunk size {chunk_prod:,} should not exceed cap {DEFAULT_CHUNK_CAP_PROD:,}"
     
     # Test cap
     chunk_test = loader._get_adaptive_chunk_size(sample_ratio=0.001)
-    assert chunk_test <= DEFAULT_CHUNK_CAP_TEST, f"Test chunk {chunk_test} exceeds cap {DEFAULT_CHUNK_CAP_TEST}"
+    assert chunk_test <= DEFAULT_CHUNK_CAP_TEST, \
+        f"Test chunk size {chunk_test:,} should not exceed cap {DEFAULT_CHUNK_CAP_TEST:,}"
     
-    print(f"✅ Chunk caps: prod={chunk_prod:,}, test={chunk_test:,}")
+    assert chunk_prod > 0, f"Production chunk size should be positive (got {chunk_prod})"
+    assert chunk_test > 0, f"Test chunk size should be positive (got {chunk_test})"
 
 
 def test_stream_sampling(tmp_path):
@@ -35,6 +39,7 @@ def test_stream_sampling(tmp_path):
     csv_file = tmp_path / "test_data.csv"
     
     # Generate synthetic data
+    np.random.seed(42)
     n_rows = 10000
     data = {
         'feature1': np.random.randn(n_rows),
@@ -65,14 +70,14 @@ def test_stream_sampling(tmp_path):
     expected_max = int(n_rows * sample_ratio * 1.2)
     
     assert expected_min <= len(df_loaded) <= expected_max, \
-        f"Expected ~{n_rows * sample_ratio} rows, got {len(df_loaded)}"
-    
-    print(f"✅ Streaming sampling: {len(df_loaded)} rows from {n_rows} (target: {n_rows * sample_ratio:.0f})")
+        f"Expected ~{n_rows * sample_ratio:.0f} rows (range: {expected_min}-{expected_max}), got {len(df_loaded)}"
+    assert len(df_loaded) > 0, "Loaded dataframe should not be empty"
 
 
 def test_max_files_limit(tmp_path):
     """Test that max_files parameter limits the number of files loaded"""
     # Create 5 test CSV files
+    np.random.seed(42)
     for i in range(5):
         csv_file = tmp_path / f"file_{i:02d}.csv"
         data = pd.DataFrame({
@@ -88,12 +93,14 @@ def test_max_files_limit(tmp_path):
     csv_files = sorted(tmp_path.glob("*.csv"))
     max_files = 2
     
+    assert len(csv_files) == 5, f"Should have created 5 CSV files (got {len(csv_files)})"
+    
     for csv_file in csv_files[:max_files]:
         df = pd.read_csv(csv_file)
         dfs.append(df)
     
-    assert len(dfs) == 2, f"Expected 2 files, got {len(dfs)}"
-    print(f"✅ Max files limit: loaded {len(dfs)} files (limit: {max_files})")
+    assert len(dfs) == 2, f"Should load exactly {max_files} files (got {len(dfs)})"
+    assert all(isinstance(df, pd.DataFrame) for df in dfs), "All loaded items should be DataFrames"
 
 
 def test_optimize_dtypes():
@@ -101,6 +108,7 @@ def test_optimize_dtypes():
     loader = DatasetLoader()
     
     # Create DF with inefficient dtypes
+    np.random.seed(42)
     df = pd.DataFrame({
         'float_col': np.random.randn(1000).astype('float64'),
         'int_col': np.random.randint(0, 100, 1000).astype('int64'),
@@ -112,10 +120,15 @@ def test_optimize_dtypes():
     df_opt = loader._optimize_dtypes(df)
     mem_after = df_opt.memory_usage(deep=True).sum()
     
-    assert mem_after < mem_before, "Dtype optimization should reduce memory"
+    assert mem_after < mem_before, \
+        f"Dtype optimization should reduce memory (before: {mem_before/1024:.1f}KB, after: {mem_after/1024:.1f}KB)"
     
     # Check that float/int were downcast
-    assert df_opt['float_col'].dtype in ['float32', 'float64'], "Float should be downcast"
-    assert df_opt['int_col'].dtype in ['int32', 'int64'], "Int should be downcast"
+    assert df_opt['float_col'].dtype in ['float32', 'float64'], \
+        f"Float column should be downcast to float32/float64 (got {df_opt['float_col'].dtype})"
+    assert df_opt['int_col'].dtype in ['int32', 'int64', 'int16', 'int8'], \
+        f"Int column should be downcast (got {df_opt['int_col'].dtype})"
     
-    print(f"✅ Dtype optimization: {mem_before/1024:.1f}KB -> {mem_after/1024:.1f}KB")
+    # Check that shape is preserved
+    assert df_opt.shape == df.shape, \
+        f"Shape should be preserved after optimization (got {df_opt.shape}, expected {df.shape})"

@@ -1,10 +1,21 @@
+"""
+Tests for Phase 2 outputs
+"""
+import sys
+from pathlib import Path
+import pytest
 import pandas as pd
+
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from src.config import PipelineConfig
 from src.phases.phase2_apply_best_config import Phase2ApplyBestConfig
 
 
 def test_phase2_outputs(tmp_path, monkeypatch):
+    """Test that Phase 2 generates all required output files"""
     config = PipelineConfig(output_dir=str(tmp_path), test_mode=True, sample_ratio=0.01)
     phase2 = Phase2ApplyBestConfig(config, best_config={"dummy": True})
 
@@ -22,6 +33,9 @@ def test_phase2_outputs(tmp_path, monkeypatch):
     result = phase2.run()
 
     output_paths = result["output_paths"]
-    assert output_paths["preprocessed_data"].exists()
-    assert output_paths["feature_names"].exists()
-    assert output_paths["summary"].exists()
+    assert output_paths["preprocessed_data"].exists(), \
+        f"Preprocessed data file should exist at {output_paths['preprocessed_data']}"
+    assert output_paths["feature_names"].exists(), \
+        f"Feature names file should exist at {output_paths['feature_names']}"
+    assert output_paths["summary"].exists(), \
+        f"Summary file should exist at {output_paths['summary']}"

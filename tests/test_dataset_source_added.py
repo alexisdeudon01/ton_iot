@@ -2,8 +2,14 @@
 """
 Test that early_fusion adds dataset_source column encoded as int (0=CIC, 1=TON)
 """
+import sys
+from pathlib import Path
 import pandas as pd
 import pytest
+
+_project_root = Path(__file__).parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
 
 from src.core.data_harmonization import DataHarmonizer
 
