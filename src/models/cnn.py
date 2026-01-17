@@ -3,7 +3,7 @@
 CNN model for tabular data (DDoS detection)
 Adapted for tabular network flow data according to IRP methodology.
 
-CNN is optional: requires torch.
+CNN is mandatory: requires torch.
 """
 
 from __future__ import annotations
@@ -159,7 +159,7 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         self.device = device
         self.random_state = random_state
 
-        self.model: Optional[TabularCNN] = None
+        self.model: TabularCNN = cast(TabularCNN, None)
         self.label_encoder = LabelEncoder()
         self.input_dim: Optional[int] = None
         self.device_obj: Optional[torch.device] = None
@@ -197,7 +197,7 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
-        dataset = TabularDataset(X, y_encoded)
+        dataset = TabularDataset(X, cast(np.ndarray, y_encoded))
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         self.model.train()
