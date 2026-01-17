@@ -3,6 +3,7 @@
 Data harmonization module for CIC-DDoS2019 and TON_IoT datasets
 Implements feature mapping and early fusion with statistical validation
 """
+from typing import Any, cast
 from src.core.dependencies import (
     np, pd, stats, Dict, List, Tuple, Optional, warnings, logging,
     FeatureAnalyzer, IRPFeaturesRequirements
@@ -541,7 +542,7 @@ class DataHarmonizer:
                     ks_stat = float(cast(Any, ks_result)[0])
                     ks_pvalue = float(cast(Any, ks_result)[1])
 
-                    validation_results[feature] = {
+                    validation_results[feature] = { 
                         'ks_statistic': ks_stat,
                         'ks_pvalue': ks_pvalue,
                         'compatible': bool(ks_pvalue > self.KS_PVALUE_THRESHOLD),
