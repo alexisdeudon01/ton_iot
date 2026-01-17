@@ -29,21 +29,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-# Import CNN (optional)
-try:
-    from src.models.cnn import TORCH_AVAILABLE as CNN_AVAILABLE
-    from src.models.cnn import CNNTabularClassifier
-except (ImportError, AttributeError):
-    CNN_AVAILABLE = False
-    CNNTabularClassifier = None
+# Import CNN
+from src.models.cnn import CNNTabularClassifier
 
-# Import TabNet (optional)
-try:
-    from src.models.tabnet import TABNET_AVAILABLE
-    from src.models.tabnet import TabNetClassifierWrapper
-except (ImportError, AttributeError):
-    TABNET_AVAILABLE = False
-    TabNetClassifierWrapper = None
+# Import TabNet
+from src.models.tabnet import TabNetClassifierWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -373,31 +363,25 @@ class Phase3Evaluation:
             )
 
         if enabled('cnn'):
-            if CNN_AVAILABLE and CNNTabularClassifier is not None:
-                try:
-                    models['CNN'] = CNNTabularClassifier(
-                        epochs=20,
-                        batch_size=64,
-                        random_state=self.config.random_state
-                    )
-                except (ImportError, AttributeError) as exc:
-                    logger.warning("CNN not available: %s", exc)
-            else:
-                logger.warning("CNN skipped (torch not available).")
+            try:
+                models['CNN'] = CNNTabularClassifier(
+                    epochs=20,
+                    batch_size=64,
+                    random_state=self.config.random_state
+                )
+            except (ImportError, AttributeError) as exc:
+                logger.warning("CNN not available: %s", exc)
 
         if enabled('tabnet'):
-            if TABNET_AVAILABLE and TabNetClassifierWrapper is not None:
-                try:
-                    models['TabNet'] = TabNetClassifierWrapper(
-                        max_epochs=50,
-                        batch_size=1024,
-                        seed=self.config.random_state,
-                        verbose=0
-                    )
-                except (ImportError, AttributeError) as exc:
-                    logger.warning("TabNet not available: %s", exc)
-            else:
-                logger.warning("TabNet skipped (pytorch-tabnet not available).")
+            try:
+                models['TabNet'] = TabNetClassifierWrapper(
+                    max_epochs=50,
+                    batch_size=1024,
+                    seed=self.config.random_state,
+                    verbose=0
+                )
+            except (ImportError, AttributeError) as exc:
+                logger.warning("TabNet not available: %s", exc)
 
         return models
 

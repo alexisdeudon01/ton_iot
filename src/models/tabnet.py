@@ -13,21 +13,14 @@ from sklearn.preprocessing import LabelEncoder
 
 warnings.filterwarnings("ignore")
 
-# Try to import pytorch-tabnet, with fallback if not available
-try:
-    from pytorch_tabnet.tab_model import TabNetClassifier
+from pytorch_tabnet.tab_model import TabNetClassifier
 
-    TABNET_AVAILABLE = True
-except ImportError:
-    TABNET_AVAILABLE = False
-    print("Warning: pytorch-tabnet not installed. TabNet model will not be available.")
-    print("Install with: pip install pytorch-tabnet")
+TABNET_AVAILABLE = True
 
 
 class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
     """
     Scikit-learn compatible TabNet classifier wrapper.
-    If pytorch-tabnet is not installed, this class will raise an ImportError upon instantiation.
     """
 
     def __init__(
@@ -78,11 +71,6 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
             patience: Patience for early stopping
             batch_size: Batch size for training
         """
-        if not TABNET_AVAILABLE:
-            raise ImportError(
-                "pytorch-tabnet is not installed. Install with: pip install pytorch-tabnet"
-            )
-
         self.n_d = n_d
         self.n_a = n_a
         self.n_steps = n_steps
@@ -193,10 +181,6 @@ class TabNetClassifierWrapper(BaseEstimator, ClassifierMixin):
 
 def main():
     """Test the TabNet model"""
-    if not TABNET_AVAILABLE:
-        print("TabNet is not available. Install pytorch-tabnet first.")
-        return
-
     import sys
     from pathlib import Path
 

@@ -11,20 +11,11 @@ logger = logging.getLogger(__name__)
 # Import sklearn models (always available)
 from .sklearn_models import make_dt, make_lr, make_rf
 
-# Try to import CNN (optional)
-try:
-    from .cnn import TORCH_AVAILABLE as CNN_AVAILABLE
-    from .cnn import CNNTabularClassifier
-except (ImportError, AttributeError):
-    CNN_AVAILABLE = False
-    CNNTabularClassifier = None
+# Import CNN
+from .cnn import CNNTabularClassifier
 
-# Try to import TabNet (optional)
-try:
-    from .tabnet import TABNET_AVAILABLE, TabNetClassifierWrapper
-except (ImportError, AttributeError):
-    TABNET_AVAILABLE = False
-    TabNetClassifierWrapper = None
+# Import TabNet
+from .tabnet import TabNetClassifierWrapper
 
 
 def get_model_registry(config) -> Dict[str, Callable[[], Any]]:
@@ -48,41 +39,23 @@ def get_model_registry(config) -> Dict[str, Callable[[], Any]]:
         random_state=config.random_state, n_estimators=100
     )
 
-    # Optional: CNN
-    if CNN_AVAILABLE:
-        try:
-            # This check is for linters; CNN_AVAILABLE already ensures CNNTabularClassifier is not None
-            if CNNTabularClassifier is not None:
-                # Capture the class in a local variable to satisfy Pylance type narrowing in the lambda
-                cnn_cls = CNNTabularClassifier
-                registry["CNN"] = lambda: cnn_cls(
-                    epochs=20, batch_size=64, random_state=config.random_state
-                )
-                logger.info("✓ CNN available in model registry")
-        except Exception as e:
-            logger.warning(f"CNN builder failed: {e}. CNN will be skipped.")
-    else:
-        logger.warning(
-            "CNN skipped (torch not available). Install via: pip install -r requirements-nn.txt"
+    # CNN
+    try:
+        registry["CNN"] = lambda: CNNTabularClassifier(
+            epochs=20, batch_size=64, random_state=config.random_state
         )
+        logger.info("✓ CNN available in model registry")
+    except Exception as e:
+        logger.warning(f"CNN builder failed: {e}. CNN will be skipped.")
 
-    # Optional: TabNet
-    if TABNET_AVAILABLE:
-        try:
-            # This check is for linters; TABNET_AVAILABLE already ensures TabNetClassifierWrapper is not None
-            if TabNetClassifierWrapper is not None:
-                # Capture the class in a local variable to satisfy Pylance type narrowing in the lambda
-                tabnet_cls = TabNetClassifierWrapper
-                registry["TabNet"] = lambda: tabnet_cls(
-                    max_epochs=50, batch_size=1024, seed=config.random_state, verbose=0
-                )
-                logger.info("✓ TabNet available in model registry")
-        except Exception as e:
-            logger.warning(f"TabNet builder failed: {e}. TabNet will be skipped.")
-    else:
-        logger.warning(
-            "TabNet skipped (pytorch-tabnet not available). Install via: pip install -r requirements-nn.txt"
+    # TabNet
+    try:
+        registry["TabNet"] = lambda: TabNetClassifierWrapper(
+            max_epochs=50, batch_size=1024, seed=config.random_state, verbose=0
         )
+        logger.info("✓ TabNet available in model registry")
+    except Exception as e:
+        logger.warning(f"TabNet builder failed: {e}. TabNet will be skipped.")
 
     logger.info(
         f"Model registry initialized with {len(registry)} models: {list(registry.keys())}"

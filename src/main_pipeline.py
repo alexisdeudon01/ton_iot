@@ -41,21 +41,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-# Import CNN (optional)
-try:
-    from src.models.cnn import TORCH_AVAILABLE as CNN_AVAILABLE
-    from src.models.cnn import CNNTabularClassifier
-except (ImportError, AttributeError):
-    CNN_AVAILABLE = False
-    CNNTabularClassifier = None
+# Import CNN
+from src.models.cnn import CNNTabularClassifier
 
-# Import TabNet (optional)
-try:
-    from src.models.tabnet import TABNET_AVAILABLE
-    from src.models.tabnet import TabNetClassifierWrapper
-except (ImportError, AttributeError):
-    TABNET_AVAILABLE = False
-    TabNetClassifierWrapper = None
+# Import TabNet
+from src.models.tabnet import TabNetClassifierWrapper
 from src.evaluation_3d import Evaluation3D
 from ahp_topsis_framework import AHPTopsisFramework
 
@@ -375,23 +365,11 @@ class IRPPipeline:
             'Random Forest': RandomForestClassifier(n_estimators=100, random_state=self.random_state),
         }
 
-        # Add CNN if available
-        if CNN_AVAILABLE and CNNTabularClassifier is not None:
-            try:
-                models['CNN'] = CNNTabularClassifier(epochs=20, batch_size=64, random_state=self.random_state)
-            except (ImportError, AttributeError) as e:
-                logger.warning(f"   CNN not available: {e}. Install via: pip install -r requirements-nn.txt")
-        else:
-            logger.warning("   CNN skipped (torch not available). Install via: pip install -r requirements-nn.txt")
+        # Add CNN
+        models['CNN'] = CNNTabularClassifier(epochs=20, batch_size=64, random_state=self.random_state)
 
-        # Add TabNet if available
-        if TABNET_AVAILABLE and TabNetClassifierWrapper is not None:
-            try:
-                models['TabNet'] = TabNetClassifierWrapper(max_epochs=50, batch_size=1024, seed=self.random_state, verbose=0)
-            except (ImportError, AttributeError) as e:
-                logger.warning(f"   TabNet not available: {e}. Install via: pip install -r requirements-nn.txt")
-        else:
-            logger.warning("   TabNet skipped (pytorch-tabnet not available). Install via: pip install -r requirements-nn.txt")
+        # Add TabNet
+        models['TabNet'] = TabNetClassifierWrapper(max_epochs=50, batch_size=1024, seed=self.random_state, verbose=0)
 
         # Use stratified cross-validation
         cv = StratifiedCrossValidator(n_splits=5, random_state=self.random_state)
