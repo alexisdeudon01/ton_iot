@@ -61,6 +61,78 @@ class PreprocessingPipeline:
         self.selected_features = None
         self.is_fitted = False
 
+    def sanitize_numeric_values(
+        self,
+        X_num: pd.DataFrame,
+        *,
+        replace_inf_with_max: bool = False,
+        clip_quantiles: Optional[Tuple[float, float]] = (0.001, 0.999),
+        abs_cap: Optional[float] = None,
+    ) -> pd.DataFrame:
+        """
+        Utility function to sanitize problematic numeric values before imputation/scaling.
+
+        This function:
+        1. Replaces +inf/-inf:
+           - If replace_inf_with_max=True: replace by max/min finite values per column
+           - Otherwise: replace by NaN
+        2. Optionally clips outliers using quantiles:
+           - If clip_quantiles is not None: clip values outside quantile range per column
+        3. Optionally applies absolute cap:
+           - If abs_cap is not None: clip values to [-abs_cap, abs_cap]
+
+        Args:
+            X_num: DataFrame with numeric columns only
+            replace_inf_with_max: Whether to replace inf with max/min of column (else NaN)
+            clip_quantiles: Tuple (q_low, q_high) for quantile clipping (None to skip)
+            abs_cap: Absolute cap value for clipping (None to skip)
+
+        Returns:
+            DataFrame with same shape and columns, sanitized values
+        """
+        X_sanitized = X_num.copy()
+
+        # Step 1: Handle Infinity values
+        if replace_inf_with_max:
+            for col in X_sanitized.columns:
+                finite_values = X_sanitized.loc[np.isfinite(X_sanitized[col]), col]
+                if len(finite_values) > 0:
+                    col_max = finite_values.max()
+                    col_min = finite_values.min()
+                    X_sanitized[col] = X_sanitized[col].replace(
+                        [np.inf, -np.inf], [col_max, col_min]
+                    )
+                    logger.debug(f"  Replaced inf in {col} with max={col_max}, min={col_min}")
+                else:
+                    # All values are inf/nan, replace with 0
+                    X_sanitized[col] = X_sanitized[col].replace([np.inf, -np.inf], 0)
+                    logger.debug(f"  Replaced inf in {col} with 0 (no finite values)")
+        else:
+            X_sanitized = X_sanitized.replace([np.inf, -np.inf], np.nan)
+            logger.debug("  Replaced Infinity with NaN")
+
+        # Step 2: Optional quantile clipping (robust outlier clipping)
+        if clip_quantiles is not None:
+            q_low, q_high = clip_quantiles
+            for col in X_sanitized.columns:
+                finite_values = X_sanitized.loc[np.isfinite(X_sanitized[col]), col]
+                if len(finite_values) > 0:
+                    q_low_val = finite_values.quantile(q_low)
+                    q_high_val = finite_values.quantile(q_high)
+                    X_sanitized[col] = X_sanitized[col].clip(
+                        lower=q_low_val, upper=q_high_val
+                    )
+                    logger.debug(
+                        f"  Clipped {col} to quantiles [{q_low_val:.3f}, {q_high_val:.3f}]"
+                    )
+
+        # Step 3: Optional absolute cap
+        if abs_cap is not None:
+            X_sanitized = X_sanitized.clip(lower=-abs_cap, upper=abs_cap)
+            logger.debug(f"  Applied absolute cap: [-{abs_cap}, {abs_cap}]")
+
+        return X_sanitized
+
     def clean_data(
         self,
         X: pd.DataFrame,
@@ -72,6 +144,7 @@ class PreprocessingPipeline:
         Step 1: Data Cleaning
         - Remove NaN and Infinity values
         - Convert to numeric
+        - Sanitize numeric values (inf, outliers)
         - Drop columns that are all NaN
         - Impute NaN with median (optional)
 
@@ -91,15 +164,36 @@ class PreprocessingPipeline:
         for col in X_cleaned.columns:
             X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
 
-        # Handle Infinity values
-        if replace_inf_with_max:
-            for col in X_cleaned.columns:
-                col_max = X_cleaned.loc[np.isfinite(X_cleaned[col]), col].max()
-                X_cleaned[col] = X_cleaned[col].replace([np.inf, -np.inf], col_max)
-            logger.info("  Replaced Infinity with column maximums")
-        else:
-            X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
-            logger.info("  Replaced Infinity with NaN")
+        # Extract numeric columns only for sanitization
+        numeric_cols = X_cleaned.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            X_numeric = X_cleaned[numeric_cols]
+            # Sanitize numeric values (inf handling + optional quantile clipping)
+            X_sanitized = self.sanitize_numeric_values(
+                X_numeric,
+                replace_inf_with_max=replace_inf_with_max,
+                clip_quantiles=(0.001, 0.999),  # Robust outlier clipping
+                abs_cap=None,  # No absolute cap in clean_data
+            )
+            # Update numeric columns with sanitized values
+            X_cleaned[numeric_cols] = X_sanitized
+            logger.info("  Applied numeric value sanitization (inf removal + quantile clipping)")
+
+        # Handle Infinity values in non-numeric columns (fallback)
+        non_numeric_cols = X_cleaned.columns.difference(numeric_cols)
+        if len(non_numeric_cols) > 0:
+            if replace_inf_with_max:
+                for col in non_numeric_cols:
+                    finite_values = X_cleaned.loc[np.isfinite(X_cleaned[col]), col]
+                    if len(finite_values) > 0:
+                        col_max = finite_values.max()
+                        X_cleaned[col] = X_cleaned[col].replace([np.inf, -np.inf], col_max)
+                logger.info("  Replaced Infinity with column maximums (non-numeric)")
+            else:
+                X_cleaned[non_numeric_cols] = X_cleaned[non_numeric_cols].replace(
+                    [np.inf, -np.inf], np.nan
+                )
+                logger.info("  Replaced Infinity with NaN (non-numeric)")
 
         # Drop columns that are all NaN
         cols_before = len(X_cleaned.columns)
@@ -598,7 +692,26 @@ class PreprocessingPipeline:
         X_cleaned = X.copy()
         for col in X_cleaned.columns:
             X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
-        X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
+
+        # Sanitize numeric values (stateless: no quantile clipping, just inf handling)
+        numeric_cols = X_cleaned.select_dtypes(include=[np.number]).columns
+        if len(numeric_cols) > 0:
+            X_numeric = X_cleaned[numeric_cols]
+            X_sanitized = self.sanitize_numeric_values(
+                X_numeric,
+                replace_inf_with_max=False,  # Replace with NaN for imputation
+                clip_quantiles=None,  # No quantile clipping in transform (stateless)
+                abs_cap=None,
+            )
+            X_cleaned[numeric_cols] = X_sanitized
+
+        # Handle non-numeric columns (fallback)
+        non_numeric_cols = X_cleaned.columns.difference(numeric_cols)
+        if len(non_numeric_cols) > 0:
+            X_cleaned[non_numeric_cols] = X_cleaned[non_numeric_cols].replace(
+                [np.inf, -np.inf], np.nan
+            )
+
         X_imputed = self.imputer.transform(X_cleaned)
         # Use Any cast to satisfy Pylance's DataFrame constructor check
         X_cleaned = pd.DataFrame(
@@ -635,10 +748,28 @@ class PreprocessingPipeline:
         """
         if isinstance(X_test, pd.DataFrame):
             X_work = X_test.copy()
-            # Numeric coercion + inf to NaN
+            # Numeric coercion
             for col in X_work.columns:
                 X_work[col] = pd.to_numeric(X_work[col], errors="coerce")
-            X_work = X_work.replace([np.inf, -np.inf], np.nan)
+
+            # Sanitize numeric values (stateless: no quantile clipping, just inf handling)
+            numeric_cols = X_work.select_dtypes(include=[np.number]).columns
+            if len(numeric_cols) > 0:
+                X_numeric = X_work[numeric_cols]
+                X_sanitized = self.sanitize_numeric_values(
+                    X_numeric,
+                    replace_inf_with_max=False,  # Replace with NaN for imputation
+                    clip_quantiles=None,  # No quantile clipping in transform_test (stateless)
+                    abs_cap=None,
+                )
+                X_work[numeric_cols] = X_sanitized
+
+            # Handle non-numeric columns (fallback)
+            non_numeric_cols = X_work.columns.difference(numeric_cols)
+            if len(non_numeric_cols) > 0:
+                X_work[non_numeric_cols] = X_work[non_numeric_cols].replace(
+                    [np.inf, -np.inf], np.nan
+                )
 
             # Impute using TRAIN-fitted imputer
             X_imputed = self.imputer.transform(X_work)
