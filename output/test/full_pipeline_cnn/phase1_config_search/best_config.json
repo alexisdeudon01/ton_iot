@@ -1,0 +1,14 @@
+{
+  "config_id": 0,
+  "config": {
+    "apply_cleaning": true,
+    "apply_encoding": true,
+    "apply_feature_selection": true,
+    "feature_selection_k": 10,
+    "apply_scaling": true,
+    "scaling_method": "RobustScaler",
+    "apply_resampling": true,
+    "resampling_method": "SMOTE"
+  },
+  "score": 0.7448656099241903
+}

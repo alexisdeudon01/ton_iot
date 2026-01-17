@@ -142,6 +142,7 @@ class Phase3Evaluation:
                     fold_results.append(results)
                 except Exception as exc:
                     logger.warning("Fold %s failed for %s: %s", fold_idx + 1, model_name, exc)
+                    logger.debug("Full traceback for fold failure:", exc_info=True)
 
             if fold_results:
                 avg_results = {

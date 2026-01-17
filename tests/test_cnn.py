@@ -55,9 +55,10 @@ def test_cnn_pipeline_full_flow():
     setup_test_logging(test_results_dir)
 
     # Initialize configuration
+    # Increased sample_ratio to 0.005 to ensure enough samples for both classes
     config = PipelineConfig(
         test_mode=True,
-        sample_ratio=0.0005,
+        sample_ratio=0.005,
         random_state=42,
         output_dir=str(test_results_dir),
         cic_max_files=3,
