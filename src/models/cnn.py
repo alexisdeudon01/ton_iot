@@ -152,6 +152,13 @@ class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         device: Optional[str] = None,
         random_state: int = 42,
     ):
+        # Validate hidden_dims early (before assignment to avoid storing invalid state)
+        if hidden_dims is not None and (not hidden_dims or len(hidden_dims) == 0):
+            raise ValueError(
+                "hidden_dims cannot be empty. Provide at least one layer size "
+                "(e.g., [64]) or use None for default [64, 32, 16]"
+            )
+        
         self.hidden_dims = hidden_dims
         self.learning_rate = learning_rate
         self.batch_size = batch_size
