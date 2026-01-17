@@ -481,6 +481,9 @@ class Evaluation3D:
         - Dimension 3: 0.5 * native + 0.3 * normalized_SHAP + 0.2 * normalized_LIME
         """
         df = self.get_results_df()
+        if df.empty or "f1_score" not in df.columns:
+            logger.warning("No valid results to compute dimension scores")
+            return pd.DataFrame()
 
         # Dimension 1: Detection Performance (F1 Score normalized)
         f1_min = df["f1_score"].min()
