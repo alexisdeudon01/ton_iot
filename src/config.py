@@ -17,6 +17,8 @@ class PipelineConfig:
     random_state: int = 42
     output_dir: str = "output"
     interactive: bool = False  # UI Tkinter optionnelle
+    cic_max_files: Optional[int] = None  # Max CIC files to load
+    synthetic_mode: bool = False  # Use synthetic data for Phase 3
     
     # Phase 1: Configuration Search (108 configs)
     phase1_search_enabled: bool = True
@@ -54,6 +56,31 @@ class PipelineConfig:
         'TabNet'
     ])
     phase3_cv_folds: int = 5
+    
+    # Preprocessing profiles for model-aware preprocessing in Phase 3
+    preprocessing_profiles: Dict[str, Dict[str, Any]] = field(default_factory=lambda: {
+        'lr_profile': {
+            'apply_scaling': True,
+            'apply_feature_selection': True,
+            'apply_resampling': True,
+            'scaling_method': 'RobustScaler',
+            'feature_selection_k_dynamic': True,  # min(60, max(10, int(0.3 * n_features)))
+            'use_class_weight': False
+        },
+        'tree_profile': {
+            'apply_scaling': False,
+            'apply_feature_selection': False,
+            'apply_resampling': False,
+            'use_class_weight': True,
+            'class_weight': 'balanced'  # pour DT/RF
+        },
+        'nn_profile': {
+            'apply_scaling': True,
+            'apply_feature_selection': False,
+            'apply_resampling': True,  # configurable
+            'scaling_method': 'RobustScaler'
+        }
+    })
     
     # Dimension 2: Resource Efficiency
     # Ajout de inference latency et peak RAM selon mémoire

@@ -496,12 +496,15 @@ class DataHarmonizer:
         common_cols = set(df_cic_harmonized.columns) & set(df_ton_harmonized.columns)
         common_cols = sorted(list(common_cols))
         
-        df_cic_aligned = df_cic_harmonized[common_cols]
-        df_ton_aligned = df_ton_harmonized[common_cols]
+        # Use .copy() to avoid SettingWithCopyWarning
+        df_cic_aligned = df_cic_harmonized[common_cols].copy()
+        df_ton_aligned = df_ton_harmonized[common_cols].copy()
         
-        # Add dataset source indicator
-        df_cic_aligned['dataset_source'] = 'CIC-DDoS2019'
-        df_ton_aligned['dataset_source'] = 'TON_IoT'
+        # Add dataset source indicator (encode immediately as int: CIC=0, TON=1)
+        df_cic_aligned['dataset_source'] = 0  # CIC-DDoS2019
+        df_ton_aligned['dataset_source'] = 1  # TON_IoT
+        
+        logger.info("[INFO] Added dataset_source feature (CIC=0, TON=1)")
         
         # Concatenate
         df_fused = pd.concat([df_cic_aligned, df_ton_aligned], ignore_index=True)

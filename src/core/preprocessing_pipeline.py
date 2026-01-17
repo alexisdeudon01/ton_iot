@@ -501,6 +501,41 @@ class PreprocessingPipeline:
         X_scaled = self.scale_features(X_selected, fit=False)
         
         return X_scaled
+    
+    def transform_test(self, X_test: np.ndarray) -> np.ndarray:
+        """
+        Transform test data using fitted feature selection and scaling
+        (Assumes X_test is already cleaned and encoded from Phase2)
+        
+        Args:
+            X_test: Test feature array (already cleaned/encoded, no dataframe)
+            
+        Returns:
+            Transformed test array with feature selection and scaling applied
+        
+        Note:
+            - Feature selection: applied if selector was fitted
+            - Scaling: applied if scaler was fitted
+            - SMOTE: NOT applied (test data should not be resampled)
+        """
+        if not self.is_fitted:
+            raise ValueError("Pipeline must be fitted before transforming test data")
+        
+        # Apply feature selection (if fitted)
+        if self.feature_selector is not None:
+            X_test_selected = self.feature_selector.transform(X_test)
+        else:
+            X_test_selected = X_test
+        
+        # Apply scaling (if fitted)
+        if self.scaler is not None and hasattr(self.scaler, 'transform'):
+            X_test_scaled = self.scaler.transform(X_test_selected)
+        else:
+            X_test_scaled = X_test_selected
+        
+        # Do NOT apply SMOTE on test data
+        
+        return X_test_scaled
 
 
 class StratifiedCrossValidator:

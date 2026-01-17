@@ -49,28 +49,66 @@ class ResourceMonitor:
         self.peak_memory = None
         self.start_time = None
         self.end_time = None
+        self.use_tracemalloc = False
+        self.tracemalloc_current = None
+        self.tracemalloc_peak = None
+        
+        # Try to use tracemalloc for more accurate peak memory tracking
+        try:
+            import tracemalloc
+            self.use_tracemalloc = True
+            self.tracemalloc_module = tracemalloc
+        except ImportError:
+            self.use_tracemalloc = False
     
     def start(self):
         """Start monitoring"""
+        self.start_time = time.perf_counter()
+        
+        if self.use_tracemalloc:
+            self.tracemalloc_module.start()
+            self.tracemalloc_current = self.tracemalloc_module.take_snapshot()
+        
+        # Fallback to psutil
         self.start_memory = self.process.memory_info().rss / 1024 / 1024  # MB
         self.peak_memory = self.start_memory
-        self.start_time = time.time()
     
     def update(self):
         """Update peak memory"""
+        if self.use_tracemalloc:
+            current_snapshot = self.tracemalloc_module.take_snapshot()
+            current_size = sum(stat.size for stat in current_snapshot.statistics('lineno')) / 1024 / 1024  # MB
+            if self.tracemalloc_peak is None or current_size > self.tracemalloc_peak:
+                self.tracemalloc_peak = current_size
+        
+        # Also update psutil peak (fallback)
         current_memory = self.process.memory_info().rss / 1024 / 1024  # MB
         if current_memory > self.peak_memory:
             self.peak_memory = current_memory
     
     def stop(self) -> Dict[str, float]:
         """Stop monitoring and return results"""
-        self.end_time = time.time()
+        self.end_time = time.perf_counter()
+        
+        # Get peak memory (prefer tracemalloc if available)
+        if self.use_tracemalloc:
+            try:
+                final_snapshot = self.tracemalloc_module.take_snapshot()
+                final_size = sum(stat.size for stat in final_snapshot.statistics('lineno')) / 1024 / 1024  # MB
+                peak_memory_mb = max(self.tracemalloc_peak or 0, final_size)
+                self.tracemalloc_module.stop()
+            except Exception:
+                # Fallback to psutil if tracemalloc fails
+                peak_memory_mb = self.peak_memory
+        else:
+            peak_memory_mb = self.peak_memory
+        
         final_memory = self.process.memory_info().rss / 1024 / 1024  # MB
         
         return {
             'training_time_seconds': self.end_time - self.start_time,
-            'memory_used_mb': self.peak_memory - self.start_memory,
-            'peak_memory_mb': self.peak_memory,
+            'memory_used_mb': peak_memory_mb - self.start_memory,
+            'peak_memory_mb': peak_memory_mb,
             'start_memory_mb': self.start_memory
         }
 
@@ -281,6 +319,26 @@ class Evaluation3D:
                 'class_wise_fn': fn.tolist() if hasattr(fn, 'tolist') else list(fn),
             }
         
+        # Measure inference latency (with warm-up for NN models)
+        is_nn = 'CNN' in model_name or 'TabNet' in model_name
+        warmup_runs = 2 if is_nn else 0
+        latency_runs = 50 if is_nn else 100  # Reduce for NN (slower)
+        
+        # Warm-up for NN models (avoid noise from first inference)
+        if warmup_runs > 0 and len(X_test) > 0:
+            _ = model_clone.predict(X_test[:min(100, len(X_test))])
+        
+        # Measure inference latency (N runs)
+        if len(X_test) > 0:
+            latency_subset = X_test[:min(100, len(X_test))]
+            latency_start = time.perf_counter()
+            for _ in range(latency_runs):
+                _ = model_clone.predict(latency_subset)
+            latency_end = time.perf_counter()
+            inference_latency_ms = ((latency_end - latency_start) / latency_runs) * 1000
+        else:
+            inference_latency_ms = 0.0
+        
         # Dimension 3: Explainability
         explainability_metrics = {}
         if compute_explainability:
@@ -298,8 +356,13 @@ class Evaluation3D:
                 )
                 explainability_metrics['lime_score'] = lime_score
         
-        # Native interpretability (for tree-based models - use trained model_clone)
-        native_interpretability = 1.0 if hasattr(model_clone, 'feature_importances_') else 0.0
+        # Native interpretability (for tree-based models and LR - use trained model_clone)
+        if hasattr(model_clone, 'feature_importances_'):
+            native_interpretability = 1.0  # DT/RF
+        elif hasattr(model_clone, 'coef_'):
+            native_interpretability = 1.0  # LR
+        else:
+            native_interpretability = 0.0  # CNN/TabNet
         
         # Compile results with detailed confusion matrix information
         results = {
@@ -315,6 +378,7 @@ class Evaluation3D:
             'training_time_seconds': resource_metrics['training_time_seconds'],
             'memory_used_mb': resource_metrics['memory_used_mb'],
             'peak_memory_mb': resource_metrics['peak_memory_mb'],
+            'inference_latency_ms': inference_latency_ms,
             # Dimension 3: Explainability
             'shap_score': explainability_metrics.get('shap_score'),
             'lime_score': explainability_metrics.get('lime_score'),

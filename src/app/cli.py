@@ -65,6 +65,19 @@ Examples:
         help='Ratio of data to use (0.0-1.0). Overrides --test-mode if specified.'
     )
     
+    parser.add_argument(
+        '--cic-max-files',
+        type=int,
+        default=None,
+        help='Maximum number of CIC-DDoS2019 files to load (default: 3 in test mode, all in normal mode)'
+    )
+    
+    parser.add_argument(
+        '--synthetic',
+        action='store_true',
+        help='Use synthetic dataset for Phase 3 evaluation (generated via sklearn.datasets.make_classification)'
+    )
+    
     # UI
     parser.add_argument(
         '--interactive',
@@ -148,7 +161,9 @@ def args_to_config(args: argparse.Namespace) -> PipelineConfig:
         random_state=args.random_state,
         output_dir=args.output_dir,
         interactive=args.interactive,
-        ahp_preferences=ahp_preferences
+        ahp_preferences=ahp_preferences,
+        cic_max_files=args.cic_max_files,
+        synthetic_mode=args.synthetic
     )
     
     return config
