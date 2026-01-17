@@ -119,32 +119,34 @@ class ResultsVisualizer:
 
         summary = "=== IRP RESEARCH PIPELINE RESULTS ===\n\n"
 
-        if self.preprocessing_stats:
+        stats = self.preprocessing_stats
+        if stats is not None:
             summary += "📊 PREPROCESSING STATISTICS\n"
-            summary += f"Total Samples: {self.preprocessing_stats['total_samples']:,}\n"
-            summary += f"Total Features: {self.preprocessing_stats['total_features']}\n"
-            if self.preprocessing_stats['class_distribution']:
+            summary += f"Total Samples: {stats['total_samples']:,}\n"
+            summary += f"Total Features: {stats['total_features']}\n"
+            if stats['class_distribution']:
                 summary += "Class Distribution:\n"
-                for label, count in self.preprocessing_stats['class_distribution'].items():
-                    summary += f"  Class {label}: {count:,} ({count/self.preprocessing_stats['total_samples']*100:.1f}%)\n"
+                for label, count in stats['class_distribution'].items():
+                    summary += f"  Class {label}: {count:,} ({count/stats['total_samples']*100:.1f}%)\n"
             summary += "\n"
 
-        if self.evaluation_results is not None:
+        eval_results = self.evaluation_results
+        if eval_results is not None:
             summary += "📈 EVALUATION RESULTS\n"
-            summary += f"Models Evaluated: {len(self.evaluation_results)}\n\n"
+            summary += f"Models Evaluated: {len(eval_results)}\n\n"
 
             # Best model per dimension
-            if 'f1_score' in self.evaluation_results.columns:
-                best_f1 = self.evaluation_results.loc[self.evaluation_results['f1_score'].idxmax()]
-                summary += f"Best Detection Performance (F1): {best_f1['model_name']} (F1={best_f1['f1_score']:.4f})\n"
+            if 'f1_score' in eval_results.columns:
+                best_f1 = eval_results.loc[eval_results['f1_score'].idxmax()]
+                summary += f"Best Detection Performance (F1): {best_f1['model_name']} (F1={float(best_f1['f1_score']):.4f})\n"
 
-            if 'training_time_seconds' in self.evaluation_results.columns:
-                best_time = self.evaluation_results.loc[self.evaluation_results['training_time_seconds'].idxmin()]
-                summary += f"Best Resource Efficiency: {best_time['model_name']} (Time={best_time['training_time_seconds']:.2f}s)\n"
+            if 'training_time_seconds' in eval_results.columns:
+                best_time = eval_results.loc[eval_results['training_time_seconds'].idxmin()]
+                summary += f"Best Resource Efficiency: {best_time['model_name']} (Time={float(best_time['training_time_seconds']):.2f}s)\n"
 
-            if 'explainability_score' in self.evaluation_results.columns:
-                best_exp = self.evaluation_results.loc[self.evaluation_results['explainability_score'].idxmax()]
-                summary += f"Best Explainability: {best_exp['model_name']} (Score={best_exp['explainability_score']:.4f})\n"
+            if 'explainability_score' in eval_results.columns:
+                best_exp = eval_results.loc[eval_results['explainability_score'].idxmax()]
+                summary += f"Best Explainability: {best_exp['model_name']} (Score={float(best_exp['explainability_score']):.4f})\n"
             summary += "\n"
 
         if self.ranking_results is not None:
@@ -255,8 +257,9 @@ class ResultsVisualizer:
         text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         content = "=== PREPROCESSING STATISTICS ===\n\n"
-        if self.preprocessing_stats:
-            for key, value in self.preprocessing_stats.items():
+        stats = self.preprocessing_stats
+        if stats is not None:
+            for key, value in stats.items():
                 content += f"{key}: {value}\n\n"
 
         text.insert(tk.END, content)
@@ -784,7 +787,7 @@ class ResultsVisualizer:
         angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
         angles += angles[:1]
 
-        colors = plt.get_cmap('tab10')(np.linspace(0, 1, len(dim_scores)))
+        colors = plt.cm.tab10(np.linspace(0, 1, len(dim_scores)))
 
         for idx, row in dim_scores.iterrows():
             model_name = row.get('model_name', f'Model {idx}')
