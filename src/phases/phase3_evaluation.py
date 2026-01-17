@@ -13,6 +13,7 @@ import pandas as pd
 from tqdm import tqdm
 
 from src.core import DatasetLoader, DataHarmonizer, PreprocessingPipeline
+from src.core.feature_engineering import engineer_cic, engineer_ton
 from src.core.preprocessing_pipeline import StratifiedCrossValidator
 from src.core.model_utils import fresh_model
 from src.evaluation_3d import Evaluation3D
@@ -219,6 +220,7 @@ class Phase3Evaluation:
             random_state=self.config.random_state,
             incremental=False
         )
+        df_ton = engineer_ton(df_ton)
 
         try:
             max_files = getattr(self.config, 'cic_max_files', None)
@@ -231,9 +233,12 @@ class Phase3Evaluation:
                 incremental=False,
                 max_files_in_test=max_files
             )
+            df_cic = engineer_cic(df_cic)
         except FileNotFoundError:
             logger.warning("CIC-DDoS2019 not available. Using TON_IoT only.")
             df_cic = pd.DataFrame()
+
+        logger.info("Ratios recalculated for fallback datasets (CIC/TON feature engineering applied).")
 
         if not df_cic.empty:
             try:
