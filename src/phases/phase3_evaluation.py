@@ -30,7 +30,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 try:
-    from src.models_cnn import CNNTabularClassifier, TORCH_AVAILABLE as CNN_AVAILABLE
+    from src.models.cnn import CNNTabularClassifier, TORCH_AVAILABLE as CNN_AVAILABLE
 except ImportError:
     CNNTabularClassifier = None
     CNN_AVAILABLE = False

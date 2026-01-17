@@ -10,8 +10,12 @@ This directory contains all the core Python modules for the IRP Research Pipelin
 - **`preprocessing_pipeline.py`** - Data preprocessing (SMOTE, RobustScaler, CV)
 - **`evaluation_3d.py`** - 3D evaluation framework (Performance, Resources, Explainability)
 - **`ahp_topsis_framework.py`** - AHP-TOPSIS multi-criteria ranking
-- **`models_cnn.py`** - CNN model for tabular data
-- **`models_tabnet.py`** - TabNet model wrapper
+- **`models/`** - ML/DL models package
+  - **`models/cnn.py`** - CNN model for tabular data
+  - **`models/tabnet.py`** - TabNet model wrapper
+  - **`models/registry.py`** - Model registry (single source of truth)
+- **`models_cnn.py`** - DEPRECATED: Compatibility wrapper (use `models/cnn.py`)
+- **`models_tabnet.py`** - DEPRECATED: Compatibility wrapper (use `models/tabnet.py`)
 
 ## Usage
 
@@ -28,6 +32,12 @@ src/
 ├── preprocessing_pipeline.py # Preprocessing
 ├── evaluation_3d.py         # 3D evaluation
 ├── ahp_topsis_framework.py  # AHP-TOPSIS
-├── models_cnn.py           # CNN model
-└── models_tabnet.py        # TabNet model
+├── models/                  # Models package
+│   ├── __init__.py
+│   ├── cnn.py              # CNN model
+│   ├── tabnet.py           # TabNet model
+│   ├── registry.py         # Model registry
+│   └── sklearn_models.py   # Scikit-learn models
+├── models_cnn.py           # DEPRECATED: Compatibility wrapper
+└── models_tabnet.py        # DEPRECATED: Compatibility wrapper
 ```
