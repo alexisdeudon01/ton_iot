@@ -8,9 +8,14 @@ Orchestrates all phases:
 """
 from src.core.dependencies import (
     os, logging, np, pd, Path, Tuple, List, Optional, Dict, Any, warnings, tqdm,
-    DatasetLoader, DataHarmonizer, PreprocessingPipeline, StratifiedCrossValidator,
     SystemMonitor
 )
+
+# Initialize logger
+logger = logging.getLogger(__name__)
+from src.core.dataset_loader import DatasetLoader
+from src.core.data_harmonization import DataHarmonizer
+from src.core.preprocessing_pipeline import PreprocessingPipeline, StratifiedCrossValidator
 
 try:
     from src.realtime_visualizer import RealTimeVisualizer, create_realtime_callback
