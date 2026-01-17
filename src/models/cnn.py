@@ -19,6 +19,8 @@ from sklearn.preprocessing import LabelEncoder
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
+from typing import List, Optional, Any, TYPE_CHECKING, Union, Type, cast
+
 # Try to import torch - CNN is optional
 try:
     import torch
@@ -29,20 +31,30 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-    torch = None
-    nn = None
-    optim = None
-    Dataset = None
-    DataLoader = None
+    torch = None  # type: ignore
+    nn = None  # type: ignore
+    optim = None  # type: ignore
+    Dataset = object  # type: ignore
+    DataLoader = None  # type: ignore
     logger.warning(
         "torch not available - CNN will be skipped. "
         "Install via: pip install -r requirements.txt"
     )
 
+# Type-safe base classes for Pylance
+if TYPE_CHECKING:
+    import torch.nn as nn_types
+    from torch.utils.data import Dataset as TorchDataset
+    _BaseDataset = TorchDataset
+    _BaseModule = nn_types.Module
+else:
+    _BaseDataset = Dataset if TORCH_AVAILABLE else object
+    _BaseModule = nn.Module if TORCH_AVAILABLE else object
+
 
 if TORCH_AVAILABLE:
 
-    class TabularDataset(Dataset):
+    class TabularDataset(cast(Type, _BaseDataset)):
         """PyTorch Dataset for tabular data."""
 
         def __init__(self, X: np.ndarray, y: Optional[np.ndarray] = None):
@@ -53,6 +65,8 @@ if TORCH_AVAILABLE:
                 X: Feature array
                 y: Target array (optional for inference)
             """
+            if torch is None:
+                raise ImportError("torch is not available")
             self.X = torch.as_tensor(X, dtype=torch.float32)
             if y is not None:
                 self.y = torch.as_tensor(y, dtype=torch.long)
@@ -67,7 +81,7 @@ if TORCH_AVAILABLE:
                 return self.X[idx], self.y[idx]
             return self.X[idx]
 
-    class TabularCNN(nn.Module):
+    class TabularCNN(cast(Type, _BaseModule)):
         """
         CNN adapted for tabular data:
         Treat features as 1D sequence, apply Conv1d over the feature dimension.
@@ -170,14 +184,16 @@ if TORCH_AVAILABLE:
             if torch.cuda.is_available():
                 torch.cuda.manual_seed_all(self.random_state)
 
-        def fit(self, X: np.ndarray, y: np.ndarray):
+        def fit(self, X: np.ndarray, y: np.ndarray) -> "CNNTabularClassifier":
             if not TORCH_AVAILABLE or torch is None or nn is None or optim is None:
                 raise ImportError("torch is not available")
 
             self._set_random_state()
 
             if self.device is None:
-                self.device_obj = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                self.device_obj = torch.device(
+                    "cuda" if torch.cuda.is_available() else "cpu"
+                )
             else:
                 self.device_obj = torch.device(self.device)
 
@@ -185,7 +201,9 @@ if TORCH_AVAILABLE:
             self.input_dim = int(X.shape[1])
             num_classes = int(len(np.unique(y_encoded)))
 
-            hidden_dims = self.hidden_dims if self.hidden_dims is not None else [64, 32, 16]
+            hidden_dims = (
+                self.hidden_dims if self.hidden_dims is not None else [64, 32, 16]
+            )
 
             self.model = TabularCNN(
                 input_dim=self.input_dim,
@@ -264,6 +282,7 @@ else:
     class CNNTabularClassifier(BaseEstimator, ClassifierMixin):
         def __init__(self, *args, **kwargs):
             pass
+
         def fit(self, X, y):
             raise ImportError(
                 "CNNTabularClassifier requires torch. "

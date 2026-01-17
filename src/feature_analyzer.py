@@ -515,7 +515,7 @@ def analyze_and_propose_features(ton_path: Optional[Path] = None, cic_path: Opti
         df_cic = loader.load_cic_ddos2019(sample_ratio=0.01)  # 1% for analysis
     else:
         if Path(cic_path).is_dir():
-            df_cic = loader.load_cic_ddos2019(dataset_path=cic_path, sample_ratio=0.01)
+            df_cic = loader.load_cic_ddos2019(dataset_path=str(cic_path), sample_ratio=0.01)
         else:
             df_cic = pd.read_csv(cic_path, nrows=1000, encoding='utf-8-sig')
 

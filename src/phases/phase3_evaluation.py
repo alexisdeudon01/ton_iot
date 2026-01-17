@@ -46,14 +46,14 @@ logger = logging.getLogger(__name__)
 
 class Phase3Evaluation:
     """Phase 3: Évaluation 3D"""
-    
+
     def __init__(self, config):
         self.config = config
         self.results_dir = Path(config.output_dir) / 'phase3_evaluation'
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.loader = DatasetLoader()
         self.harmonizer = DataHarmonizer()
-    
+
     def run(self) -> Dict:
         """Run Phase 3: Evaluate algorithms across 3 dimensions with model-aware preprocessing per fold."""
         logger.info("Phase 3: 3D Evaluation (model-aware preprocessing per fold)")
@@ -88,10 +88,10 @@ class Phase3Evaluation:
 
         for model_name, model_template in tqdm(models.items(), desc="Evaluating algorithms"):
             logger.info("Evaluating %s...", model_name)
-            
+
             # Get preprocessing profile for this model
             profile = self._get_preprocessing_profile(model_name, X.shape[1])
-            
+
             fold_results = []
 
             for fold_idx, (train_idx, test_idx) in enumerate(
@@ -113,27 +113,27 @@ class Phase3Evaluation:
                     X_train_prep, y_train_prep, pipeline = self._apply_preprocessing_per_fold(
                         X_train_fold, y_train_fold, profile
                     )
-                    
+
                     # Transform TEST with scaler/selector fitté on TRAIN
                     X_test_prep = pipeline.transform_test(X_test_fold.values)
                     y_test_prep = y_test_fold.values
-                    
+
                     # Get fresh model instance for this fold
                     model_fold = fresh_model(model_template)
-                    
+
                     # Apply class_weight if Tree profile
                     if profile.get('use_class_weight', False):
                         class_weight = profile.get('class_weight', 'balanced')
                         if hasattr(model_fold, 'set_params'):
                             model_fold.set_params(class_weight=class_weight)
-                    
+
                     # Update evaluator with current feature names
                     if hasattr(pipeline, 'selected_features') and pipeline.selected_features:
                         evaluator.feature_names = pipeline.selected_features
                     else:
                         # If no feature selection, use original feature names
                         evaluator.feature_names = feature_names
-                    
+
                     # Evaluate model (X_train_prep and X_test_prep are numpy arrays)
                     results = evaluator.evaluate_model(
                         model_fold,
@@ -189,11 +189,11 @@ class Phase3Evaluation:
         if getattr(self.config, 'synthetic_mode', False):
             logger.info("Using synthetic dataset for Phase 3 evaluation...")
             return self._generate_synthetic_dataset()
-        
+
         # Try to load from Phase2 first
         phase2_data_file = Path(self.config.output_dir) / 'phase2_apply_best_config' / 'best_preprocessed.parquet'
         phase2_data_file_csv = Path(self.config.output_dir) / 'phase2_apply_best_config' / 'best_preprocessed.csv.gz'
-        
+
         if phase2_data_file.exists():
             logger.info("Loading preprocessed dataset from Phase2 (parquet)...")
             try:
@@ -202,7 +202,7 @@ class Phase3Evaluation:
                 return df_processed
             except Exception as exc:
                 logger.warning(f"Failed to load Phase2 parquet ({exc}), trying csv.gz...")
-        
+
         if phase2_data_file_csv.exists():
             logger.info("Loading preprocessed dataset from Phase2 (csv.gz)...")
             try:
@@ -211,7 +211,7 @@ class Phase3Evaluation:
                 return df_processed
             except Exception as exc:
                 logger.warning(f"Failed to load Phase2 csv.gz ({exc}), falling back to direct loading...")
-        
+
         # Fallback: load and harmonize directly
         logger.info("Phase2 dataset not found, loading and harmonizing datasets directly...")
         df_ton = self.loader.load_ton_iot(
@@ -225,7 +225,7 @@ class Phase3Evaluation:
             max_files = getattr(self.config, 'cic_max_files', None)
             if self.config.test_mode and max_files is None:
                 max_files = 3
-            
+
             # Ensure max_files is an int, with -1 as default for no limit
             max_files_int = int(max_files) if max_files is not None else -1
 
@@ -262,20 +262,20 @@ class Phase3Evaluation:
             raise ValueError("Label column not found in dataset for Phase 3 evaluation.")
 
         return df_processed
-    
+
     def _generate_synthetic_dataset(self) -> pd.DataFrame:
         """Generate synthetic dataset using sklearn.datasets.make_classification."""
         from sklearn.datasets import make_classification
-        
+
         logger.info("Generating synthetic dataset...")
-        
+
         # Generate synthetic dataset
         n_samples = 5000 if self.config.test_mode else 10000
         n_features = 20
         n_informative = 15
         n_redundant = 5
         n_classes = 2
-        
+
         X, y = make_classification(
             n_samples=n_samples,
             n_features=n_features,
@@ -285,21 +285,21 @@ class Phase3Evaluation:
             random_state=self.config.random_state,
             class_sep=1.0  # Good separation between classes
         )
-        
+
         # Convert to DataFrame
         feature_names = [f'feature_{i}' for i in range(n_features)]
         df = pd.DataFrame(X, columns=feature_names)
         df['label'] = y
-        
+
         logger.info(f"Generated synthetic dataset: {df.shape[0]} rows, {df.shape[1]-1} features")
         logger.info(f"Label distribution: {df['label'].value_counts().to_dict()}")
-        
+
         return df
-    
+
     def _get_preprocessing_profile(self, model_name: str, n_features: int) -> Dict:
         """Get preprocessing profile for a model with dynamic feature selection."""
         model_name_lower = model_name.lower()
-        
+
         # Determine profile type
         if 'logistic' in model_name_lower or 'lr' in model_name_lower:
             profile = self.config.preprocessing_profiles.get('lr_profile', {}).copy()
@@ -310,27 +310,27 @@ class Phase3Evaluation:
         else:
             # Default to LR profile
             profile = self.config.preprocessing_profiles.get('lr_profile', {}).copy()
-        
+
         # Calculate feature_selection_k dynamically if needed
         if profile.get('feature_selection_k_dynamic', False):
             profile['feature_selection_k'] = min(60, max(10, int(0.3 * n_features)))
             profile.pop('feature_selection_k_dynamic', None)
-        
+
         return profile
-    
+
     def _apply_preprocessing_per_fold(self, X_train: pd.DataFrame, y_train: pd.Series, profile: Dict) -> tuple:
         """Apply model-aware preprocessing on training data only."""
         # Calculate feature_selection_k if dynamic
         feature_k = profile.get('feature_selection_k', 20)
         if profile.get('feature_selection_k_dynamic', False):
             feature_k = min(60, max(10, int(0.3 * X_train.shape[1])))
-        
+
         # Create new pipeline for this fold
         pipeline = PreprocessingPipeline(
             random_state=self.config.random_state,
             n_features=feature_k
         )
-        
+
         # Apply preprocessing according to profile
         result = pipeline.prepare_data(
             X_train,
@@ -341,10 +341,10 @@ class Phase3Evaluation:
             apply_resampling=profile.get('apply_resampling', True),
             apply_splitting=False
         )
-        
+
         X_train_prep = result['X_processed']
         y_train_prep = result['y_processed']
-        
+
         return X_train_prep, y_train_prep, pipeline
 
     def _build_models(self) -> Dict[str, object]:
@@ -578,10 +578,15 @@ class Phase3Evaluation:
         available_features = [f for f in ratio_features if f in df.columns]
         mi_path = metrics_dir / "mutual_information.csv"
         perm_path = metrics_dir / "permutation_importance.csv"
-        if not available_features:
-            logger.warning("No ratio features available for significance analysis.")
+
+        def save_empty_results():
+            """Helper to save empty DataFrames for consistency."""
             pd.DataFrame(columns=["feature", "mutual_information"]).to_csv(mi_path, index=False)
             pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
+
+        if not available_features:
+            logger.warning("No ratio features available for significance analysis.")
+            save_empty_results()
             return mi_path, perm_path
 
         feature_df = df[available_features].apply(pd.to_numeric, errors="coerce")
@@ -594,14 +599,12 @@ class Phase3Evaluation:
 
         if feature_df.empty:
             logger.warning("No valid data for significance analysis.")
-            pd.DataFrame(columns=["feature", "mutual_information"]).to_csv(mi_path, index=False)
-            pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
+            save_empty_results()
             return mi_path, perm_path
 
         if len(np.unique(y)) < 2:
             logger.warning("Only one class available; skipping significance analysis.")
-            pd.DataFrame(columns=["feature", "mutual_information"]).to_csv(mi_path, index=False)
-            pd.DataFrame(columns=["feature", "importance_mean", "importance_std"]).to_csv(perm_path, index=False)
+            save_empty_results()
             return mi_path, perm_path
 
         mi_scores = mutual_info_classif(feature_df.to_numpy(), y, random_state=self.config.random_state)

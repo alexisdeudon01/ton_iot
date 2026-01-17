@@ -320,7 +320,7 @@ class Evaluation3D:
         if hasattr(model_clone, "predict_proba"):
             y_pred_proba = (
                 model_clone.predict_proba(X_test)[:, 1]
-                if len(np.unique(y_test)) == 2
+                if len(np.unique(y_test, return_counts=False)) == 2
                 else model_clone.predict_proba(X_test)
             )
         else:
@@ -330,7 +330,7 @@ class Evaluation3D:
         # Following CIC-DDoS2019 methodology: Precision (Pr), Recall (Rc), F1 Score
         # Using weighted average for multi-class problems as per CIC-DDoS2019 paper
         # Reference: "Developing Realistic Distributed Denial of Service (DDoS) Attack Dataset and Taxonomy"
-        is_binary = len(np.unique(y_test)) == 2
+        is_binary = len(np.unique(y_test, return_counts=False)) == 2
         avg_method = "binary" if is_binary else "weighted"
 
         f1 = f1_score(
