@@ -13,8 +13,6 @@ import pandas as pd
 from pathlib import Path
 import warnings
 from tqdm import tqdm
-import tkinter as tk
-from tkinter import messagebox, scrolledtext
 
 warnings.filterwarnings('ignore')
 
@@ -64,7 +62,8 @@ np.random.seed(RANDOM_STATE)
 class IRPPipeline:
     """Complete IRP research pipeline"""
     
-    def __init__(self, results_dir: str = 'output', random_state: int = 42, sample_ratio: float = 1.0):
+    def __init__(self, results_dir: str = 'output', random_state: int = 42, sample_ratio: float = 1.0, 
+                 interactive: bool = False):
         """
         Initialize pipeline
         
@@ -72,6 +71,7 @@ class IRPPipeline:
             results_dir: Directory for saving results (default: 'output')
             random_state: Random seed for reproducibility
             sample_ratio: Ratio of data to use (1.0 = 100%, 0.1 = 10% for testing)
+            interactive: If True, enable GUI popups (requires Tkinter). Default: False (headless mode)
         """
         self.results_dir = Path(results_dir)
         self.results_dir.mkdir(parents=True, exist_ok=True)
@@ -111,62 +111,24 @@ class IRPPipeline:
         (self.results_dir / 'phase5_ranking').mkdir(parents=True, exist_ok=True)
         (self.results_dir / 'logs').mkdir(parents=True, exist_ok=True)
         
+        # Optional GUI callbacks (only used if interactive mode is enabled)
+        self.interactive = interactive
+        if interactive:
+            try:
+                from src.ui import show_features_popup, GUI_AVAILABLE
+                if GUI_AVAILABLE:
+                    self.features_popup_callback = show_features_popup
+                    logger.info("Interactive mode enabled - GUI popups will be shown")
+                else:
+                    self.features_popup_callback = None
+                    logger.warning("Interactive mode requested but GUI not available (Tkinter missing) - running in headless mode")
+            except ImportError:
+                self.features_popup_callback = None
+                logger.warning("Interactive mode requested but GUI module not available - running in headless mode")
+        else:
+            self.features_popup_callback = None
+        
         logger.info(f"Pipeline initialized with output directory: {self.results_dir.absolute()}")
-    
-    def _show_features_popup(self, common_features: list, cic_total: int, ton_total: int):
-        """Show popup with common features found during harmonization"""
-        try:
-            root = tk.Tk()
-            root.withdraw()  # Hide main window
-            
-            # Create popup window
-            popup = tk.Toplevel(root)
-            popup.title("Features Communes Trouvées - Harmonisation")
-            popup.geometry("700x500")
-            popup.resizable(True, True)
-            
-            # Title
-            title = tk.Label(popup, text="Features Communes entre CIC-DDoS2019 et TON_IoT", 
-                           font=("Arial", 14, "bold"))
-            title.pack(pady=10)
-            
-            # Summary
-            summary_text = f"Total features CIC-DDoS2019: {cic_total}\n"
-            summary_text += f"Total features TON_IoT: {ton_total}\n"
-            summary_text += f"Features communes trouvées: {len(common_features)}\n\n"
-            summary_label = tk.Label(popup, text=summary_text, font=("Arial", 10))
-            summary_label.pack(pady=5)
-            
-            # Features list
-            text_frame = tk.Frame(popup)
-            text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-            
-            scroll_text = scrolledtext.ScrolledText(text_frame, wrap=tk.WORD, height=15, width=80)
-            scroll_text.pack(fill=tk.BOTH, expand=True)
-            
-            # Display features
-            features_text = "\n".join([f"{i+1}. {feat}" for i, feat in enumerate(common_features)])
-            scroll_text.insert(tk.END, features_text)
-            scroll_text.config(state=tk.DISABLED)  # Make read-only
-            
-            # Close button
-            close_btn = tk.Button(popup, text="Fermer", command=popup.destroy, 
-                                font=("Arial", 10), width=20)
-            close_btn.pack(pady=10)
-            
-            # Make popup non-blocking (don't wait for window to close)
-            popup.transient(root)
-            popup.lift()
-            popup.focus_force()
-            
-            # Update root to process events without blocking
-            root.update()
-            
-            logger.info(f"   Features popup displayed (non-blocking). Pipeline continuing...")
-            # Don't destroy root - let it run in background, user can close popup manually
-            
-        except Exception as e:
-            logger.warning(f"Could not display features popup: {e}. Continuing...")
     
     def phase1_preprocessing(self) -> pd.DataFrame:
         """
@@ -245,8 +207,9 @@ class IRPPipeline:
                     logger.info(f"   Features CIC-DDoS2019 originales: {len(df_cic.columns)}")
                     logger.info(f"   Features TON_IoT originales: {len(df_ton.columns)}")
                     
-                    # Show common features in popup
-                    self._show_features_popup(common_features, len(df_cic.columns), len(df_ton.columns))
+                    # Show common features in popup (if interactive mode enabled)
+                    if self.features_popup_callback:
+                        self.features_popup_callback(common_features, len(df_cic.columns), len(df_ton.columns))
                 else:
                     logger.warning("   ⚠ Aucune feature commune trouvée!")
                 
