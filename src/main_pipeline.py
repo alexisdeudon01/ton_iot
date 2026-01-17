@@ -6,37 +6,20 @@ Orchestrates all phases:
 - Phase 3: Multi-Dimensional Algorithm Evaluation
 - Phase 5: AHP-TOPSIS Ranking
 """
-import os
-import logging
-import numpy as np
-import pandas as pd
-from pathlib import Path
-from typing import Tuple, List, Optional, Dict, Any
-import warnings
-from tqdm import tqdm
-
-warnings.filterwarnings('ignore')
-
-# Setup logger
-logger = logging.getLogger(__name__)
-
-# Import custom modules
-from dataset_loader import DatasetLoader
-from data_harmonization import DataHarmonizer
-from preprocessing_pipeline import PreprocessingPipeline, StratifiedCrossValidator
+from src.core.dependencies import (
+    os, logging, np, pd, Path, Tuple, List, Optional, Dict, Any, warnings, tqdm,
+    DatasetLoader, DataHarmonizer, PreprocessingPipeline, StratifiedCrossValidator,
+    SystemMonitor
+)
 
 try:
-    from system_monitor import SystemMonitor
-except ImportError:
-    SystemMonitor = None
-
-try:
-    from realtime_visualizer import RealTimeVisualizer, create_realtime_callback
+    from src.realtime_visualizer import RealTimeVisualizer, create_realtime_callback
     VISUALIZATION_AVAILABLE = True
 except ImportError:
     VISUALIZATION_AVAILABLE = False
     RealTimeVisualizer = None
     create_realtime_callback = None
+
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -47,7 +30,7 @@ from src.models.cnn import CNNTabularClassifier
 # Import TabNet
 from src.models.tabnet import TabNetClassifierWrapper
 from src.evaluation_3d import Evaluation3D
-from ahp_topsis_framework import AHPTopsisFramework
+from src.ahp_topsis_framework import AHPTopsisFramework
 
 # Set random seeds for reproducibility
 RANDOM_STATE = 42
@@ -75,11 +58,10 @@ class IRPPipeline:
 
         # Initialize system monitor
         self.monitor: Any = None
-        if SystemMonitor is not None:
-            try:
-                self.monitor = SystemMonitor(max_memory_percent=90.0)
-            except Exception as e:
-                logger.warning(f"Could not initialize SystemMonitor: {e}")
+        try:
+            self.monitor = SystemMonitor(max_memory_percent=90.0)
+        except Exception as e:
+            logger.warning(f"Could not initialize SystemMonitor: {e}")
 
         # Initialize loader with monitor
         self.loader = DatasetLoader(monitor=self.monitor)
@@ -382,13 +364,15 @@ class IRPPipeline:
 
         all_results = []
 
-        for model_name, model_template in tqdm(models.items(), desc="Evaluating algorithms"):
+        # Use list(models.items()) to avoid dict_items type issues with tqdm in some environments
+        for model_name, model_template in tqdm(list(models.items()), desc="Evaluating algorithms"):
             logger.info(f"\n   Evaluating {model_name}...")
 
             fold_results = []
-            fold_level_results = []  # Store per-fold results for debugging
 
-            for fold_idx, (train_idx, test_idx) in enumerate(tqdm(cv.split(X, y), desc=f"  {model_name} CV folds", total=5, leave=False)):
+            # Use list(cv.split(X, y)) to avoid iterator issues with tqdm
+            splits = list(cv.split(X, y))
+            for fold_idx, (train_idx, test_idx) in enumerate(tqdm(splits, desc=f"  {model_name} CV folds", total=len(splits), leave=False)):
                 X_train_fold, X_test_fold = X[train_idx], X[test_idx]
                 y_train_fold, y_test_fold = y[train_idx], y[test_idx]
 
@@ -437,11 +421,6 @@ class IRPPipeline:
                     # Add fold information
                     results['fold'] = fold_idx + 1
                     fold_results.append(results)
-                    fold_level_results.append({
-                        'model_name': model_name,
-                        'fold': fold_idx + 1,
-                        **{k: v for k, v in results.items() if k in required_keys}
-                    })
 
                     logger.debug(f"      Fold {fold_idx+1} - F1: {results['f1_score']:.4f}, "
                                f"Acc: {results['accuracy']:.4f}")
