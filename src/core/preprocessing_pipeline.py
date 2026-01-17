@@ -10,18 +10,21 @@ Preprocessing pipeline with complete workflow:
 
 Implements the preprocessing methodology from the IRP research
 """
+import logging
+import sys
+import warnings
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
+
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import RobustScaler, LabelEncoder
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.feature_selection import mutual_info_classif, SelectKBest
+import sklearn
 from imblearn.over_sampling import SMOTE
+from sklearn.feature_selection import SelectKBest, mutual_info_classif
 from sklearn.impute import SimpleImputer
-from typing import Tuple, List, Optional, Dict, Any, Union, cast
-import warnings
-import logging
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.preprocessing import LabelEncoder, RobustScaler
 
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
 
@@ -49,7 +52,7 @@ class PreprocessingPipeline:
         self.random_state = random_state
         self.n_features = n_features
         self.scaler = RobustScaler()
-        self.imputer = SimpleImputer(strategy='median')
+        self.imputer = SimpleImputer(strategy="median")
         # SMOTE will be initialized in resample_data() with appropriate n_neighbors based on data
         self.smote = None
         self.feature_selector = None
@@ -58,7 +61,9 @@ class PreprocessingPipeline:
         self.selected_features = None
         self.is_fitted = False
 
-    def clean_data(self, X: pd.DataFrame, y: Optional[pd.Series] = None) -> Tuple[pd.DataFrame, Optional[pd.Series]]:
+    def clean_data(
+        self, X: pd.DataFrame, y: Optional[pd.Series] = None
+    ) -> Tuple[pd.DataFrame, Optional[pd.Series]]:
         """
         Step 1: Data Cleaning
         - Remove NaN and Infinity values
@@ -77,14 +82,14 @@ class PreprocessingPipeline:
 
         # Convert all columns to numeric where possible
         for col in X_cleaned.columns:
-            X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors='coerce')
+            X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
 
         # Remove Infinity values (replace with NaN)
         X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
 
         # Drop columns that are all NaN
         cols_before = len(X_cleaned.columns)
-        X_cleaned = X_cleaned.dropna(axis=1, how='all')
+        X_cleaned = X_cleaned.dropna(axis=1, how="all")
         cols_after = len(X_cleaned.columns)
         if cols_before != cols_after:
             logger.info(f"  Dropped {cols_before - cols_after} columns (all NaN)")
@@ -92,19 +97,19 @@ class PreprocessingPipeline:
         # Handle remaining NaN values with median imputation
         X_imputed = self.imputer.fit_transform(X_cleaned)
         X_cleaned = pd.DataFrame(
-            cast(Any, X_imputed),
-            columns=X_cleaned.columns,
-            index=X_cleaned.index
+            cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
         )
 
         self.feature_names = X_cleaned.columns.tolist()
-        logger.info(f"  Cleaned data: {X_cleaned.shape[0]} rows, {X_cleaned.shape[1]} features")
+        logger.info(
+            f"  Cleaned data: {X_cleaned.shape[0]} rows, {X_cleaned.shape[1]} features"
+        )
 
         if y is not None:
             # Ensure y is binary (0/1)
             y_cleaned = y.copy()
-            if y_cleaned.dtype == 'object':
-                y_cleaned = pd.to_numeric(y_cleaned, errors='coerce').fillna(0)
+            if y_cleaned.dtype == "object":
+                y_cleaned = pd.to_numeric(y_cleaned, errors="coerce").fillna(0)
             y_cleaned = y_cleaned.astype(int)
             logger.info(f"  Label distribution: {y_cleaned.value_counts().to_dict()}")
             return X_cleaned, y_cleaned
@@ -128,23 +133,31 @@ class PreprocessingPipeline:
         # Identify categorical columns (non-numeric or object type)
         categorical_cols = []
         for col in X_encoded.columns:
-            if X_encoded[col].dtype == 'object' or not pd.api.types.is_numeric_dtype(X_encoded[col]):
+            if X_encoded[col].dtype == "object" or not pd.api.types.is_numeric_dtype(
+                X_encoded[col]
+            ):
                 categorical_cols.append(col)
 
         if categorical_cols:
-            logger.info(f"  Found {len(categorical_cols)} categorical features: {categorical_cols[:5]}{'...' if len(categorical_cols) > 5 else ''}")
+            logger.info(
+                f"  Found {len(categorical_cols)} categorical features: {categorical_cols[:5]}{'...' if len(categorical_cols) > 5 else ''}"
+            )
             for col in categorical_cols:
                 if col not in self.label_encoders:
                     self.label_encoders[col] = LabelEncoder()
                 # Handle NaN values before encoding
-                X_encoded[col] = X_encoded[col].fillna('unknown')
-                X_encoded[col] = self.label_encoders[col].fit_transform(X_encoded[col].astype(str))
+                X_encoded[col] = X_encoded[col].fillna("unknown")
+                X_encoded[col] = self.label_encoders[col].fit_transform(
+                    X_encoded[col].astype(str)
+                )
         else:
             logger.info("  No categorical features found (all numeric)")
 
         return X_encoded
 
-    def select_features(self, X: pd.DataFrame, y: pd.Series, fit: bool = True) -> pd.DataFrame:
+    def select_features(
+        self, X: pd.DataFrame, y: pd.Series, fit: bool = True
+    ) -> pd.DataFrame:
         """
         Step 3: Feature Selection
         - Select top K features using mutual information
@@ -157,32 +170,50 @@ class PreprocessingPipeline:
         Returns:
             DataFrame with selected features
         """
-        logger.info(f"[PREPROCESSING] Step 3: Feature Selection (selecting top {self.n_features} features using Mutual Information)...")
+        logger.info(
+            f"[PREPROCESSING] Step 3: Feature Selection (selecting top {self.n_features} features using Mutual Information)..."
+        )
 
         if fit:
             # Select top K features using Mutual Information (not default f_classif)
-            self.feature_selector = SelectKBest(score_func=mutual_info_classif, k=min(self.n_features, len(X.columns)))
+            self.feature_selector = SelectKBest(
+                score_func=mutual_info_classif, k=min(self.n_features, len(X.columns))
+            )
             # Use np.asarray to satisfy Pylance's type checking for fit_transform
-            X_selected = self.feature_selector.fit_transform(np.asarray(X.values), np.asarray(y.values))
+            X_selected = self.feature_selector.fit_transform(
+                np.asarray(X.values), np.asarray(y.values)
+            )
 
             # Calculate and log MI scores for selected features
             if self.feature_selector.scores_ is not None:
                 mi_scores = cast(np.ndarray, self.feature_selector.scores_)
-                logger.debug(f"  Mutual Information scores calculated for {mi_scores.shape[0]} features")
+                logger.debug(
+                    f"  Mutual Information scores calculated for {mi_scores.shape[0]} features"
+                )
 
             # Get selected feature names
             selected_indices = self.feature_selector.get_support(indices=True)
             self.selected_features = [X.columns[i] for i in selected_indices]
 
-            logger.info(f"  Selected {len(self.selected_features)} features from {len(X.columns)}")
-            logger.info(f"  Top features: {self.selected_features[:10]}{'...' if len(self.selected_features) > 10 else ''}")
+            logger.info(
+                f"  Selected {len(self.selected_features)} features from {len(X.columns)}"
+            )
+            logger.info(
+                f"  Top features: {self.selected_features[:10]}{'...' if len(self.selected_features) > 10 else ''}"
+            )
 
-            return pd.DataFrame(cast(Any, X_selected), columns=self.selected_features, index=X.index)
+            return pd.DataFrame(
+                cast(Any, X_selected), columns=self.selected_features, index=X.index
+            )
         else:
             if self.feature_selector is None:
-                raise ValueError("Feature selector must be fitted before transforming test data")
+                raise ValueError(
+                    "Feature selector must be fitted before transforming test data"
+                )
             X_selected = self.feature_selector.transform(np.asarray(X.values))
-            return pd.DataFrame(cast(Any, X_selected), columns=self.selected_features, index=X.index)
+            return pd.DataFrame(
+                cast(Any, X_selected), columns=self.selected_features, index=X.index
+            )
 
     def scale_features(self, X: np.ndarray, fit: bool = False) -> np.ndarray:
         """
@@ -221,24 +252,36 @@ class PreprocessingPipeline:
         mean_per_feature = X_scaled.mean(axis=0)
         std_per_feature = X_scaled.std(axis=0)
 
-        all_in_robust_range = np.all((min_per_feature >= -10.0) & (max_per_feature <= 10.0))
+        all_in_robust_range = np.all(
+            (min_per_feature >= -10.0) & (max_per_feature <= 10.0)
+        )
 
         if fit:
-            logger.debug(f"  Min range: [{min_per_feature.min():.3f}, {min_per_feature.max():.3f}]")
-            logger.debug(f"  Max range: [{max_per_feature.min():.3f}, {max_per_feature.max():.3f}]")
-            logger.debug(f"  Mean range: [{mean_per_feature.min():.3f}, {mean_per_feature.max():.3f}]")
+            logger.debug(
+                f"  Min range: [{min_per_feature.min():.3f}, {min_per_feature.max():.3f}]"
+            )
+            logger.debug(
+                f"  Max range: [{max_per_feature.min():.3f}, {max_per_feature.max():.3f}]"
+            )
+            logger.debug(
+                f"  Mean range: [{mean_per_feature.min():.3f}, {mean_per_feature.max():.3f}]"
+            )
             if all_in_robust_range:
-                logger.debug("  ✓ All features in RobustScaler expected range [-10, 10]")
+                logger.debug(
+                    "  ✓ All features in RobustScaler expected range [-10, 10]"
+                )
 
         return {
-            'min_per_feature': min_per_feature,
-            'max_per_feature': max_per_feature,
-            'mean_per_feature': mean_per_feature,
-            'std_per_feature': std_per_feature,
-            'all_in_robust_range': all_in_robust_range
+            "min_per_feature": min_per_feature,
+            "max_per_feature": max_per_feature,
+            "mean_per_feature": mean_per_feature,
+            "std_per_feature": std_per_feature,
+            "all_in_robust_range": all_in_robust_range,
         }
 
-    def resample_data(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def resample_data(
+        self, X: np.ndarray, y: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Step 5: Resampling
         - Balance classes using SMOTE
@@ -257,7 +300,9 @@ class PreprocessingPipeline:
 
         # Check if SMOTE can be applied (need at least n_neighbors+1 samples in minority class)
         default_n_neighbors = 5
-        min_samples_needed = default_n_neighbors + 1  # SMOTE needs at least n_neighbors+1
+        min_samples_needed = (
+            default_n_neighbors + 1
+        )  # SMOTE needs at least n_neighbors+1
 
         # Find minority class count
         minority_count = int(min(class_counts.values()))
@@ -276,7 +321,9 @@ class PreprocessingPipeline:
             # Adjust k_neighbors if minority class is small but sufficient
             k_neighbors = min(default_n_neighbors, minority_count - 1)
             if k_neighbors < default_n_neighbors:
-                logger.info(f"  Adjusted SMOTE k_neighbors from {default_n_neighbors} to {k_neighbors} (minority class has {minority_count} samples)")
+                logger.info(
+                    f"  Adjusted SMOTE k_neighbors from {default_n_neighbors} to {k_neighbors} (minority class has {minority_count} samples)"
+                )
 
             # Initialize SMOTE with adjusted k_neighbors
             self.smote = SMOTE(k_neighbors=k_neighbors, random_state=self.random_state)
@@ -284,14 +331,23 @@ class PreprocessingPipeline:
             X_resampled = cast(np.ndarray, resampled_X)
             y_resampled = cast(np.ndarray, resampled_y)
 
-        logger.info(f"  After resampling: {pd.Series(y_resampled).value_counts().to_dict()}")
-        logger.info(f"  Shape: {X_resampled.shape[0]} rows, {X_resampled.shape[1]} features")
+        logger.info(
+            f"  After resampling: {pd.Series(y_resampled).value_counts().to_dict()}"
+        )
+        logger.info(
+            f"  Shape: {X_resampled.shape[0]} rows, {X_resampled.shape[1]} features"
+        )
 
         return X_resampled, y_resampled
 
-    def split_data(self, X: np.ndarray, y: np.ndarray,
-                   train_ratio: float = 0.7, val_ratio: float = 0.15,
-                   test_ratio: float = 0.15) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
+    def split_data(
+        self,
+        X: np.ndarray,
+        y: np.ndarray,
+        train_ratio: float = 0.7,
+        val_ratio: float = 0.15,
+        test_ratio: float = 0.15,
+    ) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
         """
         Step 6: Splitting
         - Split data into Train/Validation/Test sets with stratification
@@ -310,16 +366,22 @@ class PreprocessingPipeline:
 
         # Validate ratios sum to 1.0
         if abs(train_ratio + val_ratio + test_ratio - 1.0) > 1e-6:
-            raise ValueError(f"Ratios must sum to 1.0, got {train_ratio + val_ratio + test_ratio}")
+            raise ValueError(
+                f"Ratios must sum to 1.0, got {train_ratio + val_ratio + test_ratio}"
+            )
 
         # First split: train + (val + test)
         # Use explicit indexing and Any cast to avoid Pylance tuple size mismatch confusion
-        res1 = cast(Any, train_test_split(
-            X, y,
-            test_size=(val_ratio + test_ratio),
-            stratify=y,
-            random_state=self.random_state
-        ))
+        res1 = cast(
+            Any,
+            train_test_split(
+                X,
+                y,
+                test_size=(val_ratio + test_ratio),
+                stratify=y,
+                random_state=self.random_state,
+            ),
+        )
         X_train: np.ndarray = res1[0]
         X_temp: np.ndarray = res1[1]
         y_train: np.ndarray = res1[2]
@@ -327,36 +389,50 @@ class PreprocessingPipeline:
 
         # Second split: val and test
         val_size = val_ratio / (val_ratio + test_ratio)
-        res2 = cast(Any, train_test_split(
-            X_temp, y_temp,
-            test_size=(1 - val_size),
-            stratify=y_temp,
-            random_state=self.random_state
-        ))
+        res2 = cast(
+            Any,
+            train_test_split(
+                X_temp,
+                y_temp,
+                test_size=(1 - val_size),
+                stratify=y_temp,
+                random_state=self.random_state,
+            ),
+        )
         X_val: np.ndarray = res2[0]
         X_test: np.ndarray = res2[1]
         y_val: np.ndarray = res2[2]
         y_test: np.ndarray = res2[3]
 
-        logger.info(f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})")
-        logger.info(f"  Validation set: {X_val.shape[0]} samples (class distribution: {pd.Series(y_val).value_counts().to_dict()})")
-        logger.info(f"  Test set: {X_test.shape[0]} samples (class distribution: {pd.Series(y_test).value_counts().to_dict()})")
+        logger.info(
+            f"  Training set: {X_train.shape[0]} samples (class distribution: {pd.Series(y_train).value_counts().to_dict()})"
+        )
+        logger.info(
+            f"  Validation set: {X_val.shape[0]} samples (class distribution: {pd.Series(y_val).value_counts().to_dict()})"
+        )
+        logger.info(
+            f"  Test set: {X_test.shape[0]} samples (class distribution: {pd.Series(y_test).value_counts().to_dict()})"
+        )
 
         return {
-            'train': (X_train, y_train),
-            'val': (X_val, y_val),
-            'test': (X_test, y_test)
+            "train": (X_train, y_train),
+            "val": (X_val, y_val),
+            "test": (X_test, y_test),
         }
 
-    def prepare_data(self, X: pd.DataFrame, y: pd.Series,
-                    apply_encoding: bool = True,
-                    apply_feature_selection: bool = True,
-                    apply_scaling: bool = True,
-                    apply_resampling: bool = True,
-                    apply_splitting: bool = True,
-                    train_ratio: float = 0.7,
-                    val_ratio: float = 0.15,
-                    test_ratio: float = 0.15) -> Dict:
+    def prepare_data(
+        self,
+        X: pd.DataFrame,
+        y: pd.Series,
+        apply_encoding: bool = True,
+        apply_feature_selection: bool = True,
+        apply_scaling: bool = True,
+        apply_resampling: bool = True,
+        apply_splitting: bool = True,
+        train_ratio: float = 0.7,
+        val_ratio: float = 0.15,
+        test_ratio: float = 0.15,
+    ) -> Dict:
         """
         Complete preprocessing pipeline
 
@@ -411,15 +487,21 @@ class PreprocessingPipeline:
         # Step 5: Splitting (BEFORE resampling to avoid data leakage)
         # IMPORTANT: Split first, then apply SMOTE only on training data
         if apply_splitting:
-            splits = self.split_data(X_scaled, y_array, train_ratio, val_ratio, test_ratio)
-            X_train, y_train = splits['train']
-            X_val, y_val = splits['val']
-            X_test, y_test = splits['test']
+            splits = self.split_data(
+                X_scaled, y_array, train_ratio, val_ratio, test_ratio
+            )
+            X_train, y_train = splits["train"]
+            X_val, y_val = splits["val"]
+            X_test, y_test = splits["test"]
 
             # Step 6: Resampling (SMOTE) - ONLY on training data
             if apply_resampling:
-                logger.info("[PREPROCESSING] Applying SMOTE ONLY to training data (after split to prevent data leakage)...")
-                X_train_resampled, y_train_resampled = self.resample_data(X_train, y_train)
+                logger.info(
+                    "[PREPROCESSING] Applying SMOTE ONLY to training data (after split to prevent data leakage)..."
+                )
+                X_train_resampled, y_train_resampled = self.resample_data(
+                    X_train, y_train
+                )
                 # Keep validation and test sets unchanged
                 X_val_resampled, y_val_resampled = X_val, y_val
                 X_test_resampled, y_test_resampled = X_test, y_test
@@ -430,46 +512,50 @@ class PreprocessingPipeline:
 
             # Update splits with resampled training data
             final_splits: Dict[str, Tuple[np.ndarray, np.ndarray]] = {
-                'train': (X_train_resampled, y_train_resampled),
-                'val': (X_val_resampled, y_val_resampled),
-                'test': (X_test_resampled, y_test_resampled)
+                "train": (X_train_resampled, y_train_resampled),
+                "val": (X_val_resampled, y_val_resampled),
+                "test": (X_test_resampled, y_test_resampled),
             }
             result = {
-                'X_processed': X_train_resampled,  # Return training data as main output
-                'y_processed': y_train_resampled,
-                'feature_names': self.selected_features,
-                'splits': final_splits,
-                'preprocessing_steps': {
-                    'cleaning': True,
-                    'encoding': apply_encoding,
-                    'feature_selection': apply_feature_selection,
-                    'scaling': apply_scaling,
-                    'splitting': True,
-                    'resampling': apply_resampling
-                }
+                "X_processed": X_train_resampled,  # Return training data as main output
+                "y_processed": y_train_resampled,
+                "feature_names": self.selected_features,
+                "splits": final_splits,
+                "preprocessing_steps": {
+                    "cleaning": True,
+                    "encoding": apply_encoding,
+                    "feature_selection": apply_feature_selection,
+                    "scaling": apply_scaling,
+                    "splitting": True,
+                    "resampling": apply_resampling,
+                },
             }
         else:
             # No splitting: apply SMOTE on all data (not recommended for production)
             if apply_resampling:
-                logger.warning("[PREPROCESSING] ⚠ WARNING: Applying SMOTE before splitting - this can cause data leakage!")
-                logger.warning("  Consider using apply_splitting=True to split first, then resample only training data.")
+                logger.warning(
+                    "[PREPROCESSING] ⚠ WARNING: Applying SMOTE before splitting - this can cause data leakage!"
+                )
+                logger.warning(
+                    "  Consider using apply_splitting=True to split first, then resample only training data."
+                )
                 X_resampled, y_resampled = self.resample_data(X_scaled, y_array)
             else:
                 X_resampled, y_resampled = X_scaled, y_array
 
             result = {
-                'X_processed': X_resampled,
-                'y_processed': y_resampled,
-                'feature_names': self.selected_features,
-                'splits': None,
-                'preprocessing_steps': {
-                    'cleaning': True,
-                    'encoding': apply_encoding,
-                    'feature_selection': apply_feature_selection,
-                    'scaling': apply_scaling,
-                    'resampling': apply_resampling,
-                    'splitting': False
-                }
+                "X_processed": X_resampled,
+                "y_processed": y_resampled,
+                "feature_names": self.selected_features,
+                "splits": None,
+                "preprocessing_steps": {
+                    "cleaning": True,
+                    "encoding": apply_encoding,
+                    "feature_selection": apply_feature_selection,
+                    "scaling": apply_scaling,
+                    "resampling": apply_resampling,
+                    "splitting": False,
+                },
             }
 
         logger.info("=" * 60)
@@ -494,20 +580,18 @@ class PreprocessingPipeline:
         # Clean
         X_cleaned = X.copy()
         for col in X_cleaned.columns:
-            X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors='coerce')
+            X_cleaned[col] = pd.to_numeric(X_cleaned[col], errors="coerce")
         X_cleaned = X_cleaned.replace([np.inf, -np.inf], np.nan)
         X_imputed = self.imputer.transform(X_cleaned)
         # Use Any cast to satisfy Pylance's DataFrame constructor check
         X_cleaned = pd.DataFrame(
-            cast(Any, X_imputed),
-            columns=X_cleaned.columns,
-            index=X_cleaned.index
+            cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
         )
 
         # Encode (if needed)
         for col, encoder in self.label_encoders.items():
             if col in X_cleaned.columns:
-                X_cleaned[col] = X_cleaned[col].fillna('unknown')
+                X_cleaned[col] = X_cleaned[col].fillna("unknown")
                 X_cleaned[col] = encoder.transform(X_cleaned[col].astype(str))
 
         # Select features
@@ -547,7 +631,7 @@ class PreprocessingPipeline:
             X_test_selected = X_test
 
         # Apply scaling (if fitted)
-        if self.scaler is not None and hasattr(self.scaler, 'transform'):
+        if self.scaler is not None and hasattr(self.scaler, "transform"):
             X_test_scaled = self.scaler.transform(X_test_selected)
         else:
             X_test_scaled = X_test_selected
@@ -570,7 +654,9 @@ class StratifiedCrossValidator:
         """
         self.n_splits = n_splits
         self.random_state = random_state
-        self.skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+        self.skf = StratifiedKFold(
+            n_splits=n_splits, shuffle=True, random_state=random_state
+        )
 
     def split(self, X: np.ndarray, y: np.ndarray):
         """
@@ -598,11 +684,9 @@ class StratifiedCrossValidator:
         """
         folds = []
         for fold_idx, (train_idx, test_idx) in enumerate(self.split(X, y)):
-            folds.append({
-                'fold': fold_idx + 1,
-                'train_idx': train_idx,
-                'test_idx': test_idx
-            })
+            folds.append(
+                {"fold": fold_idx + 1, "train_idx": train_idx, "test_idx": test_idx}
+            )
         return folds
 
 
@@ -617,35 +701,43 @@ def main():
         print(f"Dataset loaded: {df.shape}\n")
 
         # Prepare data
-        X = df.drop(['label', 'type'] if 'type' in df.columns else ['label'], axis=1, errors='ignore')
-        y = df['label']
+        X = df.drop(
+            ["label", "type"] if "type" in df.columns else ["label"],
+            axis=1,
+            errors="ignore",
+        )
+        y = df["label"]
 
         # Initialize pipeline
         pipeline = PreprocessingPipeline(random_state=42, n_features=20)
 
         # Preprocess
         result = pipeline.prepare_data(
-            X, y,
+            X,
+            y,
             apply_encoding=True,
             apply_feature_selection=True,
             apply_scaling=True,
             apply_resampling=True,
-            apply_splitting=True
+            apply_splitting=True,
         )
 
         print(f"\nOriginal shape: {X.shape}")
         print(f"Processed shape: {result['X_processed'].shape}")
         print(f"Selected features: {len(result['feature_names'])}")
 
-        if result['splits']:
-            X_train, y_train = result['splits']['train']
-            X_val, y_val = result['splits']['val']
-            X_test, y_test = result['splits']['test']
-            print(f"\nTrain: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}")
+        if result["splits"]:
+            X_train, y_train = result["splits"]["train"]
+            X_val, y_val = result["splits"]["val"]
+            X_test, y_test = result["splits"]["test"]
+            print(
+                f"\nTrain: {X_train.shape[0]}, Val: {X_val.shape[0]}, Test: {X_test.shape[0]}"
+            )
 
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

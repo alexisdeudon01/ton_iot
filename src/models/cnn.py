@@ -19,7 +19,7 @@ from sklearn.preprocessing import LabelEncoder
 warnings.filterwarnings("ignore")
 logger = logging.getLogger(__name__)
 
-from typing import List, Optional, Any, TYPE_CHECKING, Union, Type, cast
+from typing import TYPE_CHECKING, Any, List, Optional, Type, Union, cast
 
 # Try to import torch - CNN is optional
 try:
@@ -45,6 +45,7 @@ except ImportError:
 if TYPE_CHECKING:
     import torch.nn as nn_types
     from torch.utils.data import Dataset as TorchDataset
+
     _BaseDataset = TorchDataset
     _BaseModule = nn_types.Module
 else:

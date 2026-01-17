@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 import sys
-from pathlib import Path
+
 
 # Import from config module (src/config.py)
 _parent_dir = Path(__file__).parent.parent.parent
@@ -43,27 +43,27 @@ logger = logging.getLogger(__name__)
 
 class PipelineRunner:
     """Orchestrateur du pipeline IRP (5 phases)"""
-    
+
     def __init__(self, config: PipelineConfig):
         """
         Initialize pipeline runner
-        
+
         Args:
             config: Pipeline configuration
         """
         self.config = config
         self.results_dir = Path(config.output_dir)
         self.results_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Results from each phase
         self.phase_results = {}
-        
+
         logger.info(f"PipelineRunner initialized (output_dir: {self.results_dir})")
-    
+
     def run(self, phases: Optional[list] = None):
         """
         Run pipeline phases
-        
+
         Args:
             phases: List of phase numbers to run (1-5). If None, runs all enabled phases.
         """
@@ -79,22 +79,22 @@ class PipelineRunner:
                 phases.append(4)
             if self.config.phase5_enabled:
                 phases.append(5)
-        
+
         logger.info("=" * 70)
         logger.info("IRP RESEARCH PIPELINE - 5 PHASES")
         logger.info("=" * 70)
         logger.info(f"Running phases: {phases}")
-        
+
         # Phase 1: Config Search
         if 1 in phases:
             logger.info("\n" + "=" * 70)
             phase1 = Phase1ConfigSearch(self.config)
             result1 = phase1.run()
             self.phase_results[1] = result1
-            
+
             # Store best config for Phase 2
             self.best_config = result1.get('best_config')
-        
+
         # Phase 2: Apply Best Config
         if 2 in phases:
             if Phase2ApplyBestConfig is None:
@@ -110,12 +110,12 @@ class PipelineRunner:
                             self.best_config = data['config']
                     else:
                         raise ValueError("Phase 2 requires Phase 1 to run first or best_config.json")
-                
+
                 logger.info("\n" + "=" * 70)
                 phase2 = Phase2ApplyBestConfig(self.config, self.best_config)
                 result2 = phase2.run()
                 self.phase_results[2] = result2
-        
+
         # Phase 3: Evaluation
         if 3 in phases:
             if Phase3Evaluation is None:
@@ -125,7 +125,7 @@ class PipelineRunner:
                 phase3 = Phase3Evaluation(self.config)
                 result3 = phase3.run()
                 self.phase_results[3] = result3
-        
+
         # Phase 4: AHP Preferences
         if 4 in phases:
             if Phase4AHPPreferences is None:
@@ -135,7 +135,7 @@ class PipelineRunner:
                 phase4 = Phase4AHPPreferences(self.config)
                 result4 = phase4.run()
                 self.phase_results[4] = result4
-        
+
         # Phase 5: TOPSIS Ranking
         if 5 in phases:
             if Phase5TOPSISRanking is None:
@@ -145,10 +145,10 @@ class PipelineRunner:
                 phase5 = Phase5TOPSISRanking(self.config)
                 result5 = phase5.run()
                 self.phase_results[5] = result5
-        
+
         logger.info("\n" + "=" * 70)
         logger.info("PIPELINE EXECUTION COMPLETE")
         logger.info("=" * 70)
         logger.info(f"Results saved to: {self.results_dir}")
-        
+
         return self.phase_results
