@@ -85,15 +85,15 @@ class Phase2ApplyBestConfig:
         logger.info("TON_IoT feature engineering applied.")
 
         try:
-            max_files = None
-            if self.config.test_mode:
-                max_files = getattr(self.config, "cic_max_files", 3)
+            max_files = getattr(self.config, "cic_max_files", None)
+            if self.config.test_mode and max_files is None:
+                max_files = 3
 
             df_cic = self.loader.load_cic_ddos2019(
                 sample_ratio=self.config.sample_ratio,
                 random_state=self.config.random_state,
                 incremental=False,
-                max_files_in_test=max_files if max_files is not None else 0,
+                max_files_in_test=max_files if max_files is not None else -1,
             )
             logger.info(f"CIC-DDoS2019 loaded: {df_cic.shape}")
             df_cic = engineer_cic(df_cic)
