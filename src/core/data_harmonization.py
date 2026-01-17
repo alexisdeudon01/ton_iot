@@ -51,8 +51,9 @@ class DataHarmonizer:
 
         # Kolmogorov-Smirnov test
         ks_result = stats.ks_2samp(val1, val2)
-        ks_stat = float(ks_result[0])
-        ks_pvalue = float(ks_result[1])
+        # Use explicit indexing and cast to Any to satisfy Pylance
+        ks_stat = float(cast(Any, ks_result)[0])
+        ks_pvalue = float(cast(Any, ks_result)[1])
 
         # Calculate statistics once to avoid redundant computations
         m1, m2 = val1.mean(), val2.mean()
@@ -536,8 +537,9 @@ class DataHarmonizer:
 
                 if len(cic_values) > 0 and len(ton_values) > 0:
                     ks_result = stats.ks_2samp(cic_values, ton_values)
-                    ks_stat = float(ks_result[0])
-                    ks_pvalue = float(ks_result[1])
+                    # Use explicit indexing and cast to Any to satisfy Pylance
+                    ks_stat = float(cast(Any, ks_result)[0])
+                    ks_pvalue = float(cast(Any, ks_result)[1])
 
                     validation_results[feature] = {
                         'ks_statistic': ks_stat,
