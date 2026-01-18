@@ -3,7 +3,7 @@
 ## Résumé
 
 - **F1 Score**: 0.4455
-- **Resource Efficiency Score**: 0.7082
+- **Resource Efficiency Score**: 0.1781
 - **Explainability Score**: 1.0000
 
 ## Dimension 1: Detection Performance
@@ -17,11 +17,11 @@
 
 ## Dimension 2: Resource Efficiency
 
-- **Training Time**: 1.30 seconds
-- **Memory Usage**: -667.60 MB
+- **Training Time**: 0.85 seconds
+- **Memory Usage**: -569.80 MB
 - **Peak Memory**: 0.00 MB
 
-**Interprétation**: Efficace.
+**Interprétation**: Peu efficace (lent ou gourmand en mémoire).
 
 ## Dimension 3: Explainability
 
@@ -35,9 +35,9 @@
 ## Forces et Faiblesses
 
 **Forces**:
-- Entraînement rapide et efficace en mémoire
 - Modèle interprétable
 
 **Faiblesses**:
 - Performance de détection modérée (F1 < 0.7)
+- Entraînement lent ou gourmand en ressources
 

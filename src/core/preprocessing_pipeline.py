@@ -749,6 +749,12 @@ class PreprocessingPipeline:
         Returns:
             Transformed test array
         """
+        if not self.is_fitted:
+            raise ValueError(
+                "Pipeline must be fitted before transforming test data. "
+                "Call prepare_data() or fit() methods first."
+            )
+        
         if isinstance(X_test, pd.DataFrame):
             X_work = X_test.copy()
             # Numeric coercion

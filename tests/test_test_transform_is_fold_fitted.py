@@ -48,8 +48,8 @@ def test_test_transform_is_fold_fitted():
     profile_lr = config.preprocessing_profiles['lr_profile']
     X_train_prep, y_train_prep, pipeline = evaluator._apply_preprocessing_per_fold(X_train, y_train, profile_lr)
 
-    # Transform TEST
-    X_test_prep = evaluator._transform_test_fold(pipeline, X_test, profile_lr)
+    # Transform TEST (now using pipeline.transform_test() directly)
+    X_test_prep = pipeline.transform_test(X_test)
 
     # Assertions for LR (scaling enabled)
     assert not np.isnan(X_test_prep).any()
@@ -62,7 +62,7 @@ def test_test_transform_is_fold_fitted():
     # 3. Test tree profile (no scaling)
     profile_tree = config.preprocessing_profiles['tree_profile']
     X_train_prep_t, y_train_prep_t, pipeline_t = evaluator._apply_preprocessing_per_fold(X_train, y_train, profile_tree)
-    X_test_prep_t = evaluator._transform_test_fold(pipeline_t, X_test, profile_tree)
+    X_test_prep_t = pipeline_t.transform_test(X_test)
 
     assert not np.isnan(X_test_prep_t).any()
     # f1 should be 10 (imputed from train)
