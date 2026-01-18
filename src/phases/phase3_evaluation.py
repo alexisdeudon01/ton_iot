@@ -17,6 +17,7 @@ from src.core.feature_engineering import engineer_cic, engineer_ton
 from src.core.preprocessing_pipeline import StratifiedCrossValidator
 from src.core.model_utils import fresh_model
 from src.evaluation_3d import Evaluation3D
+from src.models import get_model_registry
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -29,11 +30,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-# Import CNN
-from src.models.cnn import CNNTabularClassifier
-
-# Import TabNet
-from src.models.tabnet import TabNetClassifierWrapper
+# Models are now loaded via get_model_registry()
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +68,39 @@ class Phase3Evaluation:
         # Get feature names (will be updated after preprocessing in each fold)
         feature_names = X.columns.tolist()
 
-        models = self._build_models()
+        # Get model registry and filter by requested algorithms
+        model_registry = get_model_registry(self.config)
+        requested = {name.lower().replace("-", "_") for name in self.config.phase3_algorithms}
+        
+        # Map registry names to Phase 3 names
+        name_mapping = {
+            'logistic_regression': 'Logistic_Regression',
+            'lr': 'Logistic_Regression',
+            'decision_tree': 'Decision_Tree',
+            'dt': 'Decision_Tree',
+            'random_forest': 'Random_Forest',
+            'rf': 'Random_Forest',
+            'cnn': 'CNN',
+            'tabnet': 'TabNet'
+        }
+        
+        # Build models from registry
+        models = {}
+        for req_name in requested:
+            registry_name = name_mapping.get(req_name, req_name)
+            if registry_name in model_registry:
+                # Create model instance from builder
+                model = model_registry[registry_name]()
+                # Map to Phase 3 naming convention
+                phase3_name = {
+                    'Logistic_Regression': 'LR',
+                    'Decision_Tree': 'DT',
+                    'Random_Forest': 'RF',
+                    'CNN': 'CNN',
+                    'TabNet': 'TabNet'
+                }.get(registry_name, registry_name)
+                models[phase3_name] = model
+        
         if not models:
             raise ValueError("No algorithms available for evaluation. Check dependencies and config.")
 
@@ -115,8 +144,9 @@ class Phase3Evaluation:
                         X_train_fold, y_train_fold, profile
                     )
 
-                    # Transform TEST with scaler/selector fitté on TRAIN
-                    X_test_prep = self._transform_test_fold(pipeline, X_test_fold, profile)
+                    # Transform TEST with scaler/selector fitted on TRAIN
+                    # Use pipeline.transform_test() directly (handles scaling based on is_fitted state)
+                    X_test_prep = pipeline.transform_test(X_test_fold)
                     y_test_prep = y_test_fold.values
 
                     # CNN reshape: (n_samples, n_features) -> (n_samples, n_features, 1)
@@ -370,81 +400,8 @@ class Phase3Evaluation:
 
         return X_train_prep, y_train_prep, pipeline
 
-    def _transform_test_fold(self, pipeline: PreprocessingPipeline, X_test_df: pd.DataFrame, profile: Dict) -> np.ndarray:
-        """
-        Strict TEST fold transformation:
-        - Convert columns to numeric
-        - Replace ±inf with NaN
-        - Apply pipeline.imputer.transform (TRAIN-fitted)
-        - Apply pipeline.feature_selector.transform if fitted
-        - Apply pipeline.scaler.transform ONLY if profile.apply_scaling=True
-        - NEVER fit anything
-        - NEVER apply SMOTE
-        """
-        X_work = X_test_df.copy()
 
-        # Numeric coercion + inf to NaN
-        for col in X_work.columns:
-            X_work[col] = pd.to_numeric(X_work[col], errors="coerce")
-        X_work = X_work.replace([np.inf, -np.inf], np.nan)
-
-        # Impute using TRAIN-fitted imputer
-        X_imputed = pipeline.imputer.transform(X_work)
-        X_arr = np.asarray(X_imputed)
-
-        # Feature selection (if fitted)
-        if pipeline.feature_selector is not None:
-            X_arr = pipeline.feature_selector.transform(X_arr)
-
-        # Scaling (if enabled and fitted)
-        if profile.get('apply_scaling', True) and pipeline.is_fitted:
-            X_arr = pipeline.scaler.transform(X_arr)
-
-        return cast(np.ndarray, X_arr)
-
-    def _build_models(self) -> Dict[str, object]:
-        """Build model dictionary based on config and availability."""
-        requested = {name.lower().replace("-", "_") for name in self.config.phase3_algorithms}
-        models = {}
-
-        def enabled(key: str) -> bool:
-            return key.lower().replace("-", "_") in requested
-
-        if enabled('logistic_regression') or enabled('lr'):
-            models['LR'] = LogisticRegression(
-                max_iter=1000,
-                random_state=self.config.random_state
-            )
-        if enabled('decision_tree') or enabled('dt'):
-            models['DT'] = DecisionTreeClassifier(random_state=self.config.random_state)
-        if enabled('random_forest') or enabled('rf'):
-            models['RF'] = RandomForestClassifier(
-                n_estimators=100,
-                random_state=self.config.random_state
-            )
-
-        if enabled('cnn'):
-            try:
-                models['CNN'] = CNNTabularClassifier(
-                    epochs=20,
-                    batch_size=64,
-                    random_state=self.config.random_state
-                )
-            except (ImportError, AttributeError) as exc:
-                logger.warning("CNN not available: %s", exc)
-
-        if enabled('tabnet'):
-            try:
-                models['TabNet'] = TabNetClassifierWrapper(
-                    max_epochs=50,
-                    batch_size=1024,
-                    seed=self.config.random_state,
-                    verbose=0
-                )
-            except (ImportError, AttributeError) as exc:
-                logger.warning("TabNet not available: %s", exc)
-
-        return models
+    # _build_models() removed: now using get_model_registry() from src.models
 
     def _save_results(self, all_results: list) -> pd.DataFrame:
         """Save evaluation results and return DataFrame."""

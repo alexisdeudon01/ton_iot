@@ -1,15 +1,46 @@
 #!/usr/bin/env python3
 """
+DEPRECATED: This module is kept for backward compatibility only.
+Use src/app/pipeline_runner.py (PipelineRunner) instead.
+
 Main pipeline for IRP research project
 Orchestrates all phases:
 - Phase 1: Preprocessing Configuration Selection
 - Phase 3: Multi-Dimensional Algorithm Evaluation
 - Phase 5: AHP-TOPSIS Ranking
+
+Migration:
+    OLD: from src.main_pipeline import IRPPipeline
+         pipeline = IRPPipeline()
+    
+    NEW: from src.app.pipeline_runner import PipelineRunner
+         from src.config import PipelineConfig
+         config = PipelineConfig()
+         runner = PipelineRunner(config)
+         runner.run()
 """
-from src.core.dependencies import (
-    os, logging, np, pd, Path, Tuple, List, Optional, Dict, Any, warnings, tqdm,
-    SystemMonitor
+import warnings
+warnings.warn(
+    "src.main_pipeline.IRPPipeline is deprecated. "
+    "Use src.app.pipeline_runner.PipelineRunner instead. "
+    "See module docstring for migration guide.",
+    DeprecationWarning,
+    stacklevel=2
 )
+# Standard library imports
+import logging
+import os
+import warnings
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+# Third-party imports
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+# Internal imports
+from src.system_monitor import SystemMonitor
 
 # Initialize logger
 logger = logging.getLogger(__name__)
