@@ -4,30 +4,25 @@ Dataset loader for CIC-DDoS2019 and TON_IoT datasets
 Handles downloading and loading of datasets for the IRP research project
 Now with system monitoring, adaptive chunking, and incremental loading
 """
-from src.core.dependencies import (
-    Any,
-    Callable,
-    Dict,
-    FeatureAnalyzer,
-    IRPFeaturesRequirements,
-    List,
-    Optional,
-    Path,
-    Set,
-    SystemMonitor,
-    Tuple,
-    Union,
-    cast,
-    datetime,
-    gc,
-    logging,
-    np,
-    os,
-    pd,
-    pickle,
-    tqdm,
-    warnings,
-)
+# Standard library imports
+import gc
+import logging
+import os
+import pickle
+import warnings
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union, cast
+
+# Third-party imports
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+# Internal imports
+from src.feature_analyzer import FeatureAnalyzer
+from src.irp_features_requirements import IRPFeaturesRequirements
+from src.system_monitor import SystemMonitor
 
 warnings.filterwarnings("ignore")
 

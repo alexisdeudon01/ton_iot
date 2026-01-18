@@ -1,8 +1,26 @@
 #!/usr/bin/env python3
 """
+DEPRECATED: This module is kept for backward compatibility only.
+Use src/evaluation/visualizations.py (matplotlib-only, headless) instead.
+
 Results Visualizer with Tkinter GUI
 Displays detailed evaluation results, confusion matrices, and performance metrics
+
+Migration:
+    OLD: from src.results_visualizer import ResultsVisualizer
+         app = ResultsVisualizer(output_dir)
+    
+    NEW: from src.evaluation.visualizations import generate_all_visualizations
+         generate_all_visualizations(metrics_df, output_dir=output_dir)
 """
+import warnings
+warnings.warn(
+    "src.results_visualizer.ResultsVisualizer is deprecated. "
+    "Use src.evaluation.visualizations.generate_all_visualizations instead. "
+    "See module docstring for migration guide.",
+    DeprecationWarning,
+    stacklevel=2
+)
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import pandas as pd

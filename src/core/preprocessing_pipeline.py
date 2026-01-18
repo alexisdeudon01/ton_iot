@@ -592,8 +592,11 @@ class PreprocessingPipeline:
         # Step 4: Scaling
         if apply_scaling:
             X_scaled = self.scale_features(X_array, fit=True)
+            # is_fitted is set in scale_features()
         else:
             X_scaled = X_array
+            # Mark pipeline as fitted even without scaling (for imputation/feature selection)
+            self.is_fitted = True
 
         # Step 5: Splitting (BEFORE resampling to avoid data leakage)
         # IMPORTANT: Split first, then apply SMOTE only on training data

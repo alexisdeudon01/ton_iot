@@ -3,11 +3,19 @@
 Data harmonization module for CIC-DDoS2019 and TON_IoT datasets
 Implements feature mapping and early fusion with statistical validation
 """
-from typing import Any, cast
-from src.core.dependencies import (
-    np, pd, stats, Dict, List, Tuple, Optional, warnings, logging,
-    FeatureAnalyzer, IRPFeaturesRequirements
-)
+# Standard library imports
+import logging
+import warnings
+from typing import Any, Dict, List, Optional, Tuple, cast
+
+# Third-party imports
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+# Internal imports
+from src.feature_analyzer import FeatureAnalyzer
+from src.irp_features_requirements import IRPFeaturesRequirements
 
 warnings.filterwarnings('ignore')
 
