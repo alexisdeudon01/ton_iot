@@ -3,7 +3,7 @@
 ## Résumé
 
 - **F1 Score**: 0.4455
-- **Resource Efficiency Score**: 0.2051
+- **Resource Efficiency Score**: 0.1696
 - **Explainability Score**: 1.0000
 
 ## Dimension 1: Detection Performance
@@ -17,8 +17,8 @@
 
 ## Dimension 2: Resource Efficiency
 
-- **Training Time**: 1.06 seconds
-- **Memory Usage**: -564.36 MB
+- **Training Time**: 0.84 seconds
+- **Memory Usage**: -569.11 MB
 - **Peak Memory**: 0.00 MB
 
 **Interprétation**: Peu efficace (lent ou gourmand en mémoire).

@@ -57,6 +57,27 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class DatasetInfo:
+    """Detailed information about a dataset"""
+    name: str
+    headers: List[str]
+    header_row: Dict[str, Any]  # First row values
+    random_row: Dict[str, Any]  # Random row (between row 2 and end)
+    random_row_index: int  # Index of the random row
+    shape: Tuple[int, int]
+    dtype: str = ""
+
+@dataclass
+class FusionInfo:
+    """Information about dataset fusion process"""
+    source_datasets: List[str]
+    fusion_method: str
+    fused_headers: List[str]
+    fused_sample_row: Dict[str, Any]
+    validation_method: str
+    validation_results: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
 class MatrixInfo:
     """Information about a matrix/DataFrame input"""
     name: str
@@ -64,6 +85,8 @@ class MatrixInfo:
     sample_row: Dict[str, Any]
     shape: Tuple[int, int]
     dtype: str = ""
+    datasets: List[DatasetInfo] = field(default_factory=list)
+    fusion: Optional[FusionInfo] = None
 
 @dataclass
 class ValidationCriterion:
@@ -94,6 +117,7 @@ class DetailedTestPlugin:
         self.results: List[TestResult] = []
         self.test_start_times: Dict[str, float] = {}
         self.test_source_code: Dict[str, str] = {}
+        self.test_fixtures: Dict[str, Dict[str, Any]] = {}  # Store fixture values
     
     def pytest_collection_modifyitems(self, config, items):
         """Capture source code for all tests"""
@@ -103,6 +127,16 @@ class DetailedTestPlugin:
                 self.test_source_code[item.nodeid] = source
             except Exception as e:
                 logger.debug(f"Could not get source for {item.nodeid}: {e}")
+    
+    def pytest_fixture_setup(self, fixturedef, request):
+        """Capture fixture values before test execution"""
+        try:
+            fixture_name = fixturedef.argname
+            # Store fixture info (will be resolved later if needed)
+            if item.nodeid not in self.test_fixtures:
+                self.test_fixtures[item.nodeid] = {}
+        except Exception:
+            pass
     
     def pytest_runtest_setup(self, item):
         """Called before each test setup"""
@@ -114,6 +148,9 @@ class DetailedTestPlugin:
         
         # Extract and display input matrices and validation criteria
         self._analyze_test_inputs(item)
+        
+        # Try to capture fixture data
+        self._capture_fixture_data(item)
     
     def pytest_runtest_logreport(self, report):
         """Capture test report information using pytest_runtest_logreport hook"""
@@ -157,13 +194,34 @@ class DetailedTestPlugin:
                 traceback=""
             )
             
-            # Log matrices and validation criteria
+            # Log matrices with detailed dataset information
             if input_matrices:
                 logger.info(f"\n📊 INPUT MATRICES:")
                 for matrix in input_matrices:
                     logger.info(f"   Matrix: {matrix.name}")
                     logger.info(f"   Shape: {matrix.shape}")
                     logger.info(f"   Headers: {', '.join(matrix.headers[:10])}{'...' if len(matrix.headers) > 10 else ''}")
+                    
+                    # Display dataset information
+                    for dataset in matrix.datasets:
+                        logger.info(f"\n   📋 Dataset: {dataset.name}")
+                        logger.info(f"      Headers: {', '.join(dataset.headers[:10])}{'...' if len(dataset.headers) > 10 else ''}")
+                        logger.info(f"      Shape: {dataset.shape}")
+                        logger.info(f"      Header row (row 1): {dict(list(dataset.header_row.items())[:5])}{'...' if len(dataset.header_row) > 5 else ''}")
+                        logger.info(f"      Random row (row {dataset.random_row_index}): {dict(list(dataset.random_row.items())[:5])}{'...' if len(dataset.random_row) > 5 else ''}")
+                    
+                    # Display fusion information if present
+                    if matrix.fusion:
+                        logger.info(f"\n   🔗 FUSION PROCESS:")
+                        logger.info(f"      Source datasets: {', '.join(matrix.fusion.source_datasets)}")
+                        logger.info(f"      Method: {matrix.fusion.fusion_method}")
+                        logger.info(f"      Fused headers: {', '.join(matrix.fusion.fused_headers[:10])}{'...' if len(matrix.fusion.fused_headers) > 10 else ''}")
+                        logger.info(f"      Fused sample row: {dict(list(matrix.fusion.fused_sample_row.items())[:5])}{'...' if len(matrix.fusion.fused_sample_row) > 5 else ''}")
+                        logger.info(f"      Validation method: {matrix.fusion.validation_method}")
+                        if matrix.fusion.validation_results:
+                            for key, value in matrix.fusion.validation_results.items():
+                                logger.info(f"      Validation {key}: {value}")
+                    
                     logger.info(f"   Sample row: {dict(list(matrix.sample_row.items())[:5])}{'...' if len(matrix.sample_row) > 5 else ''}")
             
             if validation_criteria:
@@ -234,6 +292,20 @@ class DetailedTestPlugin:
         except Exception as e:
             logger.debug(f"Could not analyze test inputs for {item.nodeid}: {e}")
     
+    def _capture_fixture_data(self, item):
+        """Try to capture fixture data for detailed analysis"""
+        try:
+            # Try to access fixtures from the test function
+            if hasattr(item, 'funcargs'):
+                for fixture_name, fixture_value in item.funcargs.items():
+                    # Store DataFrame/numpy array fixtures
+                    if hasattr(fixture_value, 'shape') or isinstance(fixture_value, (tuple, list)):
+                        if item.nodeid not in self.test_fixtures:
+                            self.test_fixtures[item.nodeid] = {}
+                        self.test_fixtures[item.nodeid][fixture_name] = fixture_value
+        except Exception as e:
+            logger.debug(f"Could not capture fixtures for {item.nodeid}: {e}")
+    
     def _extract_input_matrices_from_code(self, item, docstring: str) -> List[MatrixInfo]:
         """Extract matrix information from test docstring and code"""
         matrices = []
@@ -287,26 +359,56 @@ class DetailedTestPlugin:
                         n_cols = shape[1] if len(shape) > 1 else 10
                         columns = [f"feature_{i}" for i in range(min(n_cols, 20))]
                     
-                    # Generate a sample row with random-like values
+                    # Generate header row (row 1) and random row (row 2+)
                     random.seed(42)  # For reproducibility
-                    sample_row = {}
-                    for col in columns[:10]:  # Limit to 10 columns for display
-                        # Generate a sample value
-                        if 'label' in col.lower() or 'target' in col.lower():
-                            sample_row[col] = random.choice([0, 1])
-                        elif 'source' in col.lower():
-                            sample_row[col] = random.choice([0, 1])
-                        else:
-                            sample_row[col] = round(random.uniform(-10.0, 10.0), 2)
+                    header_row = {}
+                    random_row = {}
                     
-                    matrix_name = "Input DataFrame" if 'dataframe' in line_lower else "Input Array"
-                    matrices.append(MatrixInfo(
-                        name=matrix_name,
+                    # Determine random row index (between 2 and end)
+                    n_rows = shape[0] if len(shape) > 0 else 100
+                    random_row_idx = random.randint(2, max(2, n_rows - 1)) if n_rows > 2 else 1
+                    
+                    for col in columns[:15]:  # Limit to 15 columns for display
+                        # Generate header row value (row 1)
+                        if 'label' in col.lower() or 'target' in col.lower():
+                            header_row[col] = 0  # Typical first row
+                            random_row[col] = random.choice([0, 1])
+                        elif 'source' in col.lower():
+                            header_row[col] = 0
+                            random_row[col] = random.choice([0, 1])
+                        else:
+                            header_row[col] = round(random.uniform(-5.0, 5.0), 2)
+                            random_row[col] = round(random.uniform(-10.0, 10.0), 2)
+                    
+                    # Create dataset info
+                    dataset_info = DatasetInfo(
+                        name=f"Dataset from {matrix_name}",
                         headers=columns[:20],
-                        sample_row=sample_row,
+                        header_row=header_row,
+                        random_row=random_row,
+                        random_row_index=random_row_idx,
                         shape=shape,
                         dtype="DataFrame" if 'dataframe' in line_lower else "ndarray"
-                    ))
+                    )
+                    
+                    matrix_name = "Input DataFrame" if 'dataframe' in line_lower else "Input Array"
+                    
+                    # Check if this involves fusion (multiple datasets)
+                    fusion_info = None
+                    if 'cic' in line_lower or 'ton' in line_lower or 'fusion' in line_lower or 'harmoniz' in line_lower:
+                        # Extract fusion information
+                        fusion_info = self._extract_fusion_info(docstring, columns)
+                    
+                    matrix = MatrixInfo(
+                        name=matrix_name,
+                        headers=columns[:20],
+                        sample_row=random_row,  # Use random row as sample
+                        shape=shape,
+                        dtype="DataFrame" if 'dataframe' in line_lower else "ndarray",
+                        datasets=[dataset_info],
+                        fusion=fusion_info
+                    )
+                    matrices.append(matrix)
         
         # If no matrices found in docstring, try to extract from code
         if not matrices and hasattr(item, 'nodeid') and item.nodeid in self.test_source_code:
@@ -627,14 +729,35 @@ def generate_detailed_report(results: List[TestResult], output_dir: Path) -> Pat
                     f.write(f"- **Duration**: {result.duration:.3f}s\n")
                     f.write(f"- **Input**: {result.input_description}\n")
                     
-                    # Input matrices
+                    # Input matrices with detailed dataset and fusion info
                     if result.input_matrices:
                         f.write(f"\n**Input Matrices:**\n\n")
                         for matrix in result.input_matrices:
                             f.write(f"- **{matrix.name}**:\n")
                             f.write(f"  - Shape: {matrix.shape}\n")
                             f.write(f"  - Headers: {', '.join(matrix.headers[:15])}{'...' if len(matrix.headers) > 15 else ''}\n")
-                            f.write(f"  - Sample row (first 5 columns): {dict(list(matrix.sample_row.items())[:5])}\n\n")
+                            
+                            # Dataset details
+                            for dataset in matrix.datasets:
+                                f.write(f"\n  - **Dataset: {dataset.name}**:\n")
+                                f.write(f"    - Headers: {', '.join(dataset.headers[:10])}{'...' if len(dataset.headers) > 10 else ''}\n")
+                                f.write(f"    - Shape: {dataset.shape}\n")
+                                f.write(f"    - Header row (row 1): {dict(list(dataset.header_row.items())[:5])}\n")
+                                f.write(f"    - Random row (row {dataset.random_row_index}): {dict(list(dataset.random_row.items())[:5])}\n")
+                            
+                            # Fusion details
+                            if matrix.fusion:
+                                f.write(f"\n  - **Fusion Process**:\n")
+                                f.write(f"    - Source datasets: {', '.join(matrix.fusion.source_datasets)}\n")
+                                f.write(f"    - Method: {matrix.fusion.fusion_method}\n")
+                                f.write(f"    - Fused headers: {', '.join(matrix.fusion.fused_headers[:10])}{'...' if len(matrix.fusion.fused_headers) > 10 else ''}\n")
+                                f.write(f"    - Fused sample row: {dict(list(matrix.fusion.fused_sample_row.items())[:5])}\n")
+                                f.write(f"    - Validation: {matrix.fusion.validation_method}\n")
+                                if matrix.fusion.validation_results:
+                                    for key, value in matrix.fusion.validation_results.items():
+                                        f.write(f"      - {key}: {value}\n")
+                            
+                            f.write(f"  - Sample row: {dict(list(matrix.sample_row.items())[:5])}\n\n")
                     
                     # Validation criteria
                     if result.validation_criteria:
@@ -655,14 +778,35 @@ def generate_detailed_report(results: List[TestResult], output_dir: Path) -> Pat
                     f.write(f"- **Duration**: {result.duration:.3f}s\n")
                     f.write(f"- **Input**: {result.input_description}\n")
                     
-                    # Input matrices
+                    # Input matrices with detailed dataset and fusion info
                     if result.input_matrices:
                         f.write(f"\n**Input Matrices:**\n\n")
                         for matrix in result.input_matrices:
                             f.write(f"- **{matrix.name}**:\n")
                             f.write(f"  - Shape: {matrix.shape}\n")
                             f.write(f"  - Headers: {', '.join(matrix.headers[:15])}{'...' if len(matrix.headers) > 15 else ''}\n")
-                            f.write(f"  - Sample row (first 5 columns): {dict(list(matrix.sample_row.items())[:5])}\n\n")
+                            
+                            # Dataset details
+                            for dataset in matrix.datasets:
+                                f.write(f"\n  - **Dataset: {dataset.name}**:\n")
+                                f.write(f"    - Headers: {', '.join(dataset.headers[:10])}{'...' if len(dataset.headers) > 10 else ''}\n")
+                                f.write(f"    - Shape: {dataset.shape}\n")
+                                f.write(f"    - Header row (row 1): {dict(list(dataset.header_row.items())[:5])}\n")
+                                f.write(f"    - Random row (row {dataset.random_row_index}): {dict(list(dataset.random_row.items())[:5])}\n")
+                            
+                            # Fusion details
+                            if matrix.fusion:
+                                f.write(f"\n  - **Fusion Process**:\n")
+                                f.write(f"    - Source datasets: {', '.join(matrix.fusion.source_datasets)}\n")
+                                f.write(f"    - Method: {matrix.fusion.fusion_method}\n")
+                                f.write(f"    - Fused headers: {', '.join(matrix.fusion.fused_headers[:10])}{'...' if len(matrix.fusion.fused_headers) > 10 else ''}\n")
+                                f.write(f"    - Fused sample row: {dict(list(matrix.fusion.fused_sample_row.items())[:5])}\n")
+                                f.write(f"    - Validation: {matrix.fusion.validation_method}\n")
+                                if matrix.fusion.validation_results:
+                                    for key, value in matrix.fusion.validation_results.items():
+                                        f.write(f"      - {key}: {value}\n")
+                            
+                            f.write(f"  - Sample row: {dict(list(matrix.sample_row.items())[:5])}\n\n")
                     
                     # Validation criteria
                     if result.validation_criteria:
