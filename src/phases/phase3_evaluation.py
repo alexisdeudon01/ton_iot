@@ -367,10 +367,9 @@ class Phase3Evaluation:
 
     def _apply_preprocessing_per_fold(self, X_train: pd.DataFrame, y_train: pd.Series, profile: Dict) -> tuple:
         """Apply model-aware preprocessing on training data only."""
-        # Calculate feature_selection_k if dynamic
+        # Calculate feature_selection_k (already computed in _get_preprocessing_profile if dynamic)
         feature_k = profile.get('feature_selection_k', 20)
-        if profile.get('feature_selection_k_dynamic', False):
-            feature_k = min(60, max(10, int(0.3 * X_train.shape[1])))
+        # Note: feature_selection_k_dynamic is already handled in _get_preprocessing_profile()
 
         # Create new pipeline for this fold
         pipeline = PreprocessingPipeline(

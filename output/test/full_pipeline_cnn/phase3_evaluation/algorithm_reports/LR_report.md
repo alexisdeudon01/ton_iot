@@ -1,9 +1,9 @@
-# Rapport d'Évaluation : DT
+# Rapport d'Évaluation : LR
 
 ## Résumé
 
 - **F1 Score**: 0.4455
-- **Resource Efficiency Score**: 0.7801
+- **Resource Efficiency Score**: 0.5602
 - **Explainability Score**: 1.0000
 
 ## Dimension 1: Detection Performance
@@ -17,8 +17,8 @@
 
 ## Dimension 2: Resource Efficiency
 
-- **Training Time**: 0.03 seconds
-- **Memory Usage**: -584.02 MB
+- **Training Time**: 0.26 seconds
+- **Memory Usage**: -557.54 MB
 - **Peak Memory**: 0.00 MB
 
 **Interprétation**: Efficace.
@@ -35,7 +35,6 @@
 ## Forces et Faiblesses
 
 **Forces**:
-- Entraînement rapide et efficace en mémoire
 - Modèle interprétable
 
 **Faiblesses**:

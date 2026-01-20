@@ -85,19 +85,68 @@ The pipeline implements a strict **zero-leakage** methodology:
 #### Phase 2: Stateless Feature Engineering
 
 Phase 2 produces a harmonized dataset ready for evaluation.
-- **Cleaning**: Remplacer `inf` par `max(colonne)`, conserver `NaN` (imputation par fold).
-- **Behavioral Features**: `Flow_Bytes_s`, `Flow_Packets_s`, `Avg_Packet_Size` computed with safe divisions.
-- **Early Fusion**: Adds `dataset_source` feature (0=CIC, 1=TON).
-- **Outputs**: `best_preprocessed.parquet`, `feature_names.json`, `phase2_summary.md`.
+
+**Preprocessing Steps Applied**:
+- ✅ **Data Cleaning**: Replace `inf` by `max(colonne)`, apply median imputation
+- ✅ **Feature Encoding**: Categorical features encoded using LabelEncoder
+- ❌ **Feature Selection**: NOT applied (done in Phase 3 per fold)
+- ❌ **Scaling**: NOT applied (done in Phase 3 per fold)
+- ❌ **SMOTE Resampling**: NOT applied (done in Phase 3 per fold)
+
+**Behavioral Features**: `Flow_Bytes_s`, `Flow_Packets_s`, `Avg_Packet_Size` computed with safe divisions.
+
+**Early Fusion**: Adds `dataset_source` feature encoded as integer (0=CIC-DDoS2019, 1=TON_IoT).
+
+**Outputs**:
+- `best_preprocessed.parquet` (or `.csv.gz` if parquet unavailable): Preprocessed dataset with cleaned and encoded features
+- `feature_names.json`: List of feature names for reference
+- `phase2_summary.md`: Summary report with dataset statistics, preprocessing steps, and `dataset_source` mapping
+
+**Note**: Fit-dependent steps (scaling, feature selection, SMOTE) are applied in Phase 3 per fold to ensure zero data leakage.
 
 #### Phase 3: 3D Evaluation (Performance / Resources / Explainability)
 
-Phase 3 evaluates 5 algorithms (LR, DT, RF, CNN, TabNet) using 5-fold Stratified CV.
-- **Performance**: F1-score (primary), Precision, Recall, Accuracy, ROC-AUC.
-- **Resources**: Training time, Peak RAM (`tracemalloc`), Inference latency.
-- **Explainability**: Native (feature importance/coef) + SHAP/LIME support.
-- **Ablation Study**: Mutual Information ranking, Permutation importance, KDE plots for ratio features.
-- **Synthetic Mode**: Run with `--synthetic` for fast pipeline verification.
+Phase 3 evaluates 5 algorithms (LR, DT, RF, CNN, TabNet) using 5-fold Stratified CV with **model-aware preprocessing** applied per fold.
+
+**Model-Aware Preprocessing Profiles**:
+
+- **Logistic Regression (LR)**:
+  - Scaling: ✅ RobustScaler
+  - Feature Selection: ✅ Mutual Information (dynamic k = min(60, max(10, 0.3 * n_features)))
+  - SMOTE: ✅ Applied on training fold only
+  - Class Weight: ❌
+
+- **Tree-based (DT/RF)**:
+  - Scaling: ❌ (scale-invariant)
+  - Feature Selection: ❌ (handle feature importance internally)
+  - SMOTE: ❌ (use class_weight instead)
+  - Class Weight: ✅ 'balanced'
+
+- **Neural Networks (CNN)**:
+  - Scaling: ✅ RobustScaler
+  - Feature Selection: ❌ (learns features automatically)
+  - SMOTE: ✅ Applied on training fold only
+  - Reshape: ✅ (n_samples, n_features, 1) for CNN input
+
+- **TabNet**:
+  - Scaling: ❌ (handles scaling internally via pytorch-tabnet)
+  - Feature Selection: ❌ (no external feature selection)
+  - SMOTE: ❌ (use class_weight instead)
+  - Class Weight: ✅ 'balanced'
+
+**Zero Data Leakage Guarantee**:
+- Preprocessing (scaling, feature selection, SMOTE) is fitted **ONLY on TRAIN fold**
+- TEST fold is transformed using TRAIN-fitted objects via `pipeline.transform_test()`
+- Fresh model instance created for each fold using `fresh_model()`
+
+**Metrics**:
+- **Performance**: F1-score (primary), Precision, Recall, Accuracy, ROC-AUC
+- **Resources**: Training time, Peak RAM (`tracemalloc`), Inference latency (with warm-up for NN)
+- **Explainability**: Native (feature importance/coef for LR/DT/RF) + SHAP/LIME support
+
+**Ablation Study**: Mutual Information ranking, Permutation importance, KDE plots for ratio features.
+
+**Synthetic Mode**: Run with `--synthetic` flag to use `sklearn.datasets.make_classification()` instead of external datasets for fast pipeline verification.
 
 **Resource Metrics**:
 - Training time (seconds)

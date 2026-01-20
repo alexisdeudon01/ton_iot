@@ -19,13 +19,18 @@ import sys
 import logging
 from pathlib import Path
 from datetime import datetime
-import torch
 import os
 
 # Fonction pour vérifier la disponibilité du GPU
 def check_gpu_availability():
-    is_gpu_available = torch.cuda.is_available()
-    return is_gpu_available
+    """Check GPU availability (optional, requires torch)"""
+    try:
+        import torch
+        is_gpu_available = torch.cuda.is_available()
+        return is_gpu_available
+    except ImportError:
+        # torch not installed, assume CPU only
+        return False
 
 # Fonction pour générer le fichier req2.txt basé sur le matériel
 def generate_requirements(is_gpu_available):

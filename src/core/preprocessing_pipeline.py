@@ -345,6 +345,19 @@ class PreprocessingPipeline:
             X_scaled = self.scaler.fit_transform(X)
             self.is_fitted = True
         else:
+            # Check if scaler was actually fitted
+            try:
+                scaler_is_fitted = (
+                    hasattr(self.scaler, 'center_') and hasattr(self.scaler, 'scale_') and
+                    self.scaler.center_ is not None and self.scaler.scale_ is not None
+                )
+                if not scaler_is_fitted:
+                    logger.warning("Scaler not fitted, returning unscaled data")
+                    return X
+            except AttributeError:
+                logger.warning("Cannot verify scaler state, returning unscaled data")
+                return X
+            
             if not self.is_fitted:
                 raise ValueError("Scaler must be fitted before transforming test data")
             X_scaled = self.scaler.transform(X)
@@ -733,8 +746,22 @@ class PreprocessingPipeline:
         else:
             X_selected = X_cleaned.values
 
-        # Scale
-        X_scaled = self.scale_features(cast(np.ndarray, X_selected), fit=False)
+        # Scale (only if scaling was applied during fitting)
+        # Check if scaling was actually applied by checking if scaler has been fitted
+        try:
+            # Check if scaler has statistics_ attribute (RobustScaler) or scale_ attribute
+            scaler_was_fitted = (
+                hasattr(self.scaler, 'center_') and hasattr(self.scaler, 'scale_') and
+                self.scaler.center_ is not None and self.scaler.scale_ is not None
+            )
+            if scaler_was_fitted:
+                X_scaled = self.scale_features(cast(np.ndarray, X_selected), fit=False)
+            else:
+                # Scaling was not applied during fitting
+                X_scaled = X_selected
+        except (AttributeError, ValueError):
+            # Scaler not fitted or error checking, skip scaling
+            X_scaled = X_selected
 
         return X_scaled
 
@@ -856,7 +883,7 @@ class StratifiedCrossValidator:
 
 def main():
     """Test the preprocessing pipeline"""
-    from dataset_loader import DatasetLoader
+    from src.core.dataset_loader import DatasetLoader
 
     loader = DatasetLoader()
 
