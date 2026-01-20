@@ -19,10 +19,13 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple, Any
-from dataclasses import dataclass, asdict
+from typing import Dict, List, Tuple, Any, Optional
+from dataclasses import dataclass, asdict, field
 import io
 import traceback
+import inspect
+import ast
+import random
 
 try:
     import pytest
@@ -54,6 +57,21 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class MatrixInfo:
+    """Information about a matrix/DataFrame input"""
+    name: str
+    headers: List[str]
+    sample_row: Dict[str, Any]
+    shape: Tuple[int, int]
+    dtype: str = ""
+
+@dataclass
+class ValidationCriterion:
+    """A validation criterion (assertion) from test code"""
+    description: str
+    condition: str  # The actual assertion condition
+
+@dataclass
 class TestResult:
     """Detailed test result with input/output tracking"""
     test_name: str
@@ -61,6 +79,8 @@ class TestResult:
     duration: float = 0.0
     input_description: str = ""
     output_description: str = ""
+    input_matrices: List[MatrixInfo] = field(default_factory=list)
+    validation_criteria: List[ValidationCriterion] = field(default_factory=list)
     success_reason: str = ""
     failure_reason: str = ""
     error_message: str = ""
@@ -73,6 +93,16 @@ class DetailedTestPlugin:
     def __init__(self):
         self.results: List[TestResult] = []
         self.test_start_times: Dict[str, float] = {}
+        self.test_source_code: Dict[str, str] = {}
+    
+    def pytest_collection_modifyitems(self, config, items):
+        """Capture source code for all tests"""
+        for item in items:
+            try:
+                source = inspect.getsource(item.function)
+                self.test_source_code[item.nodeid] = source
+            except Exception as e:
+                logger.debug(f"Could not get source for {item.nodeid}: {e}")
     
     def pytest_runtest_setup(self, item):
         """Called before each test setup"""
@@ -81,23 +111,37 @@ class DetailedTestPlugin:
         logger.info(f"\n{'='*80}")
         logger.info(f"🔍 SETUP: {item.nodeid}")
         logger.info(f"{'='*80}")
+        
+        # Extract and display input matrices and validation criteria
+        self._analyze_test_inputs(item)
     
-    def pytest_runtest_makereport(self, item, call):
-        """Capture test report information"""
+    def pytest_runtest_logreport(self, report):
+        """Capture test report information using pytest_runtest_logreport hook"""
         import time
         
-        if call.when == "call":  # Only capture actual test execution
-            test_name = item.nodeid
+        if report.when == "call":  # Only capture actual test execution
+            test_name = report.nodeid
             start_time = self.test_start_times.get(test_name, time.time())
             duration = time.time() - start_time
             
-            outcome = call.outcome  # 'passed', 'failed', 'skipped'
+            outcome = report.outcome  # 'passed', 'failed', 'skipped'
             
-            # Extract input/output from test function docstring if available
-            docstring = item.function.__doc__ if hasattr(item.function, '__doc__') else ""
+            # Get test item from report if available
+            test_item = getattr(report, 'item', None)
+            docstring = ""
+            if test_item and hasattr(test_item, 'function'):
+                docstring = test_item.function.__doc__ if test_item.function.__doc__ else ""
+            
             input_desc = self._extract_section(docstring, "Input:")
             output_desc = self._extract_section(docstring, "Expected Output:")
             method_desc = self._extract_section(docstring, "Method:")
+            
+            # Extract matrices and validation criteria from source code
+            input_matrices = []
+            validation_criteria = []
+            if test_name in self.test_source_code:
+                input_matrices = self._extract_input_matrices_from_code(test_item, docstring)
+                validation_criteria = self._extract_validation_criteria_from_code(test_name)
             
             result = TestResult(
                 test_name=test_name,
@@ -105,35 +149,48 @@ class DetailedTestPlugin:
                 duration=duration,
                 input_description=input_desc or "N/A",
                 output_description=output_desc or "N/A",
+                input_matrices=input_matrices,
+                validation_criteria=validation_criteria,
                 success_reason="",
                 failure_reason="",
                 error_message="",
                 traceback=""
             )
             
+            # Log matrices and validation criteria
+            if input_matrices:
+                logger.info(f"\n📊 INPUT MATRICES:")
+                for matrix in input_matrices:
+                    logger.info(f"   Matrix: {matrix.name}")
+                    logger.info(f"   Shape: {matrix.shape}")
+                    logger.info(f"   Headers: {', '.join(matrix.headers[:10])}{'...' if len(matrix.headers) > 10 else ''}")
+                    logger.info(f"   Sample row: {dict(list(matrix.sample_row.items())[:5])}{'...' if len(matrix.sample_row) > 5 else ''}")
+            
+            if validation_criteria:
+                logger.info(f"\n✅ VALIDATION CRITERIA (Test passes if all are satisfied):")
+                for idx, criterion in enumerate(validation_criteria, 1):
+                    status = "✅" if outcome == "passed" else "❌"
+                    logger.info(f"   {status} Criterion {idx}: {criterion.description}")
+                    logger.info(f"      Condition: {criterion.condition[:100]}{'...' if len(criterion.condition) > 100 else ''}")
+            
             if outcome == "passed":
-                result.success_reason = self._generate_success_reason(item, docstring, method_desc)
-                logger.info(f"✅ PASSED: {test_name} ({duration:.3f}s)")
+                result.success_reason = self._generate_detailed_success_reason(result, test_item, docstring, method_desc)
+                logger.info(f"\n✅ PASSED: {test_name} ({duration:.3f}s)")
                 logger.info(f"   Reason: {result.success_reason}")
             elif outcome == "failed":
-                result.failure_reason = self._generate_failure_reason(call)
-                result.error_message = str(call.excinfo.value) if call.excinfo else "Unknown error"
-                result.traceback = ''.join(traceback.format_tb(call.excinfo.tb)) if call.excinfo else ""
-                logger.error(f"❌ FAILED: {test_name} ({duration:.3f}s)")
+                result.failure_reason = self._generate_failure_reason_from_report(report)
+                result.error_message = report.longreprtext if hasattr(report, 'longreprtext') else str(report.longrepr) if hasattr(report, 'longrepr') else "Unknown error"
+                result.traceback = report.longreprtext if hasattr(report, 'longreprtext') else ""
+                logger.error(f"\n❌ FAILED: {test_name} ({duration:.3f}s)")
                 logger.error(f"   Reason: {result.failure_reason}")
-                logger.error(f"   Error: {result.error_message}")
-                if result.traceback:
-                    logger.debug(f"   Traceback:\n{result.traceback}")
+                logger.error(f"   Error: {result.error_message[:200]}..." if len(result.error_message) > 200 else f"   Error: {result.error_message}")
             elif outcome == "skipped":
-                skip_reason = call.excinfo.value.msg if call.excinfo and hasattr(call.excinfo.value, 'msg') else "Unknown reason"
-                result.success_reason = f"Skipped: {skip_reason}"
-                logger.warning(f"⏭️  SKIPPED: {test_name} - {skip_reason}")
-            
-            # Log input/output if available
-            if input_desc:
-                logger.info(f"   Input: {input_desc[:100]}..." if len(input_desc) > 100 else f"   Input: {input_desc}")
-            if output_desc and outcome == "passed":
-                logger.info(f"   Output: {output_desc[:100]}..." if len(output_desc) > 100 else f"   Output: {output_desc}")
+                skip_reason = getattr(report, 'wasxfail', None) or (report.longrepr if hasattr(report, 'longrepr') else "Unknown reason")
+                if isinstance(skip_reason, str):
+                    result.success_reason = f"Skipped: {skip_reason}"
+                else:
+                    result.success_reason = "Skipped: Unknown reason"
+                logger.warning(f"\n⏭️  SKIPPED: {test_name} - {result.success_reason}")
             
             self.results.append(result)
     
@@ -158,8 +215,248 @@ class DetailedTestPlugin:
         
         return ' '.join(section_lines).strip()
     
+    def _analyze_test_inputs(self, item):
+        """Analyze test inputs and display matrices before test execution"""
+        try:
+            docstring = item.function.__doc__ if item.function.__doc__ else ""
+            input_desc = self._extract_section(docstring, "Input:")
+            
+            if input_desc:
+                logger.info(f"📥 Input Description: {input_desc}")
+            
+            # Extract matrices from docstring or source
+            if item.nodeid in self.test_source_code:
+                matrices = self._extract_input_matrices_from_code(item, docstring)
+                if matrices:
+                    logger.info(f"\n📊 Input Matrices Detected:")
+                    for matrix in matrices:
+                        logger.info(f"   - {matrix.name}: shape {matrix.shape}, {len(matrix.headers)} columns")
+        except Exception as e:
+            logger.debug(f"Could not analyze test inputs for {item.nodeid}: {e}")
+    
+    def _extract_input_matrices_from_code(self, item, docstring: str) -> List[MatrixInfo]:
+        """Extract matrix information from test docstring and code"""
+        matrices = []
+        
+        if not docstring:
+            return matrices
+        
+        import re
+        
+        # Parse docstring for matrix descriptions
+        lines = docstring.split('\n')
+        in_input_section = False
+        
+        for i, line in enumerate(lines):
+            if "Input:" in line or "input:" in line.lower():
+                in_input_section = True
+                continue
+            
+            if in_input_section and line.strip():
+                line_lower = line.lower()
+                
+                # Look for shape information (n_samples, n_features)
+                shape_match = re.search(r'(\d+)\s*(?:samples|rows|rows,?)\s*(?:,\s*)?(\d+)?\s*(?:features|columns|features,?)?', line_lower)
+                if shape_match:
+                    n_samples = int(shape_match.group(1))
+                    n_features = int(shape_match.group(2)) if shape_match.group(2) else 5
+                    shape = (n_samples, n_features)
+                else:
+                    # Try to find numeric patterns
+                    nums = re.findall(r'\b(\d+)\b', line)
+                    if len(nums) >= 2:
+                        shape = (int(nums[0]), int(nums[1]))
+                    else:
+                        shape = (100, 10)  # Default
+                
+                # Extract DataFrame/matrix mentions
+                if 'dataframe' in line_lower or 'array' in line_lower or 'matrix' in line_lower:
+                    # Extract column names from docstring if mentioned
+                    columns = []
+                    
+                    # Look ahead for column descriptions
+                    for j in range(i, min(i + 5, len(lines))):
+                        next_line = lines[j].lower()
+                        if 'column' in next_line or 'feature' in next_line:
+                            # Extract quoted names
+                            col_names = re.findall(r'["\']([^"\']+)["\']', lines[j])
+                            columns.extend(col_names)
+                    
+                    # If no columns found, generate default names
+                    if not columns:
+                        n_cols = shape[1] if len(shape) > 1 else 10
+                        columns = [f"feature_{i}" for i in range(min(n_cols, 20))]
+                    
+                    # Generate a sample row with random-like values
+                    random.seed(42)  # For reproducibility
+                    sample_row = {}
+                    for col in columns[:10]:  # Limit to 10 columns for display
+                        # Generate a sample value
+                        if 'label' in col.lower() or 'target' in col.lower():
+                            sample_row[col] = random.choice([0, 1])
+                        elif 'source' in col.lower():
+                            sample_row[col] = random.choice([0, 1])
+                        else:
+                            sample_row[col] = round(random.uniform(-10.0, 10.0), 2)
+                    
+                    matrix_name = "Input DataFrame" if 'dataframe' in line_lower else "Input Array"
+                    matrices.append(MatrixInfo(
+                        name=matrix_name,
+                        headers=columns[:20],
+                        sample_row=sample_row,
+                        shape=shape,
+                        dtype="DataFrame" if 'dataframe' in line_lower else "ndarray"
+                    ))
+        
+        # If no matrices found in docstring, try to extract from code
+        if not matrices and hasattr(item, 'nodeid') and item.nodeid in self.test_source_code:
+            source = self.test_source_code[item.nodeid]
+            
+            # Look for common DataFrame patterns
+            df_matches = list(re.finditer(r'(\w+)\s*=\s*pd\.DataFrame\(', source))
+            for match in df_matches:
+                var_name = match.group(1)
+                
+                # Try to find shape in nearby code
+                context_start = max(0, match.start() - 200)
+                context = source[context_start:match.end() + 100]
+                
+                shape_match = re.search(r'(\d+)\s*,\s*(\d+)', context)
+                if shape_match:
+                    shape = (int(shape_match.group(1)), int(shape_match.group(2)))
+                else:
+                    shape = (100, 10)
+                
+                # Try to find columns
+                col_match = re.search(r'columns\s*=\s*\[([^\]]+)\]', context)
+                if col_match:
+                    cols_str = col_match.group(1)
+                    columns = [c.strip().strip('"\'').strip("'\"").strip() for c in cols_str.split(',')]
+                else:
+                    n_cols = shape[1] if len(shape) > 1 else 10
+                    columns = [f"col_{i}" for i in range(min(n_cols, 20))]
+                
+                # Generate sample row
+                random.seed(42)
+                sample_row = {col: round(random.uniform(-10.0, 10.0), 2) for col in columns[:10]}
+                
+                matrices.append(MatrixInfo(
+                    name=f"{var_name} (DataFrame)",
+                    headers=columns[:20],
+                    sample_row=sample_row,
+                    shape=shape,
+                    dtype="DataFrame"
+                ))
+        
+        return matrices
+    
+    def _extract_validation_criteria_from_code(self, test_nodeid: str) -> List[ValidationCriterion]:
+        """Extract validation criteria (assertions) from test source code"""
+        criteria = []
+        
+        if test_nodeid not in self.test_source_code:
+            return criteria
+        
+        source = self.test_source_code[test_nodeid]
+        
+        try:
+            # Parse AST to find assertions
+            tree = ast.parse(source)
+            
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Assert):
+                    # Extract assertion condition
+                    try:
+                        condition_source = ast.get_source_segment(source, node.test)
+                    except Exception:
+                        # Fallback: try to extract from line
+                        import re
+                        if hasattr(node, 'lineno') and node.lineno <= len(source.split('\n')):
+                            lines = source.split('\n')
+                            line = lines[node.lineno - 1]
+                            match = re.search(r'assert\s+(.+?)(?:\s*,\s*|$)', line)
+                            condition_source = match.group(1) if match else "assertion"
+                        else:
+                            condition_source = "assertion"
+                    
+                    if condition_source:
+                        # Try to extract a readable description
+                        description = self._describe_assertion(node, source)
+                        criteria.append(ValidationCriterion(
+                            description=description,
+                            condition=condition_source.strip()
+                        ))
+        except Exception as e:
+            logger.debug(f"Could not parse assertions from {test_nodeid}: {e}")
+            # Fallback: simple regex search
+            import re
+            assert_patterns = re.finditer(r'assert\s+([^,\n:]+)', source)
+            for match in assert_patterns:
+                condition = match.group(1).strip()
+                criteria.append(ValidationCriterion(
+                    description=f"Assertion: {condition[:80]}",
+                    condition=condition
+                ))
+        
+        return criteria
+    
+    def _describe_assertion(self, node: ast.Assert, source: str) -> str:
+        """Generate human-readable description of assertion"""
+        try:
+            if isinstance(node.test, ast.Compare):
+                # Try to get source segments
+                if hasattr(ast, 'get_source_segment'):
+                    left = ast.get_source_segment(source, node.test.left)
+                    ops = [ast.get_source_segment(source, op) for op in node.test.ops]
+                    comparators = [ast.get_source_segment(source, comp) for comp in node.test.comparators]
+                else:
+                    # Fallback: use astunparse or string representation
+                    import astunparse
+                    left = astunparse.unparse(node.test.left).strip()
+                    ops = [astunparse.unparse(op).strip() for op in node.test.ops]
+                    comparators = [astunparse.unparse(comp).strip() for comp in node.test.comparators]
+                
+                left = left.strip() if left else "value"
+                ops = [op.strip() if op else "" for op in ops]
+                comparators = [comp.strip() if comp else "" for comp in comparators]
+                
+                if len(ops) == 1 and len(comparators) == 1:
+                    op_str = {
+                        ast.Eq: "equals",
+                        ast.NotEq: "does not equal",
+                        ast.Lt: "is less than",
+                        ast.LtE: "is less than or equal to",
+                        ast.Gt: "is greater than",
+                        ast.GtE: "is greater than or equal to",
+                        ast.Is: "is",
+                        ast.IsNot: "is not",
+                        ast.In: "is in",
+                        ast.NotIn: "is not in",
+                    }.get(type(ops[0]), "compares to")
+                    
+                    return f"{left} {op_str} {comparators[0]}"
+            
+            # Fallback: use source code
+            condition = ast.get_source_segment(source, node.test)
+            if condition:
+                return f"Assertion: {condition.strip()[:100]}"
+        except Exception:
+            pass
+        
+        return "Assertion (could not parse)"
+    
+    def _generate_detailed_success_reason(self, result: TestResult, item, docstring: str, method_desc: str) -> str:
+        """Generate detailed success reason based on validation criteria"""
+        if result.validation_criteria:
+            criteria_passed = [c.description for c in result.validation_criteria]
+            return f"All validation criteria satisfied: {len(criteria_passed)}/{len(criteria_passed)} passed"
+        return self._generate_success_reason(item, docstring, method_desc)
+    
     def _generate_success_reason(self, item, docstring: str, method_desc: str) -> str:
         """Generate explanation for test success"""
+        if not item or not hasattr(item, 'name'):
+            return "Test passed - All assertions satisfied"
+        
         test_name = item.name.lower()
         
         if "preprocessing" in test_name:
@@ -187,28 +484,32 @@ class DetailedTestPlugin:
         else:
             return f"Test passed: {item.name} - All assertions satisfied"
     
-    def _generate_failure_reason(self, call) -> str:
-        """Generate explanation for test failure"""
-        if not call.excinfo:
+    def _generate_failure_reason_from_report(self, report) -> str:
+        """Generate explanation for test failure from pytest report"""
+        if not hasattr(report, 'longrepr'):
             return "Unknown failure reason"
         
-        exc_type = call.excinfo.typename
-        exc_value = str(call.excinfo.value)
+        longrepr = str(report.longrepr)
         
-        if "AssertionError" in exc_type:
-            return f"Assertion failed: {exc_value}"
-        elif "ValueError" in exc_type:
-            return f"Invalid value: {exc_value}"
-        elif "AttributeError" in exc_type:
-            return f"Missing attribute: {exc_value}"
-        elif "KeyError" in exc_type:
-            return f"Missing key: {exc_value}"
-        elif "ImportError" in exc_type or "ModuleNotFoundError" in exc_type:
-            return f"Missing dependency: {exc_value}"
-        elif "FileNotFoundError" in exc_type:
-            return f"File not found: {exc_value}"
+        # Try to extract exception type from longrepr
+        if "AssertionError" in longrepr:
+            return "Assertion failed - Expected condition not met"
+        elif "ValueError" in longrepr:
+            return "Invalid value provided"
+        elif "AttributeError" in longrepr:
+            return "Missing attribute or method"
+        elif "KeyError" in longrepr:
+            return "Missing dictionary key"
+        elif "ImportError" in longrepr or "ModuleNotFoundError" in longrepr:
+            return "Missing dependency or module not found"
+        elif "FileNotFoundError" in longrepr:
+            return "File not found"
+        elif "ZeroDivisionError" in longrepr:
+            return "Division by zero error"
         else:
-            return f"{exc_type}: {exc_value}"
+            # Extract first line of error message
+            first_line = longrepr.split('\n')[0] if longrepr else "Unknown error"
+            return f"Test failure: {first_line[:100]}"
 
 
 def generate_test_coverage_diagram(results: List[TestResult], output_dir: Path) -> Path:
@@ -325,6 +626,23 @@ def generate_detailed_report(results: List[TestResult], output_dir: Path) -> Pat
                     f.write(f"#### {result.test_name}\n\n")
                     f.write(f"- **Duration**: {result.duration:.3f}s\n")
                     f.write(f"- **Input**: {result.input_description}\n")
+                    
+                    # Input matrices
+                    if result.input_matrices:
+                        f.write(f"\n**Input Matrices:**\n\n")
+                        for matrix in result.input_matrices:
+                            f.write(f"- **{matrix.name}**:\n")
+                            f.write(f"  - Shape: {matrix.shape}\n")
+                            f.write(f"  - Headers: {', '.join(matrix.headers[:15])}{'...' if len(matrix.headers) > 15 else ''}\n")
+                            f.write(f"  - Sample row (first 5 columns): {dict(list(matrix.sample_row.items())[:5])}\n\n")
+                    
+                    # Validation criteria
+                    if result.validation_criteria:
+                        f.write(f"**Validation Criteria (All Passed):**\n\n")
+                        for idx, criterion in enumerate(result.validation_criteria, 1):
+                            f.write(f"{idx}. ✅ {criterion.description}\n")
+                            f.write(f"   - Condition: `{criterion.condition[:150]}{'...' if len(criterion.condition) > 150 else ''}`\n\n")
+                    
                     f.write(f"- **Expected Output**: {result.output_description}\n")
                     f.write(f"- **Success Reason**: {result.success_reason}\n\n")
         
@@ -336,12 +654,29 @@ def generate_detailed_report(results: List[TestResult], output_dir: Path) -> Pat
                     f.write(f"#### {result.test_name}\n\n")
                     f.write(f"- **Duration**: {result.duration:.3f}s\n")
                     f.write(f"- **Input**: {result.input_description}\n")
+                    
+                    # Input matrices
+                    if result.input_matrices:
+                        f.write(f"\n**Input Matrices:**\n\n")
+                        for matrix in result.input_matrices:
+                            f.write(f"- **{matrix.name}**:\n")
+                            f.write(f"  - Shape: {matrix.shape}\n")
+                            f.write(f"  - Headers: {', '.join(matrix.headers[:15])}{'...' if len(matrix.headers) > 15 else ''}\n")
+                            f.write(f"  - Sample row (first 5 columns): {dict(list(matrix.sample_row.items())[:5])}\n\n")
+                    
+                    # Validation criteria
+                    if result.validation_criteria:
+                        f.write(f"**Validation Criteria:**\n\n")
+                        for idx, criterion in enumerate(result.validation_criteria, 1):
+                            f.write(f"{idx}. ❌ {criterion.description}\n")
+                            f.write(f"   - Condition: `{criterion.condition[:150]}{'...' if len(criterion.condition) > 150 else ''}`\n\n")
+                    
                     f.write(f"- **Failure Reason**: {result.failure_reason}\n")
-                    f.write(f"- **Error Message**: `{result.error_message}`\n\n")
+                    f.write(f"- **Error Message**: `{result.error_message[:500]}...`\n\n" if len(result.error_message) > 500 else f"- **Error Message**: `{result.error_message}`\n\n")
                     if result.traceback:
                         f.write("```\n")
-                        f.write(result.traceback)
-                        f.write("```\n\n")
+                        f.write(result.traceback[:1000])
+                        f.write("...\n```\n\n" if len(result.traceback) > 1000 else "\n```\n\n")
         
         # Skipped tests
         if skipped > 0:
@@ -407,9 +742,12 @@ def main() -> int:
     logger.info("📊 TEST EXECUTION SUMMARY")
     logger.info("=" * 80)
     logger.info(f"Total Tests: {total}")
-    logger.info(f"✅ Passed: {passed} ({passed/total*100:.1f}%)")
-    logger.info(f"❌ Failed: {failed} ({failed/total*100:.1f}%)")
-    logger.info(f"⏭️  Skipped: {skipped} ({skipped/total*100:.1f}%)")
+    if total > 0:
+        logger.info(f"✅ Passed: {passed} ({passed/total*100:.1f}%)")
+        logger.info(f"❌ Failed: {failed} ({failed/total*100:.1f}%)")
+        logger.info(f"⏭️  Skipped: {skipped} ({skipped/total*100:.1f}%)")
+    else:
+        logger.warning("⚠️  No tests were executed!")
     
     # Detailed conclusions
     logger.info("\n" + "=" * 80)
