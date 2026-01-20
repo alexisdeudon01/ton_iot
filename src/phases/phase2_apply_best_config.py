@@ -30,12 +30,24 @@ class Phase2ApplyBestConfig:
         self.harmonizer = DataHarmonizer()
 
     def run(self) -> Dict:
-        """Run Phase 2: Apply stateless preprocessing to full dataset."""
+        """
+        Run Phase 2: Apply stateless preprocessing to full dataset.
+
+        Function f: This phase applies the best configuration found in Phase 1
+        (only stateless steps like cleaning and encoding) to the full harmonized dataset.
+        It produces a preprocessed dataset ready for the cross-validation in Phase 3.
+
+        Returns:
+            Dict with status, output_paths, shape, and feature_names (Output)
+        """
+        logger.info("[VERBOSE] --- PHASE 2 START ---")
         logger.info("Phase 2: Apply Best Config (stateless preprocessing only)")
         logger.info("=" * 70)
 
         # Load datasets
+        logger.info("[VERBOSE] Step 2.1: Calling _load_and_harmonize_datasets()")
         df_processed = self._load_and_harmonize_datasets()
+        logger.info(f"[VERBOSE] Step 2.1 Output: Harmonized dataset shape {df_processed.shape}")
 
         # Separate features and labels (keep dataset_source as feature)
         drop_cols = ["label"]
@@ -141,7 +153,21 @@ class Phase2ApplyBestConfig:
         return df_processed
 
     def _apply_stateless_preprocessing(self, X: pd.DataFrame, y: pd.Series) -> tuple:
-        """Apply stateless preprocessing only (clean_data + encode_features, NO scaling/FS/SMOTE)."""
+        """
+        Apply stateless preprocessing only (clean_data + encode_features, NO scaling/FS/SMOTE).
+
+        Function f: Cleans the data (handling NaNs and Infs) and encodes categorical features.
+        It explicitly avoids fit-dependent steps to prevent data leakage before cross-validation.
+
+        Args:
+            X: Features (Input 1)
+            y: Labels (Input 2)
+
+        Returns:
+            Tuple of (X_encoded, y_cleaned) (Output)
+        """
+        logger.info("[VERBOSE] --- STATELESS PREPROCESSING START ---")
+        logger.info(f"[VERBOSE] Input X shape: {X.shape}")
         logger.info(
             "Applying stateless preprocessing (clean_data + encode_features only)..."
         )

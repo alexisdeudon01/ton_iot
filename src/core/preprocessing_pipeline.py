@@ -357,7 +357,7 @@ class PreprocessingPipeline:
             except AttributeError:
                 logger.warning("Cannot verify scaler state, returning unscaled data")
                 return X
-            
+
             if not self.is_fitted:
                 raise ValueError("Scaler must be fitted before transforming test data")
             X_scaled = self.scaler.transform(X)
@@ -554,15 +554,19 @@ class PreprocessingPipeline:
         test_ratio: float = 0.15,
     ) -> Dict:
         """
-        Complete preprocessing pipeline
+        Complete data preparation pipeline.
+
+        Function f: This function orchestrates the entire preprocessing flow,
+        including cleaning, encoding, scaling, feature selection, and resampling.
+        It ensures that each step is applied in the correct order to maintain data integrity.
 
         Args:
-            X: Feature dataframe
-            y: Target series
-            apply_encoding: Whether to encode categorical features
-            apply_feature_selection: Whether to select features
-            apply_scaling: Whether to scale features
-            apply_resampling: Whether to resample (SMOTE)
+            X: Input features (Input 1)
+            y: Input labels (Input 2)
+            apply_encoding: Whether to apply categorical encoding
+            apply_feature_selection: Whether to apply feature selection
+            apply_scaling: Whether to apply scaling
+            apply_resampling: Whether to apply SMOTE resampling
             apply_splitting: Whether to split into train/val/test
             apply_imputation: Whether to apply median imputation
             train_ratio: Proportion for training set
@@ -570,8 +574,10 @@ class PreprocessingPipeline:
             test_ratio: Proportion for test set
 
         Returns:
-            Dictionary with processed data and metadata
+            Dictionary containing processed data and pipeline state (Output)
         """
+        logger.info("[VERBOSE] --- DATA PREPARATION PIPELINE START ---")
+        logger.info(f"[VERBOSE] Input X shape: {X.shape}")
         logger.info("=" * 60)
         logger.info("PREPROCESSING PIPELINE")
         logger.info("=" * 60)
@@ -781,7 +787,7 @@ class PreprocessingPipeline:
                 "Pipeline must be fitted before transforming test data. "
                 "Call prepare_data() or fit() methods first."
             )
-        
+
         if isinstance(X_test, pd.DataFrame):
             X_work = X_test.copy()
             # Numeric coercion

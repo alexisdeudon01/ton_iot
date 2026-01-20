@@ -46,11 +46,24 @@ class Phase3Evaluation:
         self.harmonizer = DataHarmonizer()
 
     def run(self) -> Dict:
-        """Run Phase 3: Evaluate algorithms across 3 dimensions with model-aware preprocessing per fold."""
+        """
+        Run Phase 3: Evaluate algorithms across 3 dimensions with model-aware preprocessing per fold.
+
+        Function f: This phase performs a comprehensive evaluation of multiple algorithms
+        (LR, DT, RF, CNN, TabNet) using stratified cross-validation. For each fold,
+        it applies model-specific preprocessing (scaling, feature selection, SMOTE)
+        on the training set and transforms the test set accordingly to ensure zero data leakage.
+
+        Returns:
+            Dict with evaluation_results and dimension_scores (Output)
+        """
+        logger.info("[VERBOSE] --- PHASE 3 START ---")
         logger.info("Phase 3: 3D Evaluation (model-aware preprocessing per fold)")
 
         # Load dataset (from Phase2 if available, otherwise fallback)
+        logger.info("[VERBOSE] Step 3.1: Calling _load_and_prepare_dataset()")
         df_processed = self._load_and_prepare_dataset()
+        logger.info(f"[VERBOSE] Step 3.1 Output: Dataset shape {df_processed.shape}")
 
         # Handle dataset_source flag
         use_ds = getattr(self.config, 'phase3_use_dataset_source', True)
@@ -71,7 +84,7 @@ class Phase3Evaluation:
         # Get model registry and filter by requested algorithms
         model_registry = get_model_registry(self.config)
         requested = {name.lower().replace("-", "_") for name in self.config.phase3_algorithms}
-        
+
         # Map registry names to Phase 3 names
         name_mapping = {
             'logistic_regression': 'Logistic_Regression',
@@ -83,7 +96,7 @@ class Phase3Evaluation:
             'cnn': 'CNN',
             'tabnet': 'TabNet'
         }
-        
+
         # Build models from registry
         models = {}
         for req_name in requested:
@@ -100,7 +113,7 @@ class Phase3Evaluation:
                     'TabNet': 'TabNet'
                 }.get(registry_name, registry_name)
                 models[phase3_name] = model
-        
+
         if not models:
             raise ValueError("No algorithms available for evaluation. Check dependencies and config.")
 
@@ -366,7 +379,23 @@ class Phase3Evaluation:
         return profile
 
     def _apply_preprocessing_per_fold(self, X_train: pd.DataFrame, y_train: pd.Series, profile: Dict) -> tuple:
-        """Apply model-aware preprocessing on training data only."""
+        """
+        Apply model-aware preprocessing on training data only.
+
+        Function f: This function applies fit-dependent preprocessing steps (scaling,
+        feature selection, resampling) to the training fold based on the model's profile.
+        It returns the processed training data and the fitted pipeline for test transformation.
+
+        Args:
+            X_train: Training features (Input 1)
+            y_train: Training labels (Input 2)
+            profile: Preprocessing profile for the model (Input 3)
+
+        Returns:
+            Tuple of (X_train_prep, y_train_prep, pipeline) (Output)
+        """
+        logger.info("[VERBOSE] --- PREPROCESSING PER FOLD START ---")
+        logger.info(f"[VERBOSE] Input X_train shape: {X_train.shape}")
         # Calculate feature_selection_k (already computed in _get_preprocessing_profile if dynamic)
         feature_k = profile.get('feature_selection_k', 20)
         # Note: feature_selection_k_dynamic is already handled in _get_preprocessing_profile()

@@ -15,7 +15,7 @@ class MockConfig:
         self.phase3_algorithms = []
         self.preprocessing_profiles = {}
 
-def test_dataset_source_flag():
+def test_dataset_source_flag(monkeypatch):
     """Ensure early fusion feature is controllable via phase3_use_dataset_source."""
     # 1. Test with flag = True
     config_true = MockConfig(use_ds=True)
@@ -31,8 +31,9 @@ def test_dataset_source_flag():
     # Mock _load_and_prepare_dataset to return our df
     evaluator_true._load_and_prepare_dataset = lambda: df
 
-    # We need to mock _build_models to return empty to avoid full run
-    evaluator_true._build_models = lambda: {}
+    # We need to mock get_model_registry to return empty to avoid full run
+    import src.phases.phase3_evaluation
+    monkeypatch.setattr(src.phases.phase3_evaluation, "get_model_registry", lambda config: {})
 
     try:
         evaluator_true.run()
