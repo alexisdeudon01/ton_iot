@@ -320,6 +320,27 @@ class DetailedTestPlugin:
         matrices = []
         import re
 
+        # Try to get actual data from fixtures first (more accurate than regex)
+        if nodeid in self.test_fixtures:
+            for name, value in self.test_fixtures[nodeid].items():
+                if hasattr(value, 'shape'):
+                    # Fix for "9,0" shape: ensure we report columns correctly
+                    n_cols = value.shape[1] if len(value.shape) > 1 else 0
+                    headers = list(value.columns) if hasattr(value, 'columns') else [f"col_{i}" for i in range(n_cols)]
+                    sample_row = {}
+                    if hasattr(value, 'iloc') and len(value) > 0:
+                        sample_row = value.iloc[0].to_dict()
+
+                    matrices.append(MatrixInfo(
+                        name=f"{name} (Actual)",
+                        headers=headers[:20],
+                        sample_row=sample_row,
+                        shape=value.shape,
+                        dtype=str(type(value).__name__)
+                    ))
+            if matrices:
+                return matrices
+
         # Parse docstring for matrix descriptions
         if docstring:
             lines = docstring.split('\n')
