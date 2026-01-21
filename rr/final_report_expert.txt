@@ -1,0 +1,8 @@
+===========================================
+IRP DDOS DETECTION - RAPPORT FINAL EXPERT
+===========================================
+
+    Accuracy  F1-Score  Precision    Recall      AUC
+LR  0.799653  0.471979   0.881766  0.322228  0.87801
+
+MODÈLE RECOMMANDÉ : LR (F1-Score: 0.4720)
