@@ -5,14 +5,14 @@ import joblib
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 import dask.dataframe as dd
 from sklearn.preprocessing import RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 
-from src.new_pipeline.config import config
+from src.config import settings as config
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class DatasetPreprocessor:
         split_data = [('train', X_train_scaled, y_train), ('val', X_val_scaled, y_val), ('test', X_test_scaled, y_test)]
 
         for name, data_X, data_y in split_data:
-            df_split = pd.DataFrame(data_X, columns=features)
+            df_split = ToniotDataFrame(data_X, columns=features)
             df_split[config.phase0.label_col] = data_y.values
             path = dataset_root / f"{name}.parquet"
             df_split.to_parquet(path, index=False)
