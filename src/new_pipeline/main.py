@@ -17,8 +17,14 @@ _root = Path(__file__).resolve().parent.parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from src.core.feature_categorization import categorize_features, get_category_scores
+from src.core.feature_categorization import (
+    categorize_features,
+    get_category_scores,
+    print_verbose_feature_info,
+)
 from src.core.dependency_graph import generate_er_dependency_diagram
+from src.datastructure.base import IRPDaskFrame, IRPDataFrame
+from src.datastructure.flow import NetworkFlow
 from src.new_pipeline.config import ALGORITHMS, CIC_DDOS_DIR, RR_DIR, TON_IOT_PATH
 from src.new_pipeline.data_loader import RealDataLoader
 from src.new_pipeline.tester import PipelineTester
@@ -87,8 +93,6 @@ def main(sample_ratio: float = 1.0):
         train_ddf, val_ddf, test_ddf = loader.get_splits()
 
         # Feature Categorization (on a sample for column names)
-        print("\n" + "-" * 40)
-        print("MICRO-TÂCHE: Catégorisation des features")
         all_features = [
             c
             for c in train_ddf.columns
@@ -96,8 +100,21 @@ def main(sample_ratio: float = 1.0):
         ]
         categorized = categorize_features(all_features)
         cat_scores = get_category_scores(categorized)
-        print(f"RÉSULTAT: Features catégorisées en {len(categorized)} groupes.")
-        print(f"SCORES CATÉGORIES: {cat_scores}")
+
+        # Verbose Expert Prompt
+        print_verbose_feature_info(categorized, normalization_method="RobustScaler")
+
+        # Data Structure Demonstration: NetworkFlow
+        print("\n" + "-" * 40)
+        print("MICRO-TÂCHE: Démonstration de la structure de données FLOW")
+        sample_row = test_ddf.head(1).iloc[0]
+        flow = NetworkFlow(
+            flow_id="sample_flow_001",
+            source_ip=str(sample_row.get("src_ip", "N/A")),
+            dest_ip=str(sample_row.get("dst_ip", "N/A"))
+        )
+        flow.add_packet(sample_row)
+        print(f"RÉSULTAT: {flow}")
 
         # For training, we might need to compute if models don't support Dask
         X_train = train_ddf[all_features]

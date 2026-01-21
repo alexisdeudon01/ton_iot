@@ -101,3 +101,27 @@ def get_category_scores(categorized_features: Dict[str, List[str]]) -> Dict[str,
             scores[criterion] += CATEGORY_METRICS[cat][criterion] * weight
 
     return scores
+
+def print_verbose_feature_info(categorized_features: Dict[str, List[str]], normalization_method: str = "RobustScaler"):
+    """Prints detailed information about feature categories and normalization."""
+    print("\n" + "="*80)
+    print("PROMPT EXPERT: ANALYSE DES CATÉGORIES DE FEATURES")
+    print("="*80)
+
+    active_categories = {k: v for k, v in categorized_features.items() if len(v) > 0}
+
+    print(f"Nombre de catégories identifiées : {len(active_categories)}")
+    if len(active_categories) < 4:
+        print("⚠️ ALERTE : Moins de 4 catégories identifiées. Vérifiez le mapping des features.")
+
+    print(f"\nMéthode de normalisation utilisée : {normalization_method}")
+    print("Raison : Gestion robuste des valeurs aberrantes (outliers) fréquente dans le trafic réseau.")
+
+    for cat, features in active_categories.items():
+        print(f"\n📂 CATÉGORIE : {cat}")
+        print(f"   Description : {cat.replace('_', ' ')}")
+        print(f"   Features ({len(features)}) : {', '.join(features[:10])}{'...' if len(features) > 10 else ''}")
+        metrics = CATEGORY_METRICS.get(cat, {})
+        print(f"   Scores (1-10) -> Perf: {metrics.get('performance')}, XAI: {metrics.get('explainability')}, Res: {metrics.get('resources')}")
+
+    print("="*80 + "\n")
