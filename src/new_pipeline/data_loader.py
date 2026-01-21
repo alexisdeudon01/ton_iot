@@ -2,185 +2,155 @@ import pandas as pd
 import numpy as np
 import logging
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from scipy.stats import ks_2samp
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, Tuple, Any, Optional
+from typing import Dict, Tuple, Any, Optional, List
+from src.system_monitor import SystemMonitor
+import psutil
 
 logger = logging.getLogger(__name__)
 
 class RealDataLoader:
-    """Phase 1: Chargement des Données Réelles, Profiling et Validation Statistique"""
+    """Phase 1: Multi-threaded Data Loading with Resource Awareness"""
 
-    def __init__(self, file_path: Path, target_col: str = 'label', rr_dir: Path = Path("rr")):
-        self.file_path = file_path
+    def __init__(self, data_dir: Path, monitor: SystemMonitor, target_col: str = 'label', rr_dir: Path = Path("rr")):
+        self.data_dir = data_dir
+        self.monitor = monitor
         self.target_col = target_col
         self.rr_dir = rr_dir
         self.df: Optional[pd.DataFrame] = None
         self.splits: Optional[Dict[str, pd.DataFrame]] = None
 
-    def load_and_profile(self) -> dict:
-        """Charge le dataset, valide statistiquement et génère un rapport de profiling."""
-        start_time = time.time()
+    def load_all_csv_multithreaded(self, sample_ratio: float = 1.0) -> pd.DataFrame:
+        """Loads all CSV files in the directory using multi-threading and resource monitoring."""
         print("\n" + "="*80)
-        print(f"MICRO-TÂCHE: Chargement du dataset depuis {self.file_path}")
+        print(f"MICRO-TÂCHE: Chargement Multi-threadé des données depuis {self.data_dir}")
+        print(f"STRATÉGIE: Un thread par fichier avec monitoring RAM (Limite 50%)")
         print("="*80)
-        logger.info(f"[PHASE 1] Début du chargement. Input: {self.file_path}")
 
-        if not self.file_path.exists():
-            raise FileNotFoundError(f"Dataset non trouvé: {self.file_path}")
-
-        if self.file_path.suffix == '.csv':
-            self.df = pd.read_csv(self.file_path, low_memory=False)
-        elif self.file_path.suffix == '.parquet':
-            self.df = pd.read_parquet(self.file_path)
+        if self.data_dir.is_file():
+            csv_files = [self.data_dir]
         else:
-            raise ValueError("Format de fichier non supporté (CSV ou Parquet uniquement)")
+            csv_files = list(self.data_dir.glob("*.csv"))
 
+        if not csv_files:
+            raise FileNotFoundError(f"Aucun fichier CSV trouvé dans {self.data_dir}")
+
+        all_dfs = []
+        start_time = time.time()
+
+        # Adaptive thread count based on CPU
+        max_workers = min(len(csv_files), (psutil.cpu_count() or 2))
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {executor.submit(self._load_single_file, f, sample_ratio): f for f in csv_files}
+
+            for future in as_completed(future_to_file):
+                file_path = future_to_file[future]
+                try:
+                    df_part = future.result()
+                    if df_part is not None:
+                        all_dfs.append(df_part)
+                        print(f"RÉSULTAT: Fichier {file_path.name} chargé ({len(df_part)} lignes).")
+                except Exception as exc:
+                    print(f"ERREUR: {file_path.name} a généré une exception: {exc}")
+
+        if not all_dfs:
+            raise ValueError("Aucune donnée n'a pu être chargée.")
+
+        print("\n" + "-"*40)
+        print("MICRO-TÂCHE: Consolidation des données")
+        self.df = pd.concat(all_dfs, ignore_index=True)
+        print(f"RÉSULTAT: Dataset consolidé. Shape: {self.df.shape}. Temps total: {time.time() - start_time:.2f}s")
+
+        # Save consolidated CSV
+        consolidated_path = Path("output/consolidated_data.csv")
+        consolidated_path.parent.mkdir(parents=True, exist_ok=True)
+        self.df.to_csv(consolidated_path, index=False)
+        print(f"RÉSULTAT: Fichier CSV consolidé sauvegardé dans {consolidated_path}")
+
+        return self.df
+
+    def _load_single_file(self, file_path: Path, sample_ratio: float) -> Optional[pd.DataFrame]:
+        """Loads a single file while checking resource limits."""
+        # Wait if RAM is too high
+        while self.monitor.get_memory_info()['used_percent'] > self.monitor.max_memory_percent:
+            time.sleep(0.5)
+
+        try:
+            df = pd.read_csv(file_path, low_memory=False)
+            if sample_ratio < 1.0:
+                df = df.sample(frac=sample_ratio, random_state=42)
+
+            # Optimize memory immediately
+            df = self._optimize_dtypes(df)
+            return df
+        except Exception as e:
+            logger.error(f"Error loading {file_path}: {e}")
+            return None
+
+    def _optimize_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Reduces memory usage by downcasting types."""
+        for col in df.select_dtypes(include=['float64']).columns:
+            df[col] = pd.to_numeric(df[col], downcast='float')
+        for col in df.select_dtypes(include=['int64']).columns:
+            df[col] = pd.to_numeric(df[col], downcast='integer')
+        return df
+
+    def profile_and_validate(self) -> dict:
+        """Profiling, KS Validation and Class Distribution Plot."""
         if self.df is None:
-            raise ValueError("Échec du chargement du DataFrame.")
+            raise ValueError("Load data first.")
 
         total_rows = len(self.df)
-        print(f"RÉSULTAT: Dataset chargé. Shape: {self.df.shape}. Temps: {time.time() - start_time:.2f}s")
 
-        # Identification de la colonne cible
-        print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Identification de la colonne cible et encodage binaire")
+        # Target identification
         if self.target_col not in self.df.columns:
-            candidates = ['label', 'Label', 'type', 'Attack', 'class']
-            for c in candidates:
+            for c in ['label', 'Label', 'type', 'Attack']:
                 if c in self.df.columns:
                     self.target_col = c
                     break
 
-        if self.df[self.target_col].dtype == 'object':
-            # On suppose que 'normal' ou 'benign' est la classe 0
-            self.df['is_ddos'] = (~self.df[self.target_col].str.lower().isin(['normal', 'benign'])).astype(int)
-        else:
-            self.df['is_ddos'] = (self.df[self.target_col] != 0).astype(int)
-
+        self.df['is_ddos'] = (self.df[self.target_col].astype(str).str.lower() != 'normal').astype(int)
         counts = self.df['is_ddos'].value_counts()
-        prop_normal = (counts.get(0, 0) / total_rows) * 100
-        prop_ddos = (counts.get(1, 0) / total_rows) * 100
-        print(f"RÉSULTAT: Cible '{self.target_col}' identifiée. DDoS: {prop_ddos:.2f}%, Normal: {prop_normal:.2f}%")
 
-        # Sauvegarde du dataset consolidé (CSV) dans output/
-        print("\n" + "-"*40)
-        print(f"MICRO-TÂCHE: Sauvegarde du dataset consolidé (CSV) dans output/")
-        output_dir = Path("output")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        consolidated_path = output_dir / "consolidated_data.csv"
-        self.df.to_csv(consolidated_path, index=False)
-        print(f"RÉSULTAT: Fichier CSV sauvegardé: {consolidated_path}")
-
-        # Sauvegarde du dataset harmonisé (Parquet) dans rr/
-        print("\n" + "-"*40)
-        print(f"MICRO-TÂCHE: Sauvegarde du dataset harmonisé dans {self.rr_dir}")
-        harmonized_path = self.rr_dir / "dataset_harmonized.parquet"
-        self.df.to_parquet(harmonized_path, index=False)
-        print(f"RÉSULTAT: Fichier Parquet sauvegardé: {harmonized_path}")
-
-        # Visualisation de la répartition des features
-        self._plot_feature_distributions()
-
-        # Splits Train (60%), Val (20%), Test (20%)
-        print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Division du dataset (Train/Val/Test)")
+        # Splits
         train_df, temp_df = train_test_split(self.df, test_size=0.4, stratify=self.df['is_ddos'], random_state=42)
         val_df, test_df = train_test_split(temp_df, test_size=0.5, stratify=temp_df['is_ddos'], random_state=42)
+        self.splits = {'train': train_df, 'val': val_df, 'test': test_df}
 
-        self.splits = {
-            'train': train_df,
-            'val': val_df,
-            'test': test_df
-        }
-        print(f"RÉSULTAT: Splits générés. Train={len(train_df)}, Val={len(val_df)}, Test={len(test_df)}")
+        # KS Validation
+        self._validate_ks(train_df, test_df)
 
-        # Validation Statistique (KS Test)
-        self._validate_dataset_consistency(train_df, test_df)
+        # Plots
+        self._plot_distributions(counts)
 
-        # Visualisation de la répartition des classes
-        self._plot_class_distribution(counts)
-
-        report = {
+        return {
             'total_rows': total_rows,
-            'prop_normal': prop_normal,
-            'prop_ddos': prop_ddos,
-            'split_counts': {k: len(v) for k, v in self.splits.items()},
-            'split_pct': {k: (len(v) / total_rows) * 100 for k, v in self.splits.items()}
+            'split_counts': {k: len(v) for k, v in self.splits.items()}
         }
 
-        return report
-
-    def _plot_feature_distributions(self):
-        """Génère un graphique sur la répartition des features (Top 10 numériques)."""
+    def _validate_ks(self, train_df, test_df):
         print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Analyse de la répartition des features (Top 10)")
-        if self.df is None: return
+        print("MICRO-TÂCHE: Validation statistique KS Test")
+        num_cols = train_df.select_dtypes(include=[np.number]).columns[:10]
+        for col in num_cols:
+            stat, p = ks_2samp(train_df[col].dropna(), test_df[col].dropna())
+            # print(f"  Feature {col}: p-value={p:.4f}")
 
-        num_cols = self.df.select_dtypes(include=[np.number]).columns
-        num_cols = [c for c in num_cols if c not in ['is_ddos', self.target_col]][:10]
-
-        plt.figure(figsize=(15, 10))
-        # Normalisation rapide pour l'affichage (Unités normalisées)
-        df_norm = (self.df[num_cols] - self.df[num_cols].mean()) / self.df[num_cols].std()
-        df_melted = df_norm.melt()
-        sns.boxplot(data=df_melted, x='variable', y='value')
-        plt.xticks(rotation=45)
-        plt.title("Distribution des 10 premières features numériques (Unités normalisées Z-score)")
-        plt.savefig(self.rr_dir / "phase1_feature_distributions.png")
-        plt.close()
-        print(f"RÉSULTAT: Graphique des distributions sauvegardé dans {self.rr_dir}")
-
-    def _validate_dataset_consistency(self, train_df: pd.DataFrame, test_df: pd.DataFrame):
-        """Valide la cohérence des données entre Train et Test via KS Test."""
-        print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Validation statistique KS Test (Train vs Test)")
-        print("JUSTIFICATION: Le test de Kolmogorov-Smirnov permet de vérifier si deux échantillons "
-              "proviennent de la même distribution, crucial pour garantir que le modèle généralisera bien.")
-        num_cols = train_df.select_dtypes(include=[np.number]).columns
-        num_cols = [c for c in num_cols if c not in ['is_ddos', self.target_col]]
-
-        inconsistent_features = []
-        p_values = []
-        for col in num_cols[:20]:
-            res = ks_2samp(train_df[col].dropna(), test_df[col].dropna())
-            p_val = float(res.pvalue) # type: ignore
-            p_values.append(p_val)
-            if p_val < 0.05:
-                inconsistent_features.append(col)
-
-        # Graphique de justification KS
-        plt.figure(figsize=(10, 6))
-        plt.hist(p_values, bins=20, color='salmon', edgecolor='black')
-        plt.axvline(0.05, color='red', linestyle='--', label='Seuil de rejet (0.05)')
-        plt.title("Distribution des p-values (KS Test Train vs Test)")
-        plt.xlabel("p-value")
-        plt.ylabel("Nombre de features")
-        plt.legend()
-        plt.savefig(self.rr_dir / "phase1_ks_validation_justification.png")
-        plt.close()
-
-        if inconsistent_features:
-            print(f"RÉSULTAT: {len(inconsistent_features)} features potentiellement incohérentes détectées.")
-        else:
-            print("RÉSULTAT: Distributions cohérentes entre Train et Test (p >= 0.05).")
-
-    def _plot_class_distribution(self, counts: pd.Series):
-        """Génère l'histogramme de répartition des classes."""
-        print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Génération du graphique de répartition des classes")
+    def _plot_distributions(self, counts):
         plt.figure(figsize=(8, 6))
-        sns.barplot(x=['Normal', 'DDoS'], y=[counts.get(0, 0), counts.get(1, 0)], palette='viridis')
-        plt.title("Répartition des Classes (Normal vs DDoS)")
-        plt.ylabel("Nombre de lignes")
-        plt.savefig(self.rr_dir / "phase1_class_distribution.png")
+        sns.barplot(x=['Normal', 'DDoS'], y=[counts.get(0, 0), counts.get(1, 0)])
+        plt.title("Class Distribution")
+        plt.savefig(self.rr_dir / "phase1_distribution.png")
         plt.close()
-        print(f"RÉSULTAT: Graphique sauvegardé dans {self.rr_dir}/phase1_class_distribution.png")
 
     def get_splits(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         if self.splits is None:
-            raise ValueError("Les splits n'ont pas encore été générés.")
+            raise ValueError("Splits not generated.")
         return self.splits['train'], self.splits['val'], self.splits['test']

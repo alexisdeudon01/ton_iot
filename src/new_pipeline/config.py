@@ -3,6 +3,8 @@ Central configuration for the New DDoS Detection Pipeline
 Defines hyperparameters, XAI methods, and paths.
 """
 from pathlib import Path
+import matplotlib
+matplotlib.use('Agg') # Force non-interactive backend for multi-threading safety
 
 # Paths
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -16,7 +18,7 @@ ALGORITHMS = ['LR', 'DT', 'RF', 'CNN', 'TabNet']
 HYPERPARAMS = {
     'LR': {
         'C': [0.1, 1.0, 10.0],
-        'max_iter': [100, 500]
+        'max_iter': [1000]
     },
     'DT': {
         'max_depth': [5, 10, 20, None],
@@ -37,11 +39,11 @@ HYPERPARAMS = {
 }
 
 # XAI Configuration (Phase 4)
-XAI_METHODS = ['SHAP', 'LIME', 'FI', 'Anchors']
+XAI_METHODS = ['SHAP', 'LIME', 'FI']
 
 # XAI Validation Criteria Weights
 XAI_CRITERIA_WEIGHTS = {
     'fidelity': 0.4,
     'stability': 0.4,
-    'speed': 0.2
+    'complexity': 0.2
 }
