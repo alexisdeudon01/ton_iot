@@ -1,5 +1,5 @@
 import logging
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 from pathlib import Path
 from typing import Optional, List, Dict
@@ -96,7 +96,7 @@ class PipelineTester:
     def _generate_final_report(self) -> Path:
         """Génère le rapport texte final."""
         report_file = self.rr_dir / "final_report_expert.txt"
-        df_res = pd.DataFrame(self.test_results).T
+        df_res = ToniotDataFrame(self.test_results).T
 
         with open(report_file, 'w') as f:
             f.write("===========================================\n")

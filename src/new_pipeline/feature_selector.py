@@ -4,11 +4,11 @@ import time
 from pathlib import Path
 from typing import List, Set, Dict
 
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 from sklearn.feature_selection import mutual_info_classif, f_classif
 
-from src.new_pipeline.config import config
+from src.config import settings as config
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +28,8 @@ class FeatureSelector:
         logger.info("Starting Phase 3: Hybrid Feature Selection")
         start_time = time.time()
         
-        df_cic = pd.read_parquet(cic_train_path)
-        df_ton = pd.read_parquet(ton_train_path)
+        df_cic = ToniotDataFrame(pd.read_parquet(cic_train_path))
+        df_ton = ToniotDataFrame(pd.read_parquet(ton_train_path))
         
         def get_hybrid_top_k(df, name):
             logger.info(f"  - Analyzing features for {name}...")
@@ -49,7 +49,7 @@ class FeatureSelector:
             
             # Hybrid Score (Mean of normalized scores)
             hybrid_score = (mi_norm + f_norm) / 2
-            scores_df = pd.DataFrame({
+            scores_df = ToniotDataFrame({
                 'feature': f_common,
                 'mi': mi,
                 'f_score': f_scores,

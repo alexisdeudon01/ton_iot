@@ -4,7 +4,7 @@ import joblib
 from pathlib import Path
 from typing import Any, Dict, Optional, List
 
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -13,7 +13,8 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import recall_score, f1_score
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
-from src.new_pipeline.config import config, ModelName
+from src.config import settings as config
+from src.new_pipeline.config import ModelName
 from src.core.results import TrainingResult
 from src.core.exceptions import ModelTrainingError
 
@@ -46,8 +47,8 @@ class LateFusionTrainer:
             )
 
         try:
-            df_train = pd.read_parquet(train_path)
-            df_val = pd.read_parquet(val_path)
+            df_train = ToniotDataFrame(pd.read_parquet(train_path))
+            df_val = ToniotDataFrame(pd.read_parquet(val_path))
             
             X_train, y_train = df_train[features], df_train[config.phase0.label_col]
             X_val, y_val = df_val[features], df_val[config.phase0.label_col]

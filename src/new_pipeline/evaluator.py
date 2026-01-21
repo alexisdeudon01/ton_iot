@@ -2,12 +2,12 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Any
 
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 import joblib
 from sklearn.metrics import recall_score, f1_score, roc_auc_score, precision_score
 
-from src.new_pipeline.config import config
+from src.config import settings as config
 from src.core.results import TestResult
 
 logger = logging.getLogger(__name__)
@@ -29,8 +29,8 @@ class LateFusionEvaluator:
         """Comprehensive evaluation including intra-dataset, transfer, and fusion."""
         logger.info("Starting Phase 6: Comprehensive Evaluation")
         
-        df_cic = pd.read_parquet(cic_test_path)
-        df_ton = pd.read_parquet(ton_test_path)
+        df_cic = ToniotDataFrame(pd.read_parquet(cic_test_path))
+        df_ton = ToniotDataFrame(pd.read_parquet(ton_test_path))
         
         results = []
         
@@ -44,12 +44,12 @@ class LateFusionEvaluator:
             results.append(self._eval_single("TON -> CIC", df_cic, self.m_ton))
         
         # 3. Fusion (on both)
-        df_comb = pd.concat([df_cic, df_ton])
+        df_comb = ToniotDataFrame(pd.concat([df_cic, df_ton]))
         results.append(self._eval_fusion("LATE FUSION (Combined)", df_comb))
         
         return results
 
-    def _eval_single(self, name: str, df: pd.DataFrame, model) -> TestResult:
+    def _eval_single(self, name: str, df: ToniotDataFrame, model) -> TestResult:
         X = df[self.features]
         y = df[self.label_col]
         
@@ -58,7 +58,7 @@ class LateFusionEvaluator:
         
         return self._create_result(name, y, y_pred, y_prob)
 
-    def _eval_fusion(self, name: str, df: pd.DataFrame) -> TestResult:
+    def _eval_fusion(self, name: str, df: ToniotDataFrame) -> TestResult:
         X = df[self.features]
         y = df[self.label_col]
         

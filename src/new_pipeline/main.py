@@ -3,12 +3,12 @@ import sys
 import time
 import argparse
 from pathlib import Path
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 import joblib
 import dask.dataframe as dd
 
-from src.new_pipeline.config import config
+from src.config import settings as config
 from src.new_pipeline.data_loader import LateFusionDataLoader
 from src.new_pipeline.preprocessor import DatasetPreprocessor
 from src.new_pipeline.feature_selector import FeatureSelector
@@ -80,23 +80,21 @@ def main():
 
         # PHASE 0 & 1: Data Loading & Alignment
         loader = LateFusionDataLoader()
-        # CORRECTION: On passe le sample_ratio au loader pour Dask
         loader.prepare_datasets(force=args.force_prepare)
         f_common = loader.align_features()
 
         # PHASE 2: Preprocessing (Par Dataset)
         prep_cic = DatasetPreprocessor("cic")
         prep_ton = DatasetPreprocessor("ton")
-        
-        # CORRECTION: Chargement Dask optimisé selon le mode
+
         ddf_cic = dd.read_parquet(config.paths.cic_parquet)
         ddf_ton = dd.read_parquet(config.paths.ton_parquet)
-        
+
         if sample_ratio < 1.0:
             logger.info(f"Sampling datasets at {sample_ratio*100}%...")
             ddf_cic = ddf_cic.sample(frac=sample_ratio, random_state=42)
             ddf_ton = ddf_ton.sample(frac=sample_ratio, random_state=42)
-        
+
         paths_cic = prep_cic.process(ddf_cic, f_common)
         paths_ton = prep_ton.process(ddf_ton, f_common)
 
@@ -129,7 +127,7 @@ def main():
         # PHASE 7: Ressources & XAI
         xai = LateFusionXAI(config.phase8.xai_artifacts_dir)
         m_cic = joblib.load(res_cic.model_path)
-        df_test_cic = pd.read_parquet(paths_cic['test'])
+        df_test_cic = ToniotDataFrame(dd.read_parquet(paths_cic['test']).compute())
         
         # Audit
         audit = xai.run_resource_audit(m_cic, df_test_cic[f_fusion].head(1000))
@@ -152,7 +150,7 @@ def main():
                 'notes': f"Fusion weight w={best_w:.2f}" if 'FUSION' in res.model_name else ""
             })
         
-        report_df = pd.DataFrame(report_rows)
+        report_df = ToniotDataFrame(report_rows)
         report_df.to_csv(config.report.report_csv, index=False)
         logger.info(f"Final report exported to {config.report.report_csv}")
 

@@ -3,12 +3,12 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 import joblib
 from sklearn.metrics import recall_score, f1_score, roc_auc_score
 
-from src.new_pipeline.config import config
+from src.config import settings as config
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ class LateFusionManager:
         m_cic = joblib.load(m_cic_path)
         m_ton = joblib.load(m_ton_path)
         
-        df_cic = pd.read_parquet(cic_val_path)
-        df_ton = pd.read_parquet(ton_val_path)
+        df_cic = ToniotDataFrame(pd.read_parquet(cic_val_path))
+        df_ton = ToniotDataFrame(pd.read_parquet(ton_val_path))
         
         # Prédictions séparées sur leurs sets respectifs (déjà scalés par preprocessor.py)
         # Note: En Late Fusion, on peut aussi évaluer sur un set combiné si les features sont alignées.
@@ -76,7 +76,7 @@ class LateFusionManager:
 
         # Save results
         self.p5.fusion_artifacts_dir.mkdir(parents=True, exist_ok=True)
-        pd.DataFrame(results).to_csv(self.p5.fusion_artifacts_dir / self.p5.fusion_curve_csv, index=False)
+        ToniotDataFrame(results).to_csv(self.p5.fusion_artifacts_dir / self.p5.fusion_curve_csv, index=False)
         
         fusion_config = {
             'best_w': float(best_w),
@@ -90,7 +90,7 @@ class LateFusionManager:
         logger.info(f"Phase 5 completed. Best weight w={best_w:.2f} (Score: {best_score:.4f})")
         return best_w
 
-    def predict_fusion(self, X: pd.DataFrame, m_cic, m_ton, w: float, threshold: float = 0.5) -> Tuple[np.ndarray, np.ndarray]:
+    def predict_fusion(self, X: ToniotDataFrame, m_cic, m_ton, w: float, threshold: float = 0.5) -> Tuple[np.ndarray, np.ndarray]:
         """
         Performs late fusion prediction.
         CORRECTION: Type hint aligné avec le retour réel (Tuple).

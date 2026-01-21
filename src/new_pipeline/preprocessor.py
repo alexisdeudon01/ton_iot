@@ -5,14 +5,14 @@ import joblib
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from src.datastructure.toniot_dataframe import ToniotDataFrame
+import pandas as pd
 import numpy as np
 import dask.dataframe as dd
 from sklearn.preprocessing import RobustScaler
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 
-from src.config import settings as config
+from src.new_pipeline.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class DatasetPreprocessor:
     """
     Phase 2: Preprocessing (Par Dataset).
     CORRECTION: Split avant Fit pour éviter la fuite de données (Data Leakage).
-    Gère les valeurs Inf/NaN résiduelles de manière agressive.
+    Gère les valeurs Inf/NaN et les valeurs extrêmes hors limites float64.
     """
 
     def __init__(self, dataset_name: str):
@@ -32,6 +32,21 @@ class DatasetPreprocessor:
         self.artifacts_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Initialized Preprocessor for {dataset_name}")
 
+    def _clean_extreme_values(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Nettoie les valeurs infinies et les dépassements de capacité float64."""
+        # Remplacer Inf par NaN
+        df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        
+        # Cap les valeurs numériques pour éviter les erreurs de précision float64
+        # On utilise les limites de float64 sécurisées
+        finfo = np.finfo(np.float64)
+        for col in df.select_dtypes(include=[np.number]).columns:
+            df[col] = df[col].clip(lower=finfo.min/10, upper=finfo.max/10)
+            
+        # Remplissage final des NaN par 0.0 (sécurité)
+        df.fillna(0.0, inplace=True)
+        return df
+
     def process(self, ddf: dd.DataFrame, features: List[str]) -> Dict[str, Path]:
         """Exécute le pipeline de preprocessing : Split -> Fit (Train) -> Transform (All)."""
         logger.info(f"Starting preprocessing for {self.dataset_name} (Leakage Protected)")
@@ -39,11 +54,9 @@ class DatasetPreprocessor:
         if not features:
             raise ValueError(f"No features provided for preprocessing {self.dataset_name}")
 
-        # 1. Chargement et nettoyage final
+        # 1. Chargement et nettoyage
         df = ddf[features + [config.phase0.label_col]].compute()
-        # Sécurité maximale contre les Inf et NaN avant sklearn
-        df.replace([np.inf, -np.inf], np.nan, inplace=True)
-        df.fillna(0.0, inplace=True)
+        df = self._clean_extreme_values(df)
         
         X = df[features]
         y = df[config.phase0.label_col]
@@ -91,7 +104,7 @@ class DatasetPreprocessor:
         split_data = [('train', X_train_scaled, y_train), ('val', X_val_scaled, y_val), ('test', X_test_scaled, y_test)]
 
         for name, data_X, data_y in split_data:
-            df_split = ToniotDataFrame(data_X, columns=features)
+            df_split = pd.DataFrame(data_X, columns=features)
             df_split[config.phase0.label_col] = data_y.values
             path = dataset_root / f"{name}.parquet"
             df_split.to_parquet(path, index=False)

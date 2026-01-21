@@ -4,13 +4,13 @@ import psutil
 from pathlib import Path
 from typing import Dict, List, Any
 
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 import joblib
 import shap
 from sklearn.inspection import permutation_importance
 
-from src.new_pipeline.config import config
+from src.config import settings as config
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class LateFusionXAI:
         self.p7 = config.phase7
         logger.info(f"Initialized LateFusionXAI. Artifacts in {output_dir}")
 
-    def run_resource_audit(self, model, X_sample: pd.DataFrame) -> Dict[str, float]:
+    def run_resource_audit(self, model, X_sample: ToniotDataFrame) -> Dict[str, float]:
         """Measures inference latency, CPU usage, and peak memory."""
         logger.info(f"Auditing resources for model on {len(X_sample)} samples...")
         
@@ -50,7 +50,7 @@ class LateFusionXAI:
         logger.info(f"Resource Audit: {audit}")
         return audit
 
-    def run_xai(self, model, X: pd.DataFrame, y: pd.Series, name: str):
+    def run_xai(self, model, X: ToniotDataFrame, y: pd.Series, name: str):
         """Global (Permutation) and Local (SHAP) XAI."""
         logger.info(f"Starting XAI analysis for {name}")
         
@@ -59,7 +59,7 @@ class LateFusionXAI:
             logger.info("  - Computing Permutation Importance...")
             start_pi = time.time()
             r = permutation_importance(model, X, y, n_repeats=5, random_state=self.p8.random_state, n_jobs=-1)
-            pi_df = pd.DataFrame({'feature': X.columns, 'importance': r.importances_mean})
+            pi_df = ToniotDataFrame({'feature': X.columns, 'importance': r.importances_mean})
             pi_df = pi_df.sort_values(by='importance', ascending=False)
             
             csv_path = self.output_dir / f"{name}_permutation_importance.csv"
