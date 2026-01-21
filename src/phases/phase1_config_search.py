@@ -58,22 +58,32 @@ class Phase1ConfigSearch:
 
     def run(self) -> Dict:
         """
-        Run Phase 1: évaluer toutes les configurations
+        Run Phase 1: Evaluate 108 preprocessing configurations.
+
+        Function f: This phase loads raw datasets, harmonizes them, performs early fusion,
+        and then iterates through 108 different preprocessing configurations (scaling,
+        feature selection, resampling) to find the one that yields the best performance
+        using a quick Logistic Regression model.
 
         Returns:
-            Dict with best_config and evaluation_results
+            Dict with best_config and evaluation_results (Output)
         """
+        logger.info("[VERBOSE] --- PHASE 1 START ---")
         logger.info("=" * 60)
         logger.info("PHASE 1: Preprocessing Configuration Search")
         logger.info("=" * 60)
 
         # Load and harmonize datasets
         logger.info("\n1.1 Loading and harmonizing datasets...")
+        logger.info("[VERBOSE] Step 1.1: Calling _load_and_harmonize()")
         df_cic, df_ton = self._load_and_harmonize()
+        logger.info(f"[VERBOSE] Step 1.1 Output: CIC shape {df_cic.shape}, TON shape {df_ton.shape}")
 
         # Early fusion
         logger.info("\n1.2 Early fusion...")
+        logger.info("[VERBOSE] Step 1.2: Calling _early_fusion()")
         df_fused = self._early_fusion(df_cic, df_ton)
+        logger.info(f"[VERBOSE] Step 1.2 Output: Fused shape {df_fused.shape}")
 
         # Prepare features/labels
         X = df_fused.drop('label', axis=1)
@@ -154,16 +164,20 @@ class Phase1ConfigSearch:
     def _evaluate_config(self, X: pd.DataFrame, y: pd.Series,
                         preproc_config: Dict, config_id: int) -> float:
         """
-        Evaluate a preprocessing configuration
+        Evaluate a preprocessing configuration.
+
+        Function f: Applies the given preprocessing configuration to the dataset,
+        splits it into train/test sets, trains a Logistic Regression model,
+        and returns the accuracy score.
 
         Args:
-            X: Features
-            y: Labels
-            preproc_config: Preprocessing configuration dict
+            X: Features (Input 1)
+            y: Labels (Input 2)
+            preproc_config: Preprocessing configuration dict (Input 3)
             config_id: Configuration ID
 
         Returns:
-            Evaluation score (higher is better)
+            Evaluation score (Output: float)
         """
         # Create preprocessing pipeline with config
         pipeline = PreprocessingPipeline(random_state=self.config.random_state)

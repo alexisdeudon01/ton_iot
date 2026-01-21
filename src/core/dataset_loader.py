@@ -127,6 +127,36 @@ class DatasetLoader:
 
         return chunk_size_final
 
+    def _log_dataset_sample(self, df: pd.DataFrame, dataset_name: str):
+        """
+        Log dataset details: header and a random row (between row 2 and end)
+        as requested by the user for better verbosity.
+        """
+        if df.empty:
+            logger.info(f"[VERBOSE] Dataset {dataset_name} is empty.")
+            return
+
+        headers = list(df.columns)
+        n_rows = len(df)
+
+        logger.info(f"[VERBOSE] --- DATASET SAMPLE: {dataset_name} ---")
+        logger.info(f"[VERBOSE] Header (Columns): {headers}")
+
+        # Row 1 (Header row values)
+        header_row_values = df.iloc[0].to_dict()
+        logger.info(f"[VERBOSE] Row 1 (First data row) values: {header_row_values}")
+
+        # Random row between 2 and end
+        if n_rows > 1:
+            random_idx = np.random.randint(1, n_rows)
+            random_row_values = df.iloc[random_idx].to_dict()
+            logger.info(f"[VERBOSE] Random Row (Index {random_idx+1}) values: {random_row_values}")
+        else:
+            logger.info("[VERBOSE] Only one row available, no random row to pick.")
+
+        logger.info(f"[VERBOSE] Total rows: {n_rows}, Total columns: {len(headers)}")
+        logger.info(f"[VERBOSE] ---------------------------------------")
+
     def _analyze_csv_headers(
         self, file_path: Path, n_rows: int = 1000
     ) -> Tuple[List[str], pd.DataFrame]:
@@ -614,6 +644,8 @@ class DatasetLoader:
                 logger.info(
                     f"[OUTPUT] Memory usage: ~{df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
                 )
+                # Verbose logging of sample
+                self._log_dataset_sample(df, "TON_IoT")
 
             # Mark as loaded
             if incremental:
@@ -1082,6 +1114,8 @@ class DatasetLoader:
                 logger.info(
                     f"[OUTPUT] Memory usage: ~{combined_df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
                 )
+                # Verbose logging of sample
+                self._log_dataset_sample(combined_df, "CIC-DDoS2019")
 
             return combined_df
 

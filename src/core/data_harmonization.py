@@ -236,19 +236,26 @@ class DataHarmonizer:
                           precomputed_feature_mapping: Optional[Dict] = None,
                           filter_ton_by_type: bool = True) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Harmonize features from both datasets to a common schema
+        Harmonize features from both datasets to a common schema.
+
+        Function f: This function identifies common features between CIC-DDoS2019 and TON_IoT,
+        maps them to a unified schema, handles missing values by median imputation,
+        and prepares binary labels (0=Benign/Normal, 1=Attack/DDoS).
 
         Args:
-            df_cic: CIC-DDoS2019 dataframe
-            df_ton: TON_IoT dataframe
-            label_col_cic: Label column name in CIC-DDoS2019 (if None, uses last column)
-            label_col_ton: Label column name in TON_IoT (if None, uses last column)
-            precomputed_feature_mapping: Pre-computed feature mapping from pre-analysis (optional)
-            filter_ton_by_type: If True, filter TON_IoT to keep only rows with type='normal' or 'ddos'
+            df_cic: CIC-DDoS2019 dataframe (Input 1)
+            df_ton: TON_IoT dataframe (Input 2)
+            label_col_cic: Label column name in CIC-DDoS2019
+            label_col_ton: Label column name in TON_IoT
+            precomputed_feature_mapping: Pre-computed mapping
+            filter_ton_by_type: Filter TON_IoT rows
 
         Returns:
-            Tuple of harmonized dataframes (df_cic_harmonized, df_ton_harmonized)
+            Tuple of harmonized dataframes (Output: df_cic_harmonized, df_ton_harmonized)
         """
+        logger.info("[VERBOSE] --- HARMONIZATION PROCESS START ---")
+        logger.info(f"[VERBOSE] Input CIC shape: {df_cic.shape}")
+        logger.info(f"[VERBOSE] Input TON shape: {df_ton.shape}")
         # Auto-detect label columns (use last column as per requirements)
         if label_col_cic is None:
             label_col_cic = df_cic.columns[-1]
@@ -505,16 +512,23 @@ class DataHarmonizer:
                     df_ton_harmonized: pd.DataFrame,
                     validate: bool = True) -> Tuple[pd.DataFrame, Dict]:
         """
-        Perform early fusion of harmonized datasets with statistical validation
+        Perform early fusion of harmonized datasets with statistical validation.
+
+        Function f: This function aligns columns of both datasets, adds a 'dataset_source'
+        indicator (0 for CIC, 1 for TON), concatenates them into a single DataFrame,
+        and optionally performs Kolmogorov-Smirnov tests to validate distribution compatibility.
 
         Args:
-            df_cic_harmonized: Harmonized CIC-DDoS2019 dataframe
-            df_ton_harmonized: Harmonized TON_IoT dataframe
-            validate: Whether to perform Kolmogorov-Smirnov validation
+            df_cic_harmonized: Harmonized CIC-DDoS2019 dataframe (Input 1)
+            df_ton_harmonized: Harmonized TON_IoT dataframe (Input 2)
+            validate: Whether to perform KS validation
 
         Returns:
-            Tuple of (fused_dataframe, validation_results)
+            Tuple of (fused_dataframe, validation_results) (Output)
         """
+        logger.info("[VERBOSE] --- EARLY FUSION PROCESS START ---")
+        logger.info(f"[VERBOSE] Input CIC Harmonized shape: {df_cic_harmonized.shape}")
+        logger.info(f"[VERBOSE] Input TON Harmonized shape: {df_ton_harmonized.shape}")
         # Ensure same columns
         common_cols = set(df_cic_harmonized.columns) & set(df_ton_harmonized.columns)
         common_cols = sorted(list(common_cols))
@@ -530,7 +544,10 @@ class DataHarmonizer:
         logger.info("[INFO] Added dataset_source feature (CIC=0, TON=1)")
 
         # Concatenate
+        logger.info(f"[VERBOSE] Concatenating datasets with {len(common_cols)} common columns...")
         df_fused = pd.concat([df_cic_aligned, df_ton_aligned], ignore_index=True)
+        logger.info(f"[VERBOSE] Fused dataset shape: {df_fused.shape}")
+        logger.info(f"[VERBOSE] Fused dataset headers: {list(df_fused.columns)}")
 
         validation_results = {}
 
@@ -550,7 +567,7 @@ class DataHarmonizer:
                     ks_stat = float(cast(Any, ks_result)[0])
                     ks_pvalue = float(cast(Any, ks_result)[1])
 
-                    validation_results[feature] = { 
+                    validation_results[feature] = {
                         'ks_statistic': ks_stat,
                         'ks_pvalue': ks_pvalue,
                         'compatible': bool(ks_pvalue > self.KS_PVALUE_THRESHOLD),

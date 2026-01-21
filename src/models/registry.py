@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Optional
 logger = logging.getLogger(__name__)
 
 # Import sklearn models (always available)
-from .sklearn_models import make_dt, make_lr, make_rf
+from .sklearn_models import make_dt, make_lr, make_rf, make_knn
 
 # Import CNN
 from .cnn import CNNTabularClassifier
@@ -31,13 +31,14 @@ def get_model_registry(config) -> Dict[str, Callable[[], Any]]:
     registry = {}
 
     # Always available models
-    registry["Logistic_Regression"] = lambda: make_lr(
+    registry["LR"] = lambda: make_lr(
         random_state=config.random_state, max_iter=1000
     )
-    registry["Decision_Tree"] = lambda: make_dt(random_state=config.random_state)
-    registry["Random_Forest"] = lambda: make_rf(
+    registry["DT"] = lambda: make_dt(random_state=config.random_state)
+    registry["RF"] = lambda: make_rf(
         random_state=config.random_state, n_estimators=100
     )
+    registry["KNN"] = lambda: make_knn(n_neighbors=5)
 
     # CNN
     try:

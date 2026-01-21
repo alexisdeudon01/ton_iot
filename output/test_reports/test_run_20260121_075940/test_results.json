@@ -1,0 +1,218 @@
+{
+  "timestamp": "2026-01-21T08:01:35.382581",
+  "total_tests": 5,
+  "passed": 5,
+  "failed": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "test_name": "tests/test_algo_handling.py::test_get_algo_names_column",
+      "outcome": "passed",
+      "duration": 0.004531145095825195,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: isinstance(algos",
+          "condition": "isinstance(algos"
+        },
+        {
+          "description": "Assertion: len(algos) == 5",
+          "condition": "len(algos) == 5"
+        },
+        {
+          "description": "Assertion: list(algos.values) == ['LR'",
+          "condition": "list(algos.values) == ['LR'"
+        },
+        {
+          "description": "Assertion: algos.dtype == 'object'",
+          "condition": "algos.dtype == 'object'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_get_algo_names_index",
+      "outcome": "passed",
+      "duration": 0.0036687850952148438,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: isinstance(algos",
+          "condition": "isinstance(algos"
+        },
+        {
+          "description": "Assertion: len(algos) == 3",
+          "condition": "len(algos) == 3"
+        },
+        {
+          "description": "Assertion: list(algos.values) == ['LR'",
+          "condition": "list(algos.values) == ['LR'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 3/3 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_get_algo_names_raises",
+      "outcome": "passed",
+      "duration": 0.0026886463165283203,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [],
+      "success_reason": "Algorithm name handling (sanitization, column management) working correctly",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_ensure_algo_column",
+      "outcome": "passed",
+      "duration": 0.0037174224853515625,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df1 (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df2 (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df4 (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: result1 is not None",
+          "condition": "result1 is not None"
+        },
+        {
+          "description": "Assertion: 'algo' in result1.columns",
+          "condition": "'algo' in result1.columns"
+        },
+        {
+          "description": "Assertion: result1.equals(df1)",
+          "condition": "result1.equals(df1)"
+        },
+        {
+          "description": "Assertion: result2 is not None",
+          "condition": "result2 is not None"
+        },
+        {
+          "description": "Assertion: 'algo' in result2.columns",
+          "condition": "'algo' in result2.columns"
+        },
+        {
+          "description": "Assertion: list(result2['algo'].values) == ['LR'",
+          "condition": "list(result2['algo'].values) == ['LR'"
+        },
+        {
+          "description": "Assertion: result3 is None",
+          "condition": "result3 is None"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 7/7 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_sanitize_algo_name",
+      "outcome": "passed",
+      "duration": 0.0020606517791748047,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: result == expected",
+          "condition": "result == expected"
+        },
+        {
+          "description": "Assertion: result == label",
+          "condition": "result == label"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    }
+  ]
+}
