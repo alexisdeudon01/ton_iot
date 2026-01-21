@@ -1,0 +1,329 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="1800" viewBox="0 0 1140 1800">
+<style>text{font-family:Arial, sans-serif;font-size:12px;} .node{fill:#e8f0fe;stroke:#1a73e8;stroke-width:1;} .edge{stroke:#999;stroke-width:1;}</style>
+<line class="edge" x1="430" y1="105" x2="600" y2="135" />
+<line class="edge" x1="430" y1="105" x2="600" y2="1095" />
+<line class="edge" x1="430" y1="195" x2="600" y2="345" />
+<line class="edge" x1="950" y1="975" x2="600" y2="165" />
+<line class="edge" x1="950" y1="975" x2="600" y2="195" />
+<line class="edge" x1="950" y1="765" x2="600" y2="495" />
+<line class="edge" x1="950" y1="765" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="675" x2="600" y2="195" />
+<line class="edge" x1="950" y1="675" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="705" x2="600" y2="405" />
+<line class="edge" x1="950" y1="705" x2="600" y2="1065" />
+<line class="edge" x1="950" y1="705" x2="600" y2="1125" />
+<line class="edge" x1="950" y1="705" x2="600" y2="1155" />
+<line class="edge" x1="950" y1="705" x2="600" y2="1185" />
+<line class="edge" x1="950" y1="705" x2="600" y2="1215" />
+<line class="edge" x1="950" y1="705" x2="600" y2="1485" />
+<line class="edge" x1="950" y1="585" x2="600" y2="165" />
+<line class="edge" x1="950" y1="585" x2="600" y2="195" />
+<line class="edge" x1="950" y1="525" x2="340" y2="165" />
+<line class="edge" x1="950" y1="525" x2="600" y2="195" />
+<line class="edge" x1="950" y1="945" x2="600" y2="495" />
+<line class="edge" x1="950" y1="1005" x2="600" y2="495" />
+<line class="edge" x1="950" y1="1005" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="615" x2="600" y2="285" />
+<line class="edge" x1="950" y1="555" x2="600" y2="735" />
+<line class="edge" x1="950" y1="915" x2="600" y2="195" />
+<line class="edge" x1="950" y1="915" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="855" x2="600" y2="195" />
+<line class="edge" x1="950" y1="855" x2="600" y2="1305" />
+<line class="edge" x1="950" y1="795" x2="600" y2="495" />
+<line class="edge" x1="950" y1="795" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="825" x2="600" y2="315" />
+<line class="edge" x1="950" y1="825" x2="600" y2="975" />
+<line class="edge" x1="950" y1="825" x2="600" y2="1485" />
+<line class="edge" x1="950" y1="885" x2="600" y2="195" />
+<line class="edge" x1="950" y1="885" x2="600" y2="735" />
+<line class="edge" x1="950" y1="885" x2="600" y2="765" />
+<line class="edge" x1="950" y1="645" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="735" x2="600" y2="495" />
+<line class="edge" x1="690" y1="765" x2="600" y2="315" />
+<line class="edge" x1="690" y1="765" x2="600" y2="465" />
+<line class="edge" x1="690" y1="765" x2="600" y2="495" />
+<line class="edge" x1="690" y1="765" x2="600" y2="735" />
+<line class="edge" x1="690" y1="855" x2="600" y2="75" />
+<line class="edge" x1="690" y1="855" x2="600" y2="255" />
+<line class="edge" x1="690" y1="855" x2="600" y2="465" />
+<line class="edge" x1="690" y1="855" x2="600" y2="765" />
+<line class="edge" x1="690" y1="855" x2="600" y2="915" />
+<line class="edge" x1="690" y1="855" x2="600" y2="1005" />
+<line class="edge" x1="690" y1="855" x2="600" y2="1425" />
+<line class="edge" x1="690" y1="855" x2="600" y2="1485" />
+<line class="edge" x1="690" y1="855" x2="600" y2="1515" />
+<line class="edge" x1="950" y1="465" x2="600" y2="705" />
+<line class="edge" x1="950" y1="225" x2="600" y2="195" />
+<line class="edge" x1="950" y1="225" x2="600" y2="255" />
+<line class="edge" x1="950" y1="225" x2="600" y2="615" />
+<line class="edge" x1="950" y1="225" x2="600" y2="645" />
+<line class="edge" x1="950" y1="225" x2="600" y2="705" />
+<line class="edge" x1="950" y1="225" x2="600" y2="945" />
+<line class="edge" x1="950" y1="285" x2="600" y2="465" />
+<line class="edge" x1="950" y1="285" x2="600" y2="915" />
+<line class="edge" x1="950" y1="285" x2="600" y2="1005" />
+<line class="edge" x1="950" y1="255" x2="600" y2="195" />
+<line class="edge" x1="950" y1="255" x2="600" y2="1335" />
+<line class="edge" x1="950" y1="195" x2="600" y2="435" />
+<line class="edge" x1="950" y1="135" x2="600" y2="765" />
+<line class="edge" x1="950" y1="135" x2="600" y2="915" />
+<line class="edge" x1="950" y1="135" x2="600" y2="1005" />
+<line class="edge" x1="950" y1="45" x2="600" y2="75" />
+<line class="edge" x1="950" y1="165" x2="600" y2="615" />
+<line class="edge" x1="950" y1="495" x2="600" y2="165" />
+<line class="edge" x1="950" y1="495" x2="600" y2="195" />
+<line class="edge" x1="950" y1="495" x2="600" y2="1275" />
+<line class="edge" x1="950" y1="435" x2="600" y2="195" />
+<line class="edge" x1="950" y1="435" x2="600" y2="945" />
+<line class="edge" x1="950" y1="75" x2="600" y2="315" />
+<line class="edge" x1="950" y1="405" x2="600" y2="195" />
+<line class="edge" x1="950" y1="405" x2="600" y2="1305" />
+<line class="edge" x1="950" y1="105" x2="600" y2="285" />
+<line class="edge" x1="950" y1="375" x2="600" y2="195" />
+<line class="edge" x1="950" y1="345" x2="600" y2="195" />
+<line class="edge" x1="950" y1="315" x2="600" y2="495" />
+<line class="edge" x1="690" y1="1335" x2="600" y2="255" />
+<line class="edge" x1="690" y1="1335" x2="600" y2="435" />
+<line class="edge" x1="690" y1="1335" x2="600" y2="465" />
+<line class="edge" x1="690" y1="1335" x2="600" y2="495" />
+<line class="edge" x1="690" y1="1335" x2="600" y2="765" />
+<line class="edge" x1="690" y1="1335" x2="600" y2="885" />
+<line class="edge" x1="690" y1="1305" x2="600" y2="255" />
+<line class="edge" x1="690" y1="1305" x2="600" y2="435" />
+<line class="edge" x1="690" y1="1275" x2="600" y2="195" />
+<line class="edge" x1="690" y1="1275" x2="600" y2="255" />
+<line class="edge" x1="690" y1="1515" x2="600" y2="1575" />
+<line class="edge" x1="690" y1="135" x2="600" y2="195" />
+<line class="edge" x1="690" y1="165" x2="600" y2="195" />
+<line class="edge" x1="690" y1="165" x2="600" y2="1275" />
+<line class="edge" x1="690" y1="165" x2="600" y2="1305" />
+<line class="edge" x1="690" y1="165" x2="600" y2="1335" />
+<line class="edge" x1="690" y1="165" x2="600" y2="1365" />
+<line class="edge" x1="690" y1="165" x2="600" y2="1395" />
+<line class="edge" x1="690" y1="1215" x2="600" y2="1035" />
+<line class="edge" x1="690" y1="1065" x2="600" y2="1485" />
+<line class="edge" x1="690" y1="1185" x2="600" y2="1035" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="375" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="405" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="525" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="555" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1035" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1065" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1125" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1155" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1185" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1215" />
+<line class="edge" x1="690" y1="1095" x2="600" y2="1485" />
+<line class="edge" x1="690" y1="315" x2="600" y2="795" />
+<line class="edge" x1="690" y1="315" x2="600" y2="825" />
+<line class="edge" x1="690" y1="315" x2="600" y2="1485" />
+<line class="edge" x1="690" y1="345" x2="600" y2="75" />
+<line class="edge" x1="690" y1="345" x2="600" y2="255" />
+<line class="edge" x1="690" y1="345" x2="600" y2="765" />
+<line class="edge" x1="690" y1="345" x2="600" y2="795" />
+<line class="edge" x1="690" y1="345" x2="600" y2="825" />
+<line class="edge" x1="690" y1="345" x2="600" y2="855" />
+<line class="edge" x1="690" y1="345" x2="600" y2="1425" />
+<line class="edge" x1="690" y1="345" x2="600" y2="1455" />
+<line class="edge" x1="690" y1="345" x2="600" y2="1485" />
+<line class="edge" x1="690" y1="495" x2="600" y2="315" />
+<line class="edge" x1="690" y1="285" x2="600" y2="315" />
+<line class="edge" x1="690" y1="285" x2="600" y2="795" />
+<line class="edge" x1="690" y1="285" x2="600" y2="825" />
+<rect class="node" x="80" y="40" width="160" height="18" rx="4" />
+<text x="86" y="53">datasets/cic_ddos2019/verify_files.py</text>
+<rect class="node" x="340" y="40" width="160" height="18" rx="4" />
+<text x="346" y="53">analyze_features.py</text>
+<rect class="node" x="340" y="70" width="160" height="18" rx="4" />
+<text x="346" y="83">expert_pipeline.py</text>
+<rect class="node" x="340" y="100" width="160" height="18" rx="4" />
+<text x="346" y="113">main.py</text>
+<rect class="node" x="340" y="130" width="160" height="18" rx="4" />
+<text x="346" y="143">main_test.py</text>
+<rect class="node" x="340" y="160" width="160" height="18" rx="4" />
+<text x="346" y="173">req.py</text>
+<rect class="node" x="340" y="190" width="160" height="18" rx="4" />
+<text x="346" y="203">verify_irp_compliance.py</text>
+<rect class="node" x="600" y="40" width="160" height="18" rx="4" />
+<text x="606" y="53">src/__init__.py</text>
+<rect class="node" x="600" y="70" width="160" height="18" rx="4" />
+<text x="606" y="83">src/ahp_topsis_framework.py</text>
+<rect class="node" x="600" y="100" width="160" height="18" rx="4" />
+<text x="606" y="113">src/app/__init__.py</text>
+<rect class="node" x="600" y="130" width="160" height="18" rx="4" />
+<text x="606" y="143">src/app/cli.py</text>
+<rect class="node" x="600" y="160" width="160" height="18" rx="4" />
+<text x="606" y="173">src/app/pipeline_runner.py</text>
+<rect class="node" x="600" y="190" width="160" height="18" rx="4" />
+<text x="606" y="203">src/config/__init__.py</text>
+<rect class="node" x="600" y="220" width="160" height="18" rx="4" />
+<text x="606" y="233">src/config.py</text>
+<rect class="node" x="600" y="250" width="160" height="18" rx="4" />
+<text x="606" y="263">src/core/__init__.py</text>
+<rect class="node" x="600" y="280" width="160" height="18" rx="4" />
+<text x="606" y="293">src/core/data_harmonization.py</text>
+<rect class="node" x="600" y="310" width="160" height="18" rx="4" />
+<text x="606" y="323">src/core/dataset_loader.py</text>
+<rect class="node" x="600" y="340" width="160" height="18" rx="4" />
+<text x="606" y="353">src/core/dependencies.py</text>
+<rect class="node" x="600" y="370" width="160" height="18" rx="4" />
+<text x="606" y="383">src/core/dependency_graph.py</text>
+<rect class="node" x="600" y="400" width="160" height="18" rx="4" />
+<text x="606" y="413">src/core/feature_categorization.py</text>
+<rect class="node" x="600" y="430" width="160" height="18" rx="4" />
+<text x="606" y="443">src/core/feature_engineering.py</text>
+<rect class="node" x="600" y="460" width="160" height="18" rx="4" />
+<text x="606" y="473">src/core/model_utils.py</text>
+<rect class="node" x="600" y="490" width="160" height="18" rx="4" />
+<text x="606" y="503">src/core/preprocessing_pipeline.py</text>
+<rect class="node" x="600" y="520" width="160" height="18" rx="4" />
+<text x="606" y="533">src/datastructure/base.py</text>
+<rect class="node" x="600" y="550" width="160" height="18" rx="4" />
+<text x="606" y="563">src/datastructure/flow.py</text>
+<rect class="node" x="600" y="580" width="160" height="18" rx="4" />
+<text x="606" y="593">src/evaluation/__init__.py</text>
+<rect class="node" x="600" y="610" width="160" height="18" rx="4" />
+<text x="606" y="623">src/evaluation/explainability.py</text>
+<rect class="node" x="600" y="640" width="160" height="18" rx="4" />
+<text x="606" y="653">src/evaluation/metrics.py</text>
+<rect class="node" x="600" y="670" width="160" height="18" rx="4" />
+<text x="606" y="683">src/evaluation/reporting.py</text>
+<rect class="node" x="600" y="700" width="160" height="18" rx="4" />
+<text x="606" y="713">src/evaluation/resources.py</text>
+<rect class="node" x="600" y="730" width="160" height="18" rx="4" />
+<text x="606" y="743">src/evaluation/visualizations.py</text>
+<rect class="node" x="600" y="760" width="160" height="18" rx="4" />
+<text x="606" y="773">src/evaluation_3d.py</text>
+<rect class="node" x="600" y="790" width="160" height="18" rx="4" />
+<text x="606" y="803">src/feature_analyzer.py</text>
+<rect class="node" x="600" y="820" width="160" height="18" rx="4" />
+<text x="606" y="833">src/irp_features_requirements.py</text>
+<rect class="node" x="600" y="850" width="160" height="18" rx="4" />
+<text x="606" y="863">src/main_pipeline.py</text>
+<rect class="node" x="600" y="880" width="160" height="18" rx="4" />
+<text x="606" y="893">src/models/__init__.py</text>
+<rect class="node" x="600" y="910" width="160" height="18" rx="4" />
+<text x="606" y="923">src/models/cnn.py</text>
+<rect class="node" x="600" y="940" width="160" height="18" rx="4" />
+<text x="606" y="953">src/models/registry.py</text>
+<rect class="node" x="600" y="970" width="160" height="18" rx="4" />
+<text x="606" y="983">src/models/sklearn_models.py</text>
+<rect class="node" x="600" y="1000" width="160" height="18" rx="4" />
+<text x="606" y="1013">src/models/tabnet.py</text>
+<rect class="node" x="600" y="1030" width="160" height="18" rx="4" />
+<text x="606" y="1043">src/new_pipeline/config.py</text>
+<rect class="node" x="600" y="1060" width="160" height="18" rx="4" />
+<text x="606" y="1073">src/new_pipeline/data_loader.py</text>
+<rect class="node" x="600" y="1090" width="160" height="18" rx="4" />
+<text x="606" y="1103">src/new_pipeline/main.py</text>
+<rect class="node" x="600" y="1120" width="160" height="18" rx="4" />
+<text x="606" y="1133">src/new_pipeline/tester.py</text>
+<rect class="node" x="600" y="1150" width="160" height="18" rx="4" />
+<text x="606" y="1163">src/new_pipeline/trainer.py</text>
+<rect class="node" x="600" y="1180" width="160" height="18" rx="4" />
+<text x="606" y="1193">src/new_pipeline/validator.py</text>
+<rect class="node" x="600" y="1210" width="160" height="18" rx="4" />
+<text x="606" y="1223">src/new_pipeline/xai_manager.py</text>
+<rect class="node" x="600" y="1240" width="160" height="18" rx="4" />
+<text x="606" y="1253">src/phases/__init__.py</text>
+<rect class="node" x="600" y="1270" width="160" height="18" rx="4" />
+<text x="606" y="1283">src/phases/phase1_config_search.py</text>
+<rect class="node" x="600" y="1300" width="160" height="18" rx="4" />
+<text x="606" y="1313">src/phases/phase2_apply_best_config.py</text>
+<rect class="node" x="600" y="1330" width="160" height="18" rx="4" />
+<text x="606" y="1343">src/phases/phase3_evaluation.py</text>
+<rect class="node" x="600" y="1360" width="160" height="18" rx="4" />
+<text x="606" y="1373">src/phases/phase4_ahp_preferences.py</text>
+<rect class="node" x="600" y="1390" width="160" height="18" rx="4" />
+<text x="606" y="1403">src/phases/phase5_topsis_ranking.py</text>
+<rect class="node" x="600" y="1420" width="160" height="18" rx="4" />
+<text x="606" y="1433">src/realtime_visualizer.py</text>
+<rect class="node" x="600" y="1450" width="160" height="18" rx="4" />
+<text x="606" y="1463">src/results_visualizer.py</text>
+<rect class="node" x="600" y="1480" width="160" height="18" rx="4" />
+<text x="606" y="1493">src/system_monitor.py</text>
+<rect class="node" x="600" y="1510" width="160" height="18" rx="4" />
+<text x="606" y="1523">src/ui/__init__.py</text>
+<rect class="node" x="600" y="1540" width="160" height="18" rx="4" />
+<text x="606" y="1553">src/ui/algorithm_visualizer.py</text>
+<rect class="node" x="600" y="1570" width="160" height="18" rx="4" />
+<text x="606" y="1583">src/ui/features_popup.py</text>
+<rect class="node" x="600" y="1600" width="160" height="18" rx="4" />
+<text x="606" y="1613">src/utils/__init__.py</text>
+<rect class="node" x="600" y="1630" width="160" height="18" rx="4" />
+<text x="606" y="1643">src/utils/optional_imports.py</text>
+<rect class="node" x="600" y="1660" width="160" height="18" rx="4" />
+<text x="606" y="1673">src/utils/path_helpers.py</text>
+<rect class="node" x="600" y="1690" width="160" height="18" rx="4" />
+<text x="606" y="1703">src/utils/viz_helpers.py</text>
+<rect class="node" x="860" y="40" width="160" height="18" rx="4" />
+<text x="866" y="53">tests/_legacy_tests/test_ahp_topsis.py</text>
+<rect class="node" x="860" y="70" width="160" height="18" rx="4" />
+<text x="866" y="83">tests/_legacy_tests/test_dataset_loader_oom_fix.py</text>
+<rect class="node" x="860" y="100" width="160" height="18" rx="4" />
+<text x="866" y="113">tests/_legacy_tests/test_dataset_source_added.py</text>
+<rect class="node" x="860" y="130" width="160" height="18" rx="4" />
+<text x="866" y="143">tests/_legacy_tests/test_evaluation_3d_comprehensive.py</text>
+<rect class="node" x="860" y="160" width="160" height="18" rx="4" />
+<text x="866" y="173">tests/_legacy_tests/test_explainability.py</text>
+<rect class="node" x="860" y="190" width="160" height="18" rx="4" />
+<text x="866" y="203">tests/_legacy_tests/test_feature_engineering_common_cols.py</text>
+<rect class="node" x="860" y="220" width="160" height="18" rx="4" />
+<text x="866" y="233">tests/_legacy_tests/test_imports_no_gui_dependency.py</text>
+<rect class="node" x="860" y="250" width="160" height="18" rx="4" />
+<text x="866" y="263">tests/_legacy_tests/test_model_aware_profiles.py</text>
+<rect class="node" x="860" y="280" width="160" height="18" rx="4" />
+<text x="866" y="293">tests/_legacy_tests/test_model_utils.py</text>
+<rect class="node" x="860" y="310" width="160" height="18" rx="4" />
+<text x="866" y="323">tests/_legacy_tests/test_no_data_leakage.py</text>
+<rect class="node" x="860" y="340" width="160" height="18" rx="4" />
+<text x="866" y="353">tests/_legacy_tests/test_phase1_108_configs.py</text>
+<rect class="node" x="860" y="370" width="160" height="18" rx="4" />
+<text x="866" y="383">tests/_legacy_tests/test_phase1_config_search.py</text>
+<rect class="node" x="860" y="400" width="160" height="18" rx="4" />
+<text x="866" y="413">tests/_legacy_tests/test_phase2_outputs.py</text>
+<rect class="node" x="860" y="430" width="160" height="18" rx="4" />
+<text x="866" y="443">tests/_legacy_tests/test_registry.py</text>
+<rect class="node" x="860" y="460" width="160" height="18" rx="4" />
+<text x="866" y="473">tests/_legacy_tests/test_resource_metrics_non_negative.py</text>
+<rect class="node" x="860" y="490" width="160" height="18" rx="4" />
+<text x="866" y="503">tests/_legacy_tests/test_smoke_pipeline.py</text>
+<rect class="node" x="860" y="520" width="160" height="18" rx="4" />
+<text x="866" y="533">tests/conftest.py</text>
+<rect class="node" x="860" y="550" width="160" height="18" rx="4" />
+<text x="866" y="563">tests/test_algo_handling.py</text>
+<rect class="node" x="860" y="580" width="160" height="18" rx="4" />
+<text x="866" y="593">tests/test_cnn.py</text>
+<rect class="node" x="860" y="610" width="160" height="18" rx="4" />
+<text x="866" y="623">tests/test_data_harmonization_small.py</text>
+<rect class="node" x="860" y="640" width="160" height="18" rx="4" />
+<text x="866" y="653">tests/test_dataset_source_flag.py</text>
+<rect class="node" x="860" y="670" width="160" height="18" rx="4" />
+<text x="866" y="683">tests/test_model_aware_profiles.py</text>
+<rect class="node" x="860" y="700" width="160" height="18" rx="4" />
+<text x="866" y="713">tests/test_new_pipeline_components.py</text>
+<rect class="node" x="860" y="730" width="160" height="18" rx="4" />
+<text x="866" y="743">tests/test_no_data_leakage.py</text>
+<rect class="node" x="860" y="760" width="160" height="18" rx="4" />
+<text x="866" y="773">tests/test_no_global_fit_regression.py</text>
+<rect class="node" x="860" y="790" width="160" height="18" rx="4" />
+<text x="866" y="803">tests/test_no_smote_leakage_phase3.py</text>
+<rect class="node" x="860" y="820" width="160" height="18" rx="4" />
+<text x="866" y="833">tests/test_performance_and_ram.py</text>
+<rect class="node" x="860" y="850" width="160" height="18" rx="4" />
+<text x="866" y="863">tests/test_phase2_outputs.py</text>
+<rect class="node" x="860" y="880" width="160" height="18" rx="4" />
+<text x="866" y="893">tests/test_phase3_cnn_tabnet.py</text>
+<rect class="node" x="860" y="910" width="160" height="18" rx="4" />
+<text x="866" y="923">tests/test_phase3_synthetic.py</text>
+<rect class="node" x="860" y="940" width="160" height="18" rx="4" />
+<text x="866" y="953">tests/test_preprocessing_pipeline.py</text>
+<rect class="node" x="860" y="970" width="160" height="18" rx="4" />
+<text x="866" y="983">tests/test_tabnet.py</text>
+<rect class="node" x="860" y="1000" width="160" height="18" rx="4" />
+<text x="866" y="1013">tests/test_test_transform_is_fold_fitted.py</text>
+<text x="80" y="28" font-weight="bold">datasets</text>
+<text x="340" y="28" font-weight="bold">root</text>
+<text x="600" y="28" font-weight="bold">src</text>
+<text x="860" y="28" font-weight="bold">tests</text>
+</svg>
