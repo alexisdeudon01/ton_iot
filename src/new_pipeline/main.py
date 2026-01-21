@@ -16,6 +16,7 @@ if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
 from src.core.feature_categorization import categorize_features, get_category_scores
+from src.core.dependency_graph import generate_er_dependency_diagram
 from src.new_pipeline.config import ALGORITHMS, CIC_DDOS_DIR, RR_DIR, TON_IOT_PATH
 from src.new_pipeline.data_loader import RealDataLoader
 from src.new_pipeline.tester import PipelineTester
@@ -36,7 +37,7 @@ def setup_logging():
     )
 
 
-def main():
+def main(sample_ratio: float = 1.0):
     # 0. Initialize System Monitor with 50% RAM limit and background thread
     monitor = SystemMonitor(max_memory_percent=50.0)
     monitor.start_monitoring(interval=0.1)  # High frequency for better plots
@@ -47,6 +48,7 @@ def main():
     print("\n" + "#" * 80)
     print("### PIPELINE DDOS SENIOR EXPERT V7 - MULTI-DATASET & RESOURCE MANAGED ###")
     print("### RAM LIMIT: 50% | DEDICATED MONITORING THREAD | PROACTIVE GC ###")
+    print(f"### SAMPLE RATIO: {sample_ratio*100:.4f}% ###")
     print("#" * 80)
 
     try:
@@ -55,12 +57,12 @@ def main():
             shutil.rmtree(RR_DIR)
         RR_DIR.mkdir(parents=True, exist_ok=True)
 
-        # 1. Phase 1: Data Loading (100% Data)
+        # 1. Phase 1: Data Loading
         monitor.set_phase("Phase 1: Data Loading")
         loader = RealDataLoader(monitor, rr_dir=RR_DIR)
 
         # Load ToN-IoT and CICDDoS2019
-        loader.load_datasets(TON_IOT_PATH, CIC_DDOS_DIR, sample_ratio=1.0)
+        loader.load_datasets(TON_IOT_PATH, CIC_DDOS_DIR, sample_ratio=sample_ratio)
 
         loader.profile_and_validate()
         train_df, val_df, test_df = loader.get_splits()
@@ -161,11 +163,11 @@ def main():
             plt.close()
 
         # 3.3 Category Metrics Visualization
-        cat_metrics_df = pd.DataFrame(cat_scores).T
+        cat_metrics_df = pd.DataFrame(cat_scores, index=["Score"]).T
         cat_metrics_df.plot(kind="bar", figsize=(10, 6))
         plt.title("Feature Category Metrics (Performance, Explainability, Resources)")
         plt.ylabel("Score (1-10)")
-        plt.xticks(rotation=0)
+        plt.xticks(rotation=45)
         plt.grid(axis="y", alpha=0.3)
         plt.savefig(RR_DIR / "category_metrics.png")
         plt.close()

@@ -1,8 +1,0 @@
-===========================================
-IRP DDOS DETECTION - RAPPORT FINAL EXPERT
-===========================================
-
-     Accuracy  F1-Score  Precision  Recall  AUC
-CNN       1.0       1.0        1.0     1.0  NaN
-
-MODÈLE RECOMMANDÉ : CNN (F1-Score: 1.0000)
