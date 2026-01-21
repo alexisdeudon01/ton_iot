@@ -1,5 +1,6 @@
 from typing import List, Optional
 import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 from .base import IRPBaseStructure
 
 class NetworkFlow(IRPBaseStructure):
@@ -34,9 +35,9 @@ class NetworkFlow(IRPBaseStructure):
             return "FORWARD"
         return "BACKWARD"
 
-    def to_dataframe(self) -> pd.DataFrame:
-        """Converts the flow packets to a DataFrame."""
-        return pd.DataFrame(self.packets)
+    def to_dataframe(self) -> ToniotDataFrame:
+        """Converts the flow packets to a ToniotDataFrame."""
+        return ToniotDataFrame(self.packets)
 
     def __repr__(self):
         return f"Flow({self.flow_id}, Packets: {len(self.packets)}, Duration: {self.end_time - self.start_time if self.start_time else 0:.4f}s)"

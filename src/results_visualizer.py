@@ -23,7 +23,7 @@ warnings.warn(
 )
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 from pathlib import Path
 import json
@@ -75,19 +75,19 @@ class ResultsVisualizer:
             # Load evaluation results
             eval_path = self.output_dir / 'phase3_evaluation' / 'evaluation_results.csv'
             if eval_path.exists():
-                self.evaluation_results = pd.read_csv(eval_path)
+                self.evaluation_results = ToniotDataFrame(pd.read_csv(eval_path))
                 logger.info(f"Loaded evaluation results: {len(self.evaluation_results)} models")
 
             # Load ranking results
             ranking_path = self.output_dir / 'phase5_ranking' / 'ranking_results.csv'
             if ranking_path.exists():
-                self.ranking_results = pd.read_csv(ranking_path)
+                self.ranking_results = ToniotDataFrame(pd.read_csv(ranking_path))
                 logger.info(f"Loaded ranking results: {len(self.ranking_results)} models")
 
             # Load preprocessing stats if available
             preprocessed_path = self.output_dir / 'phase1_preprocessing' / 'preprocessed_data.csv'
             if preprocessed_path.exists():
-                df = pd.read_csv(preprocessed_path)
+                df = ToniotDataFrame(pd.read_csv(preprocessed_path))
                 self.preprocessing_stats = {
                     'total_samples': len(df),
                     'total_features': len(df.columns) - 1,  # Exclude label

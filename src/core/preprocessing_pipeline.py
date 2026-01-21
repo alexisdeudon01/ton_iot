@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import sklearn
 from imblearn.over_sampling import SMOTE
 from sklearn.feature_selection import SelectKBest, mutual_info_classif
@@ -205,7 +206,7 @@ class PreprocessingPipeline:
         # Handle remaining NaN values with median imputation if requested
         if impute:
             X_imputed = self.imputer.fit_transform(X_cleaned)
-            X_cleaned = pd.DataFrame(
+            X_cleaned = ToniotDataFrame(
                 cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
             )
             logger.info("  Applied median imputation (fitted on current data)")
@@ -224,9 +225,9 @@ class PreprocessingPipeline:
                 y_cleaned = pd.to_numeric(y_cleaned, errors="coerce").fillna(0)
             y_cleaned = y_cleaned.astype(int)
             logger.info(f"  Label distribution: {y_cleaned.value_counts().to_dict()}")
-            return X_cleaned, y_cleaned
+                return ToniotDataFrame(X_cleaned, columns=self.feature_names), y_cleaned
 
-        return X_cleaned, None
+        return ToniotDataFrame(X_cleaned), None
 
     def encode_features(self, X: pd.DataFrame) -> pd.DataFrame:
         """
@@ -314,7 +315,7 @@ class PreprocessingPipeline:
                 f"  Top features: {self.selected_features[:10]}{'...' if len(self.selected_features) > 10 else ''}"
             )
 
-            return pd.DataFrame(
+            return ToniotDataFrame(
                 cast(Any, X_selected), columns=self.selected_features, index=X.index
             )
         else:
@@ -323,7 +324,7 @@ class PreprocessingPipeline:
                     "Feature selector must be fitted before transforming test data"
                 )
             X_selected = self.feature_selector.transform(np.asarray(X.values))
-            return pd.DataFrame(
+            return ToniotDataFrame(
                 cast(Any, X_selected), columns=self.selected_features, index=X.index
             )
 
@@ -736,7 +737,7 @@ class PreprocessingPipeline:
 
         X_imputed = self.imputer.transform(X_cleaned)
         # Use Any cast to satisfy Pylance's DataFrame constructor check
-        X_cleaned = pd.DataFrame(
+        X_cleaned = ToniotDataFrame(
             cast(Any, X_imputed), columns=X_cleaned.columns, index=X_cleaned.index
         )
 

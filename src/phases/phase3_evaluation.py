@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple, Optional, cast
 
 import numpy as np
 import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 from tqdm import tqdm
 
 from src.core import DatasetLoader, DataHarmonizer, PreprocessingPipeline
@@ -238,7 +239,7 @@ class Phase3Evaluation:
             'dimension_scores': evaluator.get_dimension_scores().to_dict(orient='records')
         }
 
-    def _load_and_prepare_dataset(self) -> pd.DataFrame:
+    def _load_and_prepare_dataset(self) -> ToniotDataFrame:
         """Load dataset from Phase2 if available, otherwise load and harmonize, or use synthetic data."""
         # Check if synthetic mode is enabled
         if getattr(self.config, 'synthetic_mode', False):
@@ -254,7 +255,7 @@ class Phase3Evaluation:
             try:
                 df_processed = pd.read_parquet(phase2_data_file, engine='pyarrow')
                 logger.info(f"Loaded Phase2 dataset: {df_processed.shape}")
-                return df_processed
+                return ToniotDataFrame(df_processed)
             except Exception as exc:
                 logger.warning(f"Failed to load Phase2 parquet ({exc}), trying csv.gz...")
 
@@ -263,7 +264,7 @@ class Phase3Evaluation:
             try:
                 df_processed = pd.read_csv(phase2_data_file_csv, compression='gzip')
                 logger.info(f"Loaded Phase2 dataset: {df_processed.shape}")
-                return df_processed
+                return ToniotDataFrame(df_processed)
             except Exception as exc:
                 logger.warning(f"Failed to load Phase2 csv.gz ({exc}), falling back to direct loading...")
 
@@ -293,7 +294,7 @@ class Phase3Evaluation:
             df_cic = engineer_cic(df_cic)
         except FileNotFoundError:
             logger.warning("CIC-DDoS2019 not available. Using TON_IoT only.")
-            df_cic = pd.DataFrame()
+            df_cic = ToniotDataFrame()
 
         logger.info("Ratios recalculated for fallback datasets (CIC/TON feature engineering applied).")
 
@@ -316,9 +317,9 @@ class Phase3Evaluation:
         if 'label' not in df_processed.columns:
             raise ValueError("Label column not found in dataset for Phase 3 evaluation.")
 
-        return df_processed
+        return ToniotDataFrame(df_processed)
 
-    def _generate_synthetic_dataset(self) -> pd.DataFrame:
+    def _generate_synthetic_dataset(self) -> ToniotDataFrame:
         """Generate synthetic dataset using sklearn.datasets.make_classification."""
         from sklearn.datasets import make_classification
 
@@ -343,7 +344,7 @@ class Phase3Evaluation:
 
         # Convert to DataFrame
         feature_names = [f'feature_{i}' for i in range(n_features)]
-        df = pd.DataFrame(X, columns=feature_names)
+        df = ToniotDataFrame(X, columns=feature_names)
         df['label'] = y
 
         logger.info(f"Generated synthetic dataset: {df.shape[0]} rows, {df.shape[1]-1} features")
@@ -431,7 +432,7 @@ class Phase3Evaluation:
 
     # _build_models() removed: now using get_model_registry() from src.models
 
-    def _save_results(self, all_results: list) -> pd.DataFrame:
+    def _save_results(self, all_results: list) -> ToniotDataFrame:
         """Save evaluation results and return DataFrame."""
         if not all_results:
             logger.error("No evaluation results collected. Writing placeholder row.")
@@ -447,7 +448,7 @@ class Phase3Evaluation:
                 'n_successful_folds': 0
             }]
 
-        results_df = pd.DataFrame(all_results)
+        results_df = ToniotDataFrame(all_results)
         output_file = self.results_dir / 'evaluation_results.csv'
         results_df.to_csv(output_file, index=False)
         logger.info("Saved evaluation results to %s", output_file)

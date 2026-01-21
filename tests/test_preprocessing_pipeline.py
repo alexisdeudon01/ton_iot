@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 import pytest
 import numpy as np
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 
 # Add project root to path
 _project_root = Path(__file__).parent.parent
@@ -59,7 +59,7 @@ def test_sanitize_numeric_values_removes_inf_and_clips():
     X_base[6, 3] = 500000.0
     X_base[7, 3] = -500000.0
     
-    X_df = pd.DataFrame(X_base, columns=[f"feature_{i}" for i in range(n_features)])
+    X_df = ToniotDataFrame(X_base, columns=[f"feature_{i}" for i in range(n_features)])
     
     # Apply sanitization with quantile clipping
     X_sanitized = pipeline.sanitize_numeric_values(
@@ -141,7 +141,7 @@ def test_sanitize_numeric_values_replace_inf_with_max():
     X_base[1, 0] = -np.inf
     X_base[2, 1] = np.inf
     
-    X_df = pd.DataFrame(X_base, columns=['feature_0', 'feature_1', 'feature_2'])
+    X_df = ToniotDataFrame(X_base, columns=['feature_0', 'feature_1', 'feature_2'])
     
     # Calculate expected max/min for each column
     expected_max_0 = X_df.loc[np.isfinite(X_df['feature_0']), 'feature_0'].max()
@@ -199,7 +199,7 @@ def test_sanitize_numeric_values_abs_cap():
     X_base[0, 0] = 500.0  # > abs_cap
     X_base[1, 0] = -500.0  # < -abs_cap
     
-    X_df = pd.DataFrame(X_base, columns=['feature_0', 'feature_1', 'feature_2'])
+    X_df = ToniotDataFrame(X_base, columns=['feature_0', 'feature_1', 'feature_2'])
     
     abs_cap = 100.0
     
@@ -257,7 +257,7 @@ def test_sanitize_numeric_values_integration_with_clean_data():
     X_base[1, 0] = -np.inf
     X_base[2, 1] = 1000000.0  # Extreme outlier
     
-    X_df = pd.DataFrame(X_base, columns=[f"feature_{i}" for i in range(5)])
+    X_df = ToniotDataFrame(X_base, columns=[f"feature_{i}" for i in range(5)])
     y = pd.Series(np.random.randint(0, 2, 100))
     
     # Call clean_data() which internally uses sanitize_numeric_values()
@@ -316,12 +316,12 @@ def test_transform_test_requires_fitted_pipeline():
         pipeline.transform_test(X_test_array)
     
     # Test 2: Unfitted pipeline with DataFrame should raise ValueError
-    X_test_df = pd.DataFrame(np.random.randn(10, 5))
+    X_test_df = ToniotDataFrame(np.random.randn(10, 5))
     with pytest.raises(ValueError, match="Pipeline must be fitted before transforming test data"):
         pipeline.transform_test(X_test_df)
     
     # Test 3: Fitted pipeline should work correctly
-    X_train = pd.DataFrame(np.random.randn(20, 5))
+    X_train = ToniotDataFrame(np.random.randn(20, 5))
     y_train = pd.Series(np.random.randint(0, 2, 20))
     
     # Fit pipeline
@@ -340,7 +340,7 @@ def test_transform_test_requires_fitted_pipeline():
     assert pipeline.is_fitted, "Pipeline should be fitted after prepare_data()"
     
     # Test with fitted pipeline (should not raise)
-    X_test_fitted = pd.DataFrame(np.random.randn(10, 5))
+    X_test_fitted = ToniotDataFrame(np.random.randn(10, 5))
     result = pipeline.transform_test(X_test_fitted)
     
     assert isinstance(result, np.ndarray), "Result should be numpy array"

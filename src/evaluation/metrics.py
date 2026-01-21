@@ -3,7 +3,7 @@
 Dimension 1: Performance Metrics (F1, Precision, Recall, Accuracy)
 """
 import numpy as np
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, confusion_matrix
 from typing import Dict, List, Tuple, Literal, cast
 import logging
@@ -32,7 +32,7 @@ def compute_performance_metrics(y_true, y_pred, average: str = 'weighted') -> Di
     }
 
 
-def aggregate_metrics_per_algorithm(metrics_by_fold: pd.DataFrame) -> pd.DataFrame:
+def aggregate_metrics_per_algorithm(metrics_by_fold: ToniotDataFrame) -> ToniotDataFrame:
     """
     Aggregate metrics across folds per algorithm
 
@@ -51,4 +51,4 @@ def aggregate_metrics_per_algorithm(metrics_by_fold: pd.DataFrame) -> pd.DataFra
                 row[f'{col}_mean'] = float(df_algo[col].mean())
                 row[f'{col}_std'] = float(df_algo[col].std())
         agg_metrics.append(row)
-    return pd.DataFrame(agg_metrics)
+    return ToniotDataFrame(agg_metrics)

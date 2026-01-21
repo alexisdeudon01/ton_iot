@@ -5,7 +5,6 @@ Provides algorithm-specific visualizations with real-time updates via callbacks
 """
 import logging
 import numpy as np
-import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
 from datetime import datetime

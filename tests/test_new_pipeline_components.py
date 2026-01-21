@@ -1,5 +1,5 @@
 import pytest
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 from pathlib import Path
 from src.new_pipeline.data_loader import RealDataLoader
@@ -16,7 +16,7 @@ def monitor():
 
 @pytest.fixture
 def sample_df():
-    return pd.DataFrame({
+    return ToniotDataFrame({
         'Flow Duration': [100, 200, 300],
         'Total Fwd Packets': [10, 20, 30],
         'is_ddos': [0, 1, 0],

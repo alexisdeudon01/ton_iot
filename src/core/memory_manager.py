@@ -2,6 +2,7 @@ import psutil
 import logging
 import dask.dataframe as dd
 import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 import time
 
@@ -22,7 +23,7 @@ class MemoryAwareProcessor:
         logger.info(f"MemoryAwareProcessor initialized with safety_margin={safety_margin}")
 
     def safe_compute(self, dask_df: dd.DataFrame,
-                     operation: str = "unspecified") -> pd.DataFrame:
+                     operation: str = "unspecified") -> ToniotDataFrame:
         """
         Convertit intelligemment Dask→Pandas selon RAM disponible avec logging verbeux.
         """
@@ -69,7 +70,7 @@ class MemoryAwareProcessor:
         logger.info(f"[MEMORY] Operation '{operation}' completed in {elapsed:.2f}s")
         logger.info(f"[MEMORY] Final RAM Usage: {final_mem.percent}%")
         
-        return result
+        return ToniotDataFrame(result)
 
     def get_memory_status(self) -> dict:
         mem = psutil.virtual_memory()

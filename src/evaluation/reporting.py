@@ -2,7 +2,7 @@
 """
 Generate CSV exports and Markdown reports for Phase 3
 """
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import json
 from pathlib import Path
 import logging
@@ -10,8 +10,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def export_metrics_csvs(metrics_by_fold: pd.DataFrame, metrics_aggregated: pd.DataFrame,
-                        scores_normalized: pd.DataFrame, output_dir: Path):
+def export_metrics_csvs(metrics_by_fold: ToniotDataFrame, metrics_aggregated: ToniotDataFrame,
+                        scores_normalized: ToniotDataFrame, output_dir: Path):
     """
     Export all CSV files for Phase 3
     
@@ -31,7 +31,7 @@ def export_metrics_csvs(metrics_by_fold: pd.DataFrame, metrics_aggregated: pd.Da
     logger.info(f"Exported CSV files to {metrics_dir}")
 
 
-def generate_algorithm_reports(metrics_df: pd.DataFrame, output_dir: Path):
+def generate_algorithm_reports(metrics_df: ToniotDataFrame, output_dir: Path):
     """
     Generate Markdown report for each algorithm
     

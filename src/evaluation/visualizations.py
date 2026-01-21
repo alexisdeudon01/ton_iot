@@ -8,7 +8,7 @@ import matplotlib
 matplotlib.use('Agg')  # Non-interactive backend
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 from pathlib import Path
 import logging
 from typing import Dict, List, Optional, Tuple
@@ -40,9 +40,9 @@ def save_fig(fig, filepath: Path):
 
 
 def generate_all_visualizations(
-    metrics_df: pd.DataFrame,
-    metrics_by_fold_df: Optional[pd.DataFrame] = None,
-    scores_normalized_df: Optional[pd.DataFrame] = None,
+    metrics_df: ToniotDataFrame,
+    metrics_by_fold_df: Optional[ToniotDataFrame] = None,
+    scores_normalized_df: Optional[ToniotDataFrame] = None,
     confusion_matrices: Optional[Dict[str, np.ndarray]] = None,
     roc_curves: Optional[Dict[str, Tuple[np.ndarray, np.ndarray, float]]] = None,
     pr_curves: Optional[Dict[str, Tuple[np.ndarray, np.ndarray]]] = None,
@@ -87,7 +87,7 @@ def generate_all_visualizations(
 
     # DIM 2: RESOURCES (7 visualizations)
     logger.info("Generating Resource visualizations...")
-    generated_files.update(generate_resource_visualizations(
+    def get_algo_names(df: ToniotDataFrame) -> pd.Series:
         metrics_df, scores_normalized_df, vis_dir
     ))
 
@@ -98,6 +98,7 @@ def generate_all_visualizations(
         feature_names, vis_dir
     ))
 
+    def ensure_algo_column(df: Optional[ToniotDataFrame]) -> Optional[ToniotDataFrame]:
     # TRANSVERSAL 3D (7 visualizations)
     logger.info("Generating 3D transversal visualizations...")
     generated_files.update(generate_3d_transversal_visualizations(
@@ -114,7 +115,7 @@ def generate_all_visualizations(
 # ============================================================================
 # DIM 1: PERFORMANCE VISUALIZATIONS (7)
 # ============================================================================
-def get_algo_names(df: pd.DataFrame) -> pd.Series:
+def get_algo_names(df: ToniotDataFrame) -> pd.Series:
     """
     Return algorithm names in a consistent way.
     Enforces 'algo' as a first-class column.
@@ -139,7 +140,7 @@ def get_algo_names(df: pd.DataFrame) -> pd.Series:
     )
 
 
-def ensure_algo_column(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+def ensure_algo_column(df: Optional[ToniotDataFrame]) -> Optional[ToniotDataFrame]:
     """
     Ensure DataFrame has 'algo' as a column (not index).
     

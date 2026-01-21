@@ -6,7 +6,7 @@ and that dataset_source is present and encoded (0/1)
 import sys
 from pathlib import Path
 import pytest
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import json
 
 _project_root = Path(__file__).parent.parent
@@ -48,7 +48,7 @@ def test_phase2_outputs(tmp_path, monkeypatch):
             "dataset_source": [0, 0, 1, 1],  # CIC=0, TON=1
             "label": [0, 1, 0, 1],
         }
-        return pd.DataFrame(data)
+        return ToniotDataFrame(data)
 
     monkeypatch.setattr(phase2, "_load_and_harmonize_datasets", fake_load_and_harmonize)
 

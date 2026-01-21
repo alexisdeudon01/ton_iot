@@ -1,6 +1,7 @@
 from typing import Any
 import pandas as pd
 import dask.dataframe as dd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 
 class IRPBaseStructure:
     """Base class for all custom data structures in the IRP project."""
@@ -11,10 +12,10 @@ class IRPBaseStructure:
     def add_metadata(self, key: str, value: Any):
         self.metadata[key] = value
 
-class IRPDataFrame(pd.DataFrame, IRPBaseStructure):
-    """Custom Pandas DataFrame for IRP."""
+class IRPDataFrame(ToniotDataFrame, IRPBaseStructure):
+    """Custom DataFrame for IRP built on ToniotDataFrame with metadata mixin."""
     def __init__(self, *args, **kwargs):
-        pd.DataFrame.__init__(self, *args, **kwargs)
+        ToniotDataFrame.__init__(self, *args, **kwargs)
         IRPBaseStructure.__init__(self)
 
     @property

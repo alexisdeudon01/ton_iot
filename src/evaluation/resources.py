@@ -4,7 +4,7 @@ Dimension 2: Resource Metrics (training time, peak RAM, inference latency)
 """
 import time
 import numpy as np
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import psutil
 import logging
 from typing import Dict, Optional
@@ -90,7 +90,7 @@ def measure_inference_latency(model, X_sample, n_runs: int = 100) -> float:
 
 def compute_resource_efficiency(metrics_df, time_col='train_time_sec', 
                                 ram_col='peak_ram_mb', latency_col='latency_ms',
-                                weights=(0.5, 0.3, 0.2), eps=1e-6) -> pd.DataFrame:
+                                weights=(0.5, 0.3, 0.2), eps=1e-6) -> ToniotDataFrame:
     """
     Compute resource efficiency scores (inverted normalized metrics)
     
@@ -126,5 +126,5 @@ def compute_resource_efficiency(metrics_df, time_col='train_time_sec',
         w_ram * df.get(f'eff_{ram_col}', 0) +
         w_latency * df.get(f'eff_{latency_col}', 0)
     )
-    
-    return df
+
+    return ToniotDataFrame(df)

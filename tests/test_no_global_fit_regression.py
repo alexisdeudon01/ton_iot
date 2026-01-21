@@ -1,5 +1,5 @@
 import pytest
-import pandas as pd
+from src.datastructure.toniot_dataframe import ToniotDataFrame
 import numpy as np
 from unittest.mock import MagicMock, patch
 from src.phases.phase3_evaluation import Phase3Evaluation
@@ -43,7 +43,7 @@ def test_no_global_fit_regression():
         # Mock _load_and_prepare_dataset to return a small df
         X_rand = np.random.randn(20, 5)
         y_rand = np.array([0] * 10 + [1] * 10) # Discrete labels for StratifiedKFold
-        df = pd.DataFrame(X_rand, columns=[f'f{i}' for i in range(5)])
+        df = ToniotDataFrame(X_rand, columns=[f'f{i}' for i in range(5)])
         df['label'] = y_rand
         evaluator._load_and_prepare_dataset = MagicMock(return_value=df)
 
@@ -54,7 +54,7 @@ def test_no_global_fit_regression():
                 'f1_score': 0.9, 'accuracy': 0.9, 'precision': 0.9, 'recall': 0.9,
                 'training_time_seconds': 0.1, 'memory_used_mb': 10, 'explainability_score': 0.8
             }
-            mock_eval_inst.get_dimension_scores.return_value = pd.DataFrame()
+            mock_eval_inst.get_dimension_scores.return_value = ToniotDataFrame()
 
             # Run Phase 3
             evaluator.run()
