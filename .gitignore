@@ -115,6 +115,9 @@ Thumbs.db
 # Log files - exclude all .log files globally
 *.log
 **/logs/*.log
+*.patch
+*.rej
+*.orig
 
 # CSV data files (datasets)
 *.csv
