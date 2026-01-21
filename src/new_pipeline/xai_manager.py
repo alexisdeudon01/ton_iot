@@ -9,12 +9,13 @@ from typing import Optional
 import shap
 import lime
 import lime.lime_tabular
+import dask.dataframe as dd
 from src.new_pipeline.config import XAI_METHODS, XAI_CRITERIA_WEIGHTS
 
 logger = logging.getLogger(__name__)
 
 class XAIManager:
-    """Phase 4: Advanced XAI Validation with 3 measured scores."""
+    """Phase 4: Advanced XAI Validation with 3 measured scores and Dask support."""
 
     def __init__(self, rr_dir: Path):
         self.methods = XAI_METHODS
@@ -26,7 +27,16 @@ class XAIManager:
         print(f"PHASE 4: VALIDATION XAI (Fidélité, Stabilité, Complexité)")
         print("="*80)
 
-        X_test_num = X_test.select_dtypes(include=[np.number]).fillna(0)
+        # Handle Dask dataframes by sampling for XAI (XAI is expensive)
+        if isinstance(X_test, dd.DataFrame):
+            print(f"INFO: Conversion Dask -> Pandas pour XAI (Sampling 100 rows)")
+            X_test_pd = X_test.head(100)
+            y_test_pd = y_test.head(100)
+        else:
+            X_test_pd = X_test
+            y_test_pd = y_test
+
+        X_test_num = X_test_pd.select_dtypes(include=[np.number]).fillna(0)
 
         algos_to_eval = [algo_name] if algo_name else list(models.keys())
 
@@ -101,15 +111,18 @@ class XAIManager:
         """SHAP Summary Plot with criteria inclusion."""
         print("\n" + "-"*40)
         print("MICRO-TÂCHE: Génération des graphiques SHAP/LIME")
-        X_num = X_test.select_dtypes(include=[np.number]).fillna(0)
 
-        if 'RF' in models:
+        if isinstance(X_test, dd.DataFrame):
+            X_num = X_test.head(100).select_dtypes(include=[np.number]).fillna(0)
+        else:
+            X_num = X_test.select_dtypes(include=[np.number]).fillna(0)
+
+        if 'RF' in models and models['RF'] is not None:
             try:
                 explainer = shap.TreeExplainer(models['RF'])
-                shap_values = explainer.shap_values(X_num.iloc[:100])
+                shap_values = explainer.shap_values(X_num)
                 plt.figure()
-                # Include criteria in title or labels if possible
-                shap.summary_plot(shap_values, X_num.iloc[:100], show=False)
+                shap.summary_plot(shap_values, X_num, show=False)
                 plt.title("SHAP Summary Plot (Validated for Fidelity & Stability)")
                 plt.savefig(self.rr_dir / "phase4_shap_summary.png")
                 plt.close()

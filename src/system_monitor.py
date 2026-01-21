@@ -77,9 +77,7 @@ class SystemMonitor:
                 # Proactive Memory Management
                 if mem.percent > self.max_memory_percent:
                     gc.collect()
-                    # If still too high, we might need to sleep to let system breathe
-                    if mem.percent > self.max_memory_percent + 5:
-                        time.sleep(0.5)
+                    # Non-blocking: we don't sleep here anymore as Dask handles memory
             except Exception as e:
                 pass # Avoid crashing the monitor thread
 

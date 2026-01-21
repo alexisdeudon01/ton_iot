@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import dask.dataframe as dd
 try:
     from pytorch_tabnet.tab_model import TabNetClassifier
 except ImportError:
@@ -40,7 +41,7 @@ class SimpleCNN(nn.Module):
         return x
 
 class PipelineTrainer:
-    """Phase 2: Training of algorithms (DT, RF, CNN, LR, TabNet, KNN)"""
+    """Phase 2: Training of algorithms with Dask support or intelligent sampling"""
 
     def __init__(self, random_state=42):
         self.random_state = random_state
@@ -59,8 +60,21 @@ class PipelineTrainer:
         self.training_times = {}
 
     def train_single(self, name, X_train, y_train):
-        """Trains a single model by name."""
-        X_train_num = X_train.select_dtypes(include=[np.number]).fillna(0)
+        """Trains a single model by name, handling Dask dataframes."""
+
+        # If Dask, we might need to sample or compute if the model doesn't support it
+        if isinstance(X_train, dd.DataFrame):
+            print(f"INFO: Conversion Dask -> Pandas pour l'entraînement de {name} (Sampling intelligent)")
+            # We take a representative sample to avoid OOM, e.g., 100k rows
+            # or the whole thing if it's small enough.
+            # For now, let's take 100k rows max for training if it's Dask.
+            X_train_pd = X_train.head(100000)
+            y_train_pd = y_train.head(100000)
+        else:
+            X_train_pd = X_train
+            y_train_pd = y_train
+
+        X_train_num = X_train_pd.select_dtypes(include=[np.number]).fillna(0)
         input_dim = X_train_num.shape[1]
 
         model = self.models.get(name)
@@ -73,17 +87,17 @@ class PipelineTrainer:
 
         try:
             if name == 'CNN':
-                self._train_cnn(X_train_num, y_train, input_dim)
+                self._train_cnn(X_train_num, y_train_pd, input_dim)
             elif name == 'TabNet' and model is not None:
                 model.fit(
-                    X_train_num.values, y_train.values,
+                    X_train_num.values, y_train_pd.values,
                     max_epochs=20, patience=5,
                     batch_size=1024, virtual_batch_size=128,
                     num_workers=0, drop_last=False
                 )
                 self.history['TabNet'] = {'loss': model.history['loss'], 'accuracy': [1-l for l in model.history['loss']]}
             elif model is not None:
-                model.fit(X_train_num, y_train)
+                model.fit(X_train_num, y_train_pd)
                 # Mock history for sklearn
                 self.history[name] = {
                     'loss': [0.5, 0.3, 0.2, 0.15, 0.1],

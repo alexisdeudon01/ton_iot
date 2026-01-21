@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import psutil
+from dask.distributed import Client, LocalCluster
 
 # Ensure project root is in sys.path
 _root = Path(__file__).resolve().parent.parent.parent
@@ -38,16 +40,30 @@ def setup_logging():
 
 
 def main(sample_ratio: float = 1.0):
-    # 0. Initialize System Monitor with 50% RAM limit and background thread
+    # 0. Initialize Dask Client for resource management
+    # We limit memory per worker to stay within 50% total RAM
+    total_ram_gb = psutil.virtual_memory().total / (1024**3)
+    memory_limit = f"{total_ram_gb * 0.45:.1f}GB" # 45% to be safe
+
+    cluster = LocalCluster(
+        n_workers=2,
+        threads_per_worker=2,
+        memory_limit=memory_limit,
+        dashboard_address=":8787"
+    )
+    client = Client(cluster)
+
+    # Initialize System Monitor for plotting
     monitor = SystemMonitor(max_memory_percent=50.0)
-    monitor.start_monitoring(interval=0.1)  # High frequency for better plots
+    monitor.start_monitoring(interval=0.1)
 
     setup_logging()
     logger = logging.getLogger(__name__)
 
     print("\n" + "#" * 80)
-    print("### PIPELINE DDOS SENIOR EXPERT V7 - MULTI-DATASET & RESOURCE MANAGED ###")
-    print("### RAM LIMIT: 50% | DEDICATED MONITORING THREAD | PROACTIVE GC ###")
+    print("### PIPELINE DDOS SENIOR EXPERT V8 - DASK POWERED & RESOURCE MANAGED ###")
+    print(f"### DASK CLIENT: {client.dashboard_link} ###")
+    print(f"### RAM LIMIT: 50% ({memory_limit}) | DASK OUT-OF-CORE ###")
     print(f"### SAMPLE RATIO: {sample_ratio*100:.4f}% ###")
     print("#" * 80)
 
@@ -65,14 +81,14 @@ def main(sample_ratio: float = 1.0):
         loader.load_datasets(TON_IOT_PATH, CIC_DDOS_DIR, sample_ratio=sample_ratio)
 
         loader.profile_and_validate()
-        train_df, val_df, test_df = loader.get_splits()
+        train_ddf, val_ddf, test_ddf = loader.get_splits()
 
-        # Feature Categorization
+        # Feature Categorization (on a sample for column names)
         print("\n" + "-" * 40)
         print("MICRO-TÂCHE: Catégorisation des features")
         all_features = [
             c
-            for c in train_df.columns
+            for c in train_ddf.columns
             if c not in ["is_ddos", "label", "type", "dataset"]
         ]
         categorized = categorize_features(all_features)
@@ -80,15 +96,15 @@ def main(sample_ratio: float = 1.0):
         print(f"RÉSULTAT: Features catégorisées en {len(categorized)} groupes.")
         print(f"SCORES CATÉGORIES: {cat_scores}")
 
-        X_train = train_df[all_features]
-        y_train = train_df["is_ddos"]
-        X_val = val_df[all_features]
-        y_val = val_df["is_ddos"]
-        X_test = test_df[all_features]
-        y_test = test_df["is_ddos"]
+        # For training, we might need to compute if models don't support Dask
+        X_train = train_ddf[all_features]
+        y_train = train_ddf["is_ddos"]
+        X_val = val_ddf[all_features]
+        y_val = val_ddf["is_ddos"]
+        X_test = test_ddf[all_features]
+        y_test = test_ddf["is_ddos"]
 
         # 2. Iterative Model Evaluation Loop
-        # For each algorithm, we do Training -> Validation -> XAI -> Testing
         results = {}
 
         for algo in ALGORITHMS:
@@ -136,9 +152,10 @@ def main(sample_ratio: float = 1.0):
         monitor.generate_timeline_heatmap(str(RR_DIR / "execution_timeline.png"))
 
         # 3.1 Correlation Matrix on a sample of data
+        X_sample = X_test.head(1000)
         plt.figure(figsize=(12, 10))
         sns.heatmap(
-            X_test.sample(min(1000, len(X_test))).corr(), cmap="coolwarm", annot=False
+            X_sample.corr(), cmap="coolwarm", annot=False
         )
         plt.title("Correlation Matrix (Sample)")
         plt.savefig(RR_DIR / "correlation_matrix.png")
@@ -183,7 +200,13 @@ def main(sample_ratio: float = 1.0):
         logger.error(f"Pipeline failed: {e}", exc_info=True)
     finally:
         monitor.stop_monitoring()
+        client.close()
+        cluster.close()
 
 
 if __name__ == "__main__":
-    main()
+    # Default to 100% data unless specified
+    ratio = 1.0
+    if "--test-mode" in sys.argv:
+        ratio = 0.001
+    main(sample_ratio=ratio)

@@ -4,12 +4,13 @@ from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 import numpy as np
 from pathlib import Path
 from typing import Optional
+import dask.dataframe as dd
 from src.new_pipeline.config import HYPERPARAMS
 
 logger = logging.getLogger(__name__)
 
 class PipelineValidator:
-    """Phase 3: Validation (Tuning Dynamique Hors Config)"""
+    """Phase 3: Validation (Tuning Dynamique Hors Config) with Dask support"""
 
     def __init__(self, models, random_state=42):
         self.models = models
@@ -19,7 +20,16 @@ class PipelineValidator:
     def validate_tuning(self, X_val, y_val, rr_dir: Path, algo_name: Optional[str] = None):
         logger.info("[PHASE 3] Début de la validation (Tuning hyperparamètres)")
 
-        X_val_num = X_val.select_dtypes(include=[np.number]).fillna(0)
+        # Handle Dask dataframes by sampling
+        if isinstance(X_val, dd.DataFrame):
+            print(f"INFO: Conversion Dask -> Pandas pour la validation (Sampling 50k rows)")
+            X_val_pd = X_val.head(50000)
+            y_val_pd = y_val.head(50000)
+        else:
+            X_val_pd = X_val
+            y_val_pd = y_val
+
+        X_val_num = X_val_pd.select_dtypes(include=[np.number]).fillna(0)
 
         algos_to_tune = [algo_name] if algo_name else ['LR', 'DT', 'RF', 'KNN']
 
@@ -34,7 +44,7 @@ class PipelineValidator:
             param_name = list(grid.keys())[0]
             param_values = grid[param_name]
 
-            self._tune_algo(name, X_val_num, y_val, param_name, param_values, rr_dir)
+            self._tune_algo(name, X_val_num, y_val_pd, param_name, param_values, rr_dir)
 
     def _tune_algo(self, name, X, y, param_name, values, rr_dir):
         logger.info(f"Tuning dynamique de {name} sur {param_name}...")

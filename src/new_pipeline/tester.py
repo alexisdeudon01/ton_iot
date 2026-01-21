@@ -6,11 +6,12 @@ import numpy as np
 from pathlib import Path
 from typing import Optional
 import torch
+import dask.dataframe as dd
 
 logger = logging.getLogger(__name__)
 
 class PipelineTester:
-    """Phase 5: Testing (Évaluation Finale)"""
+    """Phase 5: Testing (Évaluation Finale) with Dask support"""
 
     def __init__(self, models, rr_dir: Path):
         self.models = models
@@ -20,7 +21,16 @@ class PipelineTester:
     def evaluate_all(self, X_test, y_test, algo_name: Optional[str] = None):
         logger.info("[PHASE 5] Évaluation finale sur le jeu de Test")
 
-        X_test_num = X_test.select_dtypes(include=[np.number]).fillna(0)
+        # Handle Dask dataframes by sampling for evaluation
+        if isinstance(X_test, dd.DataFrame):
+            print(f"INFO: Conversion Dask -> Pandas pour l'évaluation (Sampling 100k rows)")
+            X_test_pd = X_test.head(100000)
+            y_test_pd = y_test.head(100000)
+        else:
+            X_test_pd = X_test
+            y_test_pd = y_test
+
+        X_test_num = X_test_pd.select_dtypes(include=[np.number]).fillna(0)
         metrics_names = ['Accuracy', 'F1-Score', 'Precision', 'Recall', 'AUC']
 
         algos_to_eval = [algo_name] if algo_name else list(self.models.keys())
@@ -47,11 +57,11 @@ class PipelineTester:
                     y_prob = model.predict_proba(X_test_num)[:, 1]
 
                 self.test_results[name] = {
-                    'Accuracy': accuracy_score(y_test, y_pred),
-                    'F1-Score': f1_score(y_test, y_pred),
-                    'Precision': precision_score(y_test, y_pred),
-                    'Recall': recall_score(y_test, y_pred),
-                    'AUC': roc_auc_score(y_test, y_prob)
+                    'Accuracy': accuracy_score(y_test_pd, y_pred),
+                    'F1-Score': f1_score(y_test_pd, y_pred),
+                    'Precision': precision_score(y_test_pd, y_pred),
+                    'Recall': recall_score(y_test_pd, y_pred),
+                    'AUC': roc_auc_score(y_test_pd, y_prob)
                 }
             except Exception as e:
                 logger.error(f"  Erreur évaluation {name}: {e}")
@@ -70,7 +80,7 @@ class PipelineTester:
             scores = [self.test_results[algo][metric] for algo in algos]
             plt.plot(algos, scores, marker='o', label=metric, linewidth=2)
 
-        plt.title("Synthèse des Performances Finales (Comparaison des 5 Algos)")
+        plt.title("Synthèse des Performances Finales (Comparaison des Algos)")
         plt.xlabel("Algorithmes")
         plt.ylabel("Score")
         plt.legend()
