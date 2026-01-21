@@ -1,0 +1,190 @@
+---
+title: TON IoT ML Pipeline - Class Diagram
+---
+classDiagram
+    %% Core Pipeline Classes
+    class RealDataLoader {
+        -SystemMonitor monitor
+        -str target_col
+        -Path rr_dir
+        -dd.DataFrame ddf
+        -Dict splits
+        +load_datasets(ton_iot_path, cic_ddos_dir, sample_ratio) dd.DataFrame
+        +split_data(test_size, val_size) Dict
+        +generate_report(output_dir)
+        -_harmonize_columns(ddf, mapping) dd.DataFrame
+        -_compute_splits()
+    }
+
+    class PipelineTrainer {
+        -int random_state
+        -Dict models
+        -Dict history
+        -Dict training_times
+        +train_single(name, X_train, y_train)
+        +train_all(X_train, y_train)
+        +plot_results(output_dir)
+        -_train_cnn(X, y, input_dim)
+    }
+
+    class PipelineValidator {
+        -Dict models
+        -int random_state
+        -Dict best_params
+        +validate_tuning(X_val, y_val, rr_dir, algo_name)
+        -_tune_algo(name, X, y, param_name, values, rr_dir)
+    }
+
+    class PipelineTester {
+        -Dict models
+        -Path rr_dir
+        -Dict test_results
+        +evaluate_all(X_test, y_test, algo_name)
+        -_analyze_fit(name, test_f1)
+        -_plot_final_synthesis(metrics_names)
+        -_generate_final_report()
+    }
+
+    class XAIManager {
+        -List methods
+        -Path rr_dir
+        -Dict results
+        +validate_xai(models, X_test, y_test, algo_name)
+        -_measure_fidelity(model, X) float
+        -_measure_stability(model, X) float
+        -_measure_complexity(method) float
+        -_plot_xai_metrics()
+        -_select_best() Dict
+    }
+
+    %% Neural Network Models
+    class SimpleCNN {
+        <<nn.Module>>
+        -Conv1d conv1
+        -MaxPool1d pool
+        -Linear fc1
+        -Linear fc2
+        -int fc1_input_size
+        +forward(x) Tensor
+    }
+
+    class CNNTabularClassifier {
+        -int epochs
+        -int batch_size
+        -int random_state
+        -SimpleCNN model
+        -List classes_
+        +fit(X, y)
+        +predict(X) ndarray
+        +predict_proba(X) ndarray
+    }
+
+    class TabNetClassifierWrapper {
+        -int max_epochs
+        -int batch_size
+        -int seed
+        -int verbose
+        -TabNetClassifier model
+        +fit(X, y)
+        +predict(X) ndarray
+        +predict_proba(X) ndarray
+    }
+
+    %% System Monitoring
+    class SystemMonitor {
+        -float max_memory_percent
+        -psutil.Process process
+        -float start_time
+        -Dict history
+        -str current_phase
+        -threading.Event _stop_event
+        -Thread _monitor_thread
+        -Lock lock
+        +start_monitoring(interval)
+        +stop_monitoring()
+        +set_phase(phase_name)
+        +get_current_stats() Dict
+        +plot_resource_usage(output_dir)
+        -_monitor_loop(interval)
+    }
+
+    %% Dataset Loader (Core)
+    class DatasetLoader {
+        <<Legacy>>
+        -Path data_dir
+        -SystemMonitor monitor
+        -Set loaded_files
+        -Callable progress_callback
+        +load_cic_ddos2019(sample_ratio, max_files) DataFrame
+        +load_ton_iot(sample_ratio) DataFrame
+        +load_combined_dataset(sample_ratio) DataFrame
+        -_get_adaptive_chunk_size(sample_ratio) int
+        -_load_file_cache() Set
+        -_save_file_cache()
+    }
+
+    %% Sklearn Models Factory
+    class SklearnModels {
+        <<interface>>
+        +make_dt(random_state) DecisionTreeClassifier$
+        +make_lr(random_state, max_iter) LogisticRegression$
+        +make_rf(random_state, n_estimators) RandomForestClassifier$
+        +make_knn(n_neighbors) KNeighborsClassifier$
+    }
+
+    %% Model Registry
+    class ModelRegistry {
+        <<factory>>
+        +get_model_registry(config) Dict~str, Callable~$
+    }
+
+    %% Configuration
+    class PipelineConfig {
+        <<dataclass>>
+        +int random_state
+        +float test_size
+        +float val_size
+        +Dict hyperparams
+        +List xai_methods
+        +Dict xai_criteria_weights
+        +Path output_dir
+        +Path rr_dir
+    }
+
+    %% Relationships - Composition
+    RealDataLoader *-- SystemMonitor : monitors with
+    PipelineTrainer *-- SimpleCNN : trains
+
+    %% Relationships - Association
+    RealDataLoader --> PipelineTrainer : provides data to
+    PipelineTrainer --> PipelineValidator : trained models to
+    PipelineValidator --> XAIManager : validated models to
+    XAIManager --> PipelineTester : XAI results to
+
+    %% Relationships - Dependency
+    PipelineTrainer ..> CNNTabularClassifier : creates
+    PipelineTrainer ..> TabNetClassifierWrapper : creates
+    PipelineTrainer ..> SklearnModels : uses
+    ModelRegistry ..> SklearnModels : builds from
+    ModelRegistry ..> CNNTabularClassifier : builds
+    ModelRegistry ..> TabNetClassifierWrapper : builds
+
+    %% Relationships - Uses
+    PipelineTester --> SystemMonitor : monitors with
+    XAIManager --> SystemMonitor : monitors with
+
+    %% Inheritance
+    SimpleCNN --|> nn.Module : extends
+    CNNTabularClassifier *-- SimpleCNN : contains
+
+    %% Configuration dependency
+    RealDataLoader ..> PipelineConfig : uses
+    PipelineTrainer ..> PipelineConfig : uses
+    PipelineValidator ..> PipelineConfig : uses
+    XAIManager ..> PipelineConfig : uses
+
+    %% Notes
+    note for RealDataLoader "Loads TON-IoT and CIC-DDoS2019\nwith Dask for out-of-core processing"
+    note for SystemMonitor "Background thread monitors\nCPU/RAM and enforces limits"
+    note for SimpleCNN "Adaptive CNN architecture\nfor tabular data"
+    note for XAIManager "Evaluates explainability:\nFidelity, Stability, Complexity"

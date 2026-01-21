@@ -1,0 +1,417 @@
+---
+title: TON IoT ML Pipeline - Improved Architecture
+---
+classDiagram
+    %% ============================================================
+    %% LAYER 1: ORCHESTRATION & CONFIGURATION
+    %% ============================================================
+
+    class PipelineOrchestrator {
+        <<orchestrator>>
+        -DIContainer container
+        -Path checkpoint_dir
+        -PipelineState state
+        -Dict context
+        -EventBus event_bus
+        +run(resume_from) void
+        +pause() void
+        +resume() void
+        -_execute_state_machine() void
+        -_save_checkpoint() void
+        -_restore_checkpoint(state) void
+    }
+
+    class PipelineState {
+        <<enumeration>>
+        INITIALIZED
+        DATA_LOADED
+        DATA_SPLIT
+        MODELS_TRAINED
+        MODELS_VALIDATED
+        XAI_COMPLETED
+        TESTING_COMPLETED
+        FINISHED
+        FAILED
+    }
+
+    class PipelineConfig {
+        <<pydantic>>
+        +PathConfig paths
+        +ModelConfig models
+        +HyperparamConfig hyperparams
+        +ResourceConfig resources
+        +from_yaml(path) PipelineConfig$
+        +validate()
+    }
+
+    class DIContainer {
+        <<singleton>>
+        -SystemMonitor monitor
+        -PipelineConfig config
+        -ModelRegistry registry
+        +create_data_loader() IDataRepository
+        +create_trainer() IModelTrainer
+        +create_validator() IValidator
+        +create_xai_manager() IXAIManager
+        +create_tester() ITester
+    }
+
+    %% ============================================================
+    %% LAYER 2: INTERFACES (CONTRACTS)
+    %% ============================================================
+
+    class IDataRepository {
+        <<interface>>
+        +load_raw_data(sample_ratio) DataFrame*
+        +get_splits() Tuple~DataFrame~*
+        +save_processed_data(data, name) void*
+        +get_statistics() DataStats*
+    }
+
+    class IMLModel {
+        <<interface>>
+        +fit(X, y) IMLModel*
+        +predict(X) ndarray*
+        +predict_proba(X) ndarray*
+        +get_feature_importance() ndarray*
+        +supports_incremental_learning bool*
+    }
+
+    class IModelTrainer {
+        <<interface>>
+        +train_single(name, X, y) TrainingResult*
+        +train_all(X, y) Dict~TrainingResult~*
+    }
+
+    class IValidator {
+        <<interface>>
+        +validate_tuning(X, y, algo) ValidationResult*
+    }
+
+    class IXAIManager {
+        <<interface>>
+        +validate_xai(models, X, y) Dict~XAIResult~*
+    }
+
+    class ITester {
+        <<interface>>
+        +evaluate_all(X, y) Dict~TestResult~*
+    }
+
+    %% ============================================================
+    %% LAYER 3: IMPLEMENTATIONS
+    %% ============================================================
+
+    class DaskDataRepository {
+        -SystemMonitor monitor
+        -MemoryAwareProcessor memory_mgr
+        -Path cache_dir
+        -dd.DataFrame _cached_data
+        +load_raw_data(sample_ratio) DataFrame
+        +get_splits() Tuple~DataFrame~
+        +save_processed_data(data, name)
+        -_harmonize_features(ddf) DataFrame
+        -_apply_feature_engineering(ddf) DataFrame
+    }
+
+    class PipelineTrainer {
+        -ModelRegistry registry
+        -VisualizationService viz
+        -EventBus event_bus
+        -Dict~str,IMLModel~ models
+        -Dict~str,TrainingResult~ results
+        +train_single(name, X, y) TrainingResult
+        +train_all(X, y) Dict~TrainingResult~
+    }
+
+    class PipelineValidator {
+        -Dict~str,IMLModel~ models
+        -VisualizationService viz
+        -EventBus event_bus
+        -Dict~str,ValidationResult~ results
+        +validate_tuning(X, y, algo) ValidationResult
+        -_tune_algo(name, X, y, params) ValidationResult
+    }
+
+    class XAIManager {
+        -List~str~ methods
+        -VisualizationService viz
+        -EventBus event_bus
+        -Dict~str,XAIResult~ results
+        +validate_xai(models, X, y) Dict~XAIResult~
+        -_measure_fidelity(model, X) float
+        -_measure_stability(model, X) float
+        -_measure_complexity(method) float
+    }
+
+    class PipelineTester {
+        -Dict~str,IMLModel~ models
+        -VisualizationService viz
+        -EventBus event_bus
+        -Dict~str,TestResult~ results
+        +evaluate_all(X, y) Dict~TestResult~
+        -_analyze_fit(name, f1) FitAnalysis
+        -_calculate_metrics(y_true, y_pred) Dict
+    }
+
+    %% ============================================================
+    %% LAYER 4: MODEL ADAPTERS (STRATEGY PATTERN)
+    %% ============================================================
+
+    class SklearnModelAdapter {
+        -sklearn_model model
+        +fit(X, y) IMLModel
+        +predict(X) ndarray
+        +predict_proba(X) ndarray
+        +get_feature_importance() ndarray
+        +supports_incremental_learning bool
+    }
+
+    class CNNModelAdapter {
+        -SimpleCNN model
+        -int epochs
+        -int batch_size
+        -optimizer optimizer
+        +fit(X, y) IMLModel
+        +predict(X) ndarray
+        +predict_proba(X) ndarray
+        +get_feature_importance() ndarray
+        +supports_incremental_learning bool
+    }
+
+    class TabNetModelAdapter {
+        -TabNetClassifier model
+        -int max_epochs
+        +fit(X, y) IMLModel
+        +predict(X) ndarray
+        +predict_proba(X) ndarray
+        +get_feature_importance() ndarray
+        +supports_incremental_learning bool
+    }
+
+    class SimpleCNN {
+        <<nn.Module>>
+        -Conv1d conv1
+        -MaxPool1d pool
+        -Linear fc1
+        -Linear fc2
+        +forward(x) Tensor
+    }
+
+    %% ============================================================
+    %% LAYER 5: SERVICES & UTILITIES
+    %% ============================================================
+
+    class VisualizationService {
+        -Path output_dir
+        -str style
+        +plot_training_times(times, filename)
+        +plot_metrics_comparison(results, filename)
+        +plot_confusion_matrices(cms, filename)
+        +plot_training_history(history, filename)
+        +plot_resource_usage(monitor, filename)
+    }
+
+    class SystemMonitor {
+        <<singleton>>
+        -float max_memory_percent
+        -Dict history
+        -str current_phase
+        -Thread _monitor_thread
+        +start_monitoring(interval)
+        +stop_monitoring()
+        +set_phase(phase_name)
+        +get_current_stats() Dict
+        -_monitor_loop(interval)
+    }
+
+    class MemoryAwareProcessor {
+        -SystemMonitor monitor
+        -float safety_margin
+        +estimate_dataframe_memory(rows, cols) int
+        +calculate_safe_sample_size(total_rows, cols) int
+        +adaptive_compute(dask_df, operation) DataFrame
+    }
+
+    class EventBus {
+        -Dict~EventType,List~ _subscribers
+        +subscribe(event_type, callback)
+        +publish(event) void
+        +unsubscribe(event_type, callback)
+    }
+
+    class EventType {
+        <<enumeration>>
+        DATA_LOADED
+        TRAINING_STARTED
+        TRAINING_COMPLETED
+        VALIDATION_STARTED
+        VALIDATION_COMPLETED
+        ERROR_OCCURRED
+    }
+
+    class ModelRegistry {
+        <<factory>>
+        -PipelineConfig config
+        +get_model_registry() Dict~str,Callable~$
+        +build_model(name) IMLModel
+    }
+
+    class ErrorHandler {
+        -int max_retries
+        +handle_with_retry(func, args) Any
+        +log_error(exception)
+        +should_retry(exception) bool
+    }
+
+    %% ============================================================
+    %% LAYER 6: RESULT OBJECTS
+    %% ============================================================
+
+    class TrainingResult {
+        <<dataclass>>
+        +str model_name
+        +float training_time
+        +Dict history
+        +bool success
+        +Optional~str~ error
+        +final_loss() float
+    }
+
+    class ValidationResult {
+        <<dataclass>>
+        +str model_name
+        +Dict best_params
+        +Dict scores
+        +best_f1() float
+    }
+
+    class TestResult {
+        <<dataclass>>
+        +str model_name
+        +float accuracy
+        +float f1_score
+        +float precision
+        +float recall
+        +float auc
+        +ndarray confusion_matrix
+        +to_dict() Dict
+    }
+
+    class XAIResult {
+        <<dataclass>>
+        +str model_name
+        +str method
+        +float fidelity
+        +float stability
+        +float complexity
+        +float composite_score
+    }
+
+    %% ============================================================
+    %% RELATIONSHIPS - ORCHESTRATION
+    %% ============================================================
+
+    PipelineOrchestrator *-- DIContainer : uses
+    PipelineOrchestrator *-- EventBus : publishes to
+    PipelineOrchestrator *-- PipelineState : manages
+    PipelineOrchestrator ..> PipelineConfig : reads
+
+    DIContainer *-- PipelineConfig : holds
+    DIContainer *-- SystemMonitor : provides
+    DIContainer *-- ModelRegistry : provides
+    DIContainer ..> IDataRepository : creates
+    DIContainer ..> IModelTrainer : creates
+    DIContainer ..> IValidator : creates
+    DIContainer ..> IXAIManager : creates
+    DIContainer ..> ITester : creates
+
+    %% ============================================================
+    %% RELATIONSHIPS - IMPLEMENTATIONS
+    %% ============================================================
+
+    DaskDataRepository ..|> IDataRepository : implements
+    PipelineTrainer ..|> IModelTrainer : implements
+    PipelineValidator ..|> IValidator : implements
+    XAIManager ..|> IXAIManager : implements
+    PipelineTester ..|> ITester : implements
+
+    %% ============================================================
+    %% RELATIONSHIPS - MODELS
+    %% ============================================================
+
+    SklearnModelAdapter ..|> IMLModel : implements
+    CNNModelAdapter ..|> IMLModel : implements
+    TabNetModelAdapter ..|> IMLModel : implements
+
+    CNNModelAdapter *-- SimpleCNN : contains
+    SimpleCNN --|> nn.Module : extends
+
+    ModelRegistry ..> SklearnModelAdapter : builds
+    ModelRegistry ..> CNNModelAdapter : builds
+    ModelRegistry ..> TabNetModelAdapter : builds
+
+    %% ============================================================
+    %% RELATIONSHIPS - SERVICES
+    %% ============================================================
+
+    DaskDataRepository --> MemoryAwareProcessor : uses
+    DaskDataRepository --> SystemMonitor : monitors with
+
+    PipelineTrainer --> VisualizationService : visualizes with
+    PipelineTrainer --> EventBus : publishes to
+    PipelineTrainer --> IMLModel : trains
+
+    PipelineValidator --> VisualizationService : visualizes with
+    PipelineValidator --> EventBus : publishes to
+
+    XAIManager --> VisualizationService : visualizes with
+    XAIManager --> EventBus : publishes to
+
+    PipelineTester --> VisualizationService : visualizes with
+    PipelineTester --> EventBus : publishes to
+
+    MemoryAwareProcessor --> SystemMonitor : monitors with
+
+    %% ============================================================
+    %% RELATIONSHIPS - RESULTS
+    %% ============================================================
+
+    PipelineTrainer ..> TrainingResult : returns
+    PipelineValidator ..> ValidationResult : returns
+    PipelineTester ..> TestResult : returns
+    XAIManager ..> XAIResult : returns
+
+    %% ============================================================
+    %% RELATIONSHIPS - ERROR HANDLING
+    %% ============================================================
+
+    PipelineOrchestrator --> ErrorHandler : uses
+    PipelineTrainer --> ErrorHandler : uses
+
+    %% ============================================================
+    %% NOTES
+    %% ============================================================
+
+    note for PipelineOrchestrator "State machine with checkpoint/resume.\nOrchestrates entire pipeline execution."
+
+    note for DIContainer "Dependency injection container.\nManages all dependencies and lifecycles."
+
+    note for IMLModel "Common interface for all models.\nEnables strategy pattern."
+
+    note for EventBus "Observer pattern for progress tracking.\nDecouples logging/monitoring from business logic."
+
+    note for MemoryAwareProcessor "Prevents OOM by estimating memory\nand adapting sample sizes dynamically."
+
+    note for VisualizationService "Separated visualization from business logic.\nReusable across all pipeline phases."
+
+    %% ============================================================
+    %% STYLING
+    %% ============================================================
+
+    classDef orchestration fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef interface fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef implementation fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef service fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef result fill:#ffe0b2,stroke:#e65100,stroke-width:2px
+    classDef config fill:#ffccbc,stroke:#bf360c,stroke-width:2px

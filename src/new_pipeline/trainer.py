@@ -23,10 +23,17 @@ logger = logging.getLogger(__name__)
 class SimpleCNN(nn.Module):
     def __init__(self, input_dim):
         super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv1d(1, 16, kernel_size=3, padding=1)
-        self.pool = nn.MaxPool1d(2)
-        # Adjust fc1 input size based on input_dim and pooling
-        self.fc1_input_size = 16 * (input_dim // 2)
+        # Adaptive architecture for small input_dim
+        k_size = min(3, input_dim)
+        self.conv1 = nn.Conv1d(1, 16, kernel_size=k_size, padding=k_size//2)
+        self.pool = nn.MaxPool1d(2) if input_dim >= 2 else nn.Identity()
+
+        # Calculate actual output size after conv and pool
+        with torch.no_grad():
+            dummy = torch.zeros(1, 1, input_dim)
+            dummy = self.pool(torch.relu(self.conv1(dummy)))
+            self.fc1_input_size = dummy.view(1, -1).size(1)
+
         self.fc1 = nn.Linear(self.fc1_input_size, 32)
         self.fc2 = nn.Linear(32, 2)
 
@@ -64,20 +71,28 @@ class PipelineTrainer:
 
         # If Dask, we might need to sample or compute if the model doesn't support it
         if isinstance(X_train, dd.DataFrame):
-            print(f"INFO: Conversion Dask -> Pandas pour l'entraînement de {name} (Sampling intelligent)")
-            # We take a representative sample to avoid OOM, e.g., 100k rows
-            # or the whole thing if it's small enough.
-            # For now, let's take 100k rows max for training if it's Dask.
-            X_train_pd = X_train.head(100000)
-            y_train_pd = y_train.head(100000)
+            print(f"INFO: Conversion Dask -> Pandas pour l'entraînement de {name} (Sampling aléatoire)")
+            # CRITICAL: Use sample() instead of head() to ensure we get both classes
+            try:
+                # Take a larger sample to ensure class representation, then limit to 100k
+                X_train_pd = X_train.sample(frac=min(1.0, 200000/70000000)).compute().head(100000)
+                y_train_pd = y_train.loc[X_train_pd.index].compute()
+            except:
+                X_train_pd = X_train.head(100000)
+                y_train_pd = y_train.head(100000)
         else:
             X_train_pd = X_train
             y_train_pd = y_train
 
         X_train_num = X_train_pd.select_dtypes(include=[np.number]).fillna(0)
-        input_dim = X_train_num.shape[1]
 
+        if X_train_num.empty or X_train_num.shape[1] == 0:
+            logger.error(f"Erreur: Pas de features numériques pour {name}")
+            return
+
+        input_dim = X_train_num.shape[1]
         model = self.models.get(name)
+
         if name == 'TabNet' and model is None:
             logger.warning("TabNet non disponible.")
             return
@@ -89,6 +104,7 @@ class PipelineTrainer:
             if name == 'CNN':
                 self._train_cnn(X_train_num, y_train_pd, input_dim)
             elif name == 'TabNet' and model is not None:
+                # TabNet needs numpy arrays
                 model.fit(
                     X_train_num.values, y_train_pd.values,
                     max_epochs=20, patience=5,

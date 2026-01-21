@@ -1,0 +1,2012 @@
+{
+  "timestamp": "2026-01-21T16:39:14.500286",
+  "total_tests": 38,
+  "passed": 34,
+  "failed": 4,
+  "skipped": 0,
+  "results": [
+    {
+      "test_name": "tests/test_algo_handling.py::test_get_algo_names_column",
+      "outcome": "passed",
+      "duration": 0.0063571929931640625,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: isinstance(algos",
+          "condition": "isinstance(algos"
+        },
+        {
+          "description": "Assertion: len(algos) == 5",
+          "condition": "len(algos) == 5"
+        },
+        {
+          "description": "Assertion: list(algos.values) == ['LR'",
+          "condition": "list(algos.values) == ['LR'"
+        },
+        {
+          "description": "Assertion: algos.dtype == 'object'",
+          "condition": "algos.dtype == 'object'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_get_algo_names_index",
+      "outcome": "passed",
+      "duration": 0.003034353256225586,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: isinstance(algos",
+          "condition": "isinstance(algos"
+        },
+        {
+          "description": "Assertion: len(algos) == 3",
+          "condition": "len(algos) == 3"
+        },
+        {
+          "description": "Assertion: list(algos.values) == ['LR'",
+          "condition": "list(algos.values) == ['LR'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 3/3 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_get_algo_names_raises",
+      "outcome": "passed",
+      "duration": 0.0030624866485595703,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [],
+      "success_reason": "Algorithm name handling (sanitization, column management) working correctly",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_ensure_algo_column",
+      "outcome": "passed",
+      "duration": 0.005379438400268555,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df1 (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df2 (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df4 (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: result1 is not None",
+          "condition": "result1 is not None"
+        },
+        {
+          "description": "Assertion: 'algo' in result1.columns",
+          "condition": "'algo' in result1.columns"
+        },
+        {
+          "description": "Assertion: result1.equals(df1)",
+          "condition": "result1.equals(df1)"
+        },
+        {
+          "description": "Assertion: result2 is not None",
+          "condition": "result2 is not None"
+        },
+        {
+          "description": "Assertion: 'algo' in result2.columns",
+          "condition": "'algo' in result2.columns"
+        },
+        {
+          "description": "Assertion: list(result2['algo'].values) == ['LR'",
+          "condition": "list(result2['algo'].values) == ['LR'"
+        },
+        {
+          "description": "Assertion: result3 is None",
+          "condition": "result3 is None"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 7/7 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_algo_handling.py::test_sanitize_algo_name",
+      "outcome": "passed",
+      "duration": 0.0018982887268066406,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: result == expected",
+          "condition": "result == expected"
+        },
+        {
+          "description": "Assertion: result == label",
+          "condition": "result == label"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_cnn.py::test_cnn_pipeline_full_flow",
+      "outcome": "failed",
+      "duration": 107.86133575439453,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 1 in results",
+          "condition": "1 in results"
+        },
+        {
+          "description": "Assertion: 2 in results",
+          "condition": "2 in results"
+        },
+        {
+          "description": "Assertion: 3 in results",
+          "condition": "3 in results"
+        },
+        {
+          "description": "Assertion: 5 in results",
+          "condition": "5 in results"
+        },
+        {
+          "description": "Assertion: runner.best_config is not None",
+          "condition": "runner.best_config is not None"
+        },
+        {
+          "description": "Assertion: (test_results_dir / 'phase1_config_search' / 'best_config.json').exists()",
+          "condition": "(test_results_dir / 'phase1_config_search' / 'best_config.json').exists()"
+        },
+        {
+          "description": "Assertion: algo in found_algos",
+          "condition": "algo in found_algos"
+        }
+      ],
+      "success_reason": "",
+      "failure_reason": "Assertion failed - Expected condition not met",
+      "error_message": "tests/test_cnn.py:99: in test_cnn_pipeline_full_flow\n    assert algo in found_algos, f\"{algo} missing from evaluation. Found: {found_algos}\"\nE   AssertionError: LR missing from evaluation. Found: ['NO_MODELS_EVALUATED']\nE   assert 'LR' in ['NO_MODELS_EVALUATED']",
+      "traceback": "tests/test_cnn.py:99: in test_cnn_pipeline_full_flow\n    assert algo in found_algos, f\"{algo} missing from evaluation. Found: {found_algos}\"\nE   AssertionError: LR missing from evaluation. Found: ['NO_MODELS_EVALUATED']\nE   assert 'LR' in ['NO_MODELS_EVALUATED']"
+    },
+    {
+      "test_name": "tests/test_data_harmonization_small.py::test_analyze_feature_similarity_basic",
+      "outcome": "passed",
+      "duration": 0.012446880340576172,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df1 (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            0,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df2 (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            0,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: result['compatible'] is True",
+          "condition": "result['compatible'] is True"
+        },
+        {
+          "description": "Assertion: 'ks_pvalue' in result",
+          "condition": "'ks_pvalue' in result"
+        },
+        {
+          "description": "Assertion: result['mean_diff'] < 0.5",
+          "condition": "result['mean_diff'] < 0.5"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 3/3 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_data_harmonization_small.py::test_early_fusion_basic",
+      "outcome": "passed",
+      "duration": 0.02033853530883789,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df_cic (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df_ton (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: len(fused) == 4",
+          "condition": "len(fused) == 4"
+        },
+        {
+          "description": "Assertion: 'dataset_source' in fused.columns",
+          "condition": "'dataset_source' in fused.columns"
+        },
+        {
+          "description": "Assertion: list(fused['dataset_source'].unique()) == [0",
+          "condition": "list(fused['dataset_source'].unique()) == [0"
+        },
+        {
+          "description": "Assertion: 'f1' in validation",
+          "condition": "'f1' in validation"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_data_harmonization_small.py::test_harmonize_features_labels",
+      "outcome": "passed",
+      "duration": 0.03143811225891113,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df_cic (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "df_ton (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: h_cic['label'].tolist() == [0",
+          "condition": "h_cic['label'].tolist() == [0"
+        },
+        {
+          "description": "Assertion: h_ton['label'].tolist() == [0",
+          "condition": "h_ton['label'].tolist() == [0"
+        },
+        {
+          "description": "Assertion: 'f1' in h_cic.columns",
+          "condition": "'f1' in h_cic.columns"
+        },
+        {
+          "description": "Assertion: 'f1' in h_ton.columns",
+          "condition": "'f1' in h_ton.columns"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_dataset_source_flag.py::test_dataset_source_flag",
+      "outcome": "passed",
+      "duration": 0.013362646102905273,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5
+          },
+          "shape": [
+            1,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'dataset_source' in X.columns",
+          "condition": "'dataset_source' in X.columns"
+        },
+        {
+          "description": "Assertion: 'dataset_source' not in X_f.columns",
+          "condition": "'dataset_source' not in X_f.columns"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_model_aware_profiles.py::test_model_aware_profiles",
+      "outcome": "passed",
+      "duration": 0.005708932876586914,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: lr_profile[\"apply_scaling\"] is True",
+          "condition": "lr_profile[\"apply_scaling\"] is True"
+        },
+        {
+          "description": "Assertion: lr_profile[\"apply_feature_selection\"] is True",
+          "condition": "lr_profile[\"apply_feature_selection\"] is True"
+        },
+        {
+          "description": "Assertion: lr_profile[\"apply_resampling\"] is True",
+          "condition": "lr_profile[\"apply_resampling\"] is True"
+        },
+        {
+          "description": "Assertion: lr_profile.get(\"use_class_weight\"",
+          "condition": "lr_profile.get(\"use_class_weight\""
+        },
+        {
+          "description": "Assertion: \"feature_selection_k\" in lr_profile",
+          "condition": "\"feature_selection_k\" in lr_profile"
+        },
+        {
+          "description": "Assertion: 10 <= lr_profile[\"feature_selection_k\"] <= 60",
+          "condition": "10 <= lr_profile[\"feature_selection_k\"] <= 60"
+        },
+        {
+          "description": "Assertion: cnn_profile[\"apply_scaling\"] is True",
+          "condition": "cnn_profile[\"apply_scaling\"] is True"
+        },
+        {
+          "description": "Assertion: cnn_profile[\"apply_feature_selection\"] is False",
+          "condition": "cnn_profile[\"apply_feature_selection\"] is False"
+        },
+        {
+          "description": "Assertion: cnn_profile[\"apply_resampling\"] is True",
+          "condition": "cnn_profile[\"apply_resampling\"] is True"
+        },
+        {
+          "description": "Assertion: cnn_profile.get(\"cnn_reshape\"",
+          "condition": "cnn_profile.get(\"cnn_reshape\""
+        },
+        {
+          "description": "Assertion: tabnet_profile[\"apply_scaling\"] is False",
+          "condition": "tabnet_profile[\"apply_scaling\"] is False"
+        },
+        {
+          "description": "Assertion: tabnet_profile[\"apply_feature_selection\"] is False",
+          "condition": "tabnet_profile[\"apply_feature_selection\"] is False"
+        },
+        {
+          "description": "Assertion: tabnet_profile[\"apply_resampling\"] is False",
+          "condition": "tabnet_profile[\"apply_resampling\"] is False"
+        },
+        {
+          "description": "Assertion: tabnet_profile[\"use_class_weight\"] is True",
+          "condition": "tabnet_profile[\"use_class_weight\"] is True"
+        },
+        {
+          "description": "Assertion: tabnet_profile.get(\"class_weight\") == \"balanced\"",
+          "condition": "tabnet_profile.get(\"class_weight\") == \"balanced\""
+        },
+        {
+          "description": "Assertion: tree_profile[\"apply_scaling\"] is False",
+          "condition": "tree_profile[\"apply_scaling\"] is False"
+        },
+        {
+          "description": "Assertion: tree_profile[\"apply_feature_selection\"] is False",
+          "condition": "tree_profile[\"apply_feature_selection\"] is False"
+        },
+        {
+          "description": "Assertion: tree_profile[\"apply_resampling\"] is False",
+          "condition": "tree_profile[\"apply_resampling\"] is False"
+        },
+        {
+          "description": "Assertion: tree_profile[\"use_class_weight\"] is True",
+          "condition": "tree_profile[\"use_class_weight\"] is True"
+        },
+        {
+          "description": "Assertion: tree_profile.get(\"class_weight\") == \"balanced\"",
+          "condition": "tree_profile.get(\"class_weight\") == \"balanced\""
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 20/20 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_new_pipeline_components.py::test_feature_categorization",
+      "outcome": "passed",
+      "duration": 0.0027844905853271484,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'Flow_Basic_Stats' in categorized",
+          "condition": "'Flow_Basic_Stats' in categorized"
+        },
+        {
+          "description": "Assertion: 'Flow Duration' in categorized['Flow_Basic_Stats']",
+          "condition": "'Flow Duration' in categorized['Flow_Basic_Stats']"
+        },
+        {
+          "description": "Assertion: 'Flow_Identifiers' in categorized",
+          "condition": "'Flow_Identifiers' in categorized"
+        },
+        {
+          "description": "Assertion: 'Source IP' in categorized['Flow_Identifiers']",
+          "condition": "'Source IP' in categorized['Flow_Identifiers']"
+        },
+        {
+          "description": "Assertion: 'Flag_Counts' in categorized",
+          "condition": "'Flag_Counts' in categorized"
+        },
+        {
+          "description": "Assertion: 'SYN Flag Count' in categorized['Flag_Counts']",
+          "condition": "'SYN Flag Count' in categorized['Flag_Counts']"
+        },
+        {
+          "description": "Assertion: 'Other' in categorized",
+          "condition": "'Other' in categorized"
+        },
+        {
+          "description": "Assertion: 'Unknown_Col' in categorized['Other']",
+          "condition": "'Unknown_Col' in categorized['Other']"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 8/8 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_new_pipeline_components.py::test_category_scores",
+      "outcome": "passed",
+      "duration": 0.003148317337036133,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'performance' in scores",
+          "condition": "'performance' in scores"
+        },
+        {
+          "description": "Assertion: 'explainability' in scores",
+          "condition": "'explainability' in scores"
+        },
+        {
+          "description": "Assertion: 'resources' in scores",
+          "condition": "'resources' in scores"
+        },
+        {
+          "description": "Assertion: scores['explainability'] > 0",
+          "condition": "scores['explainability'] > 0"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_new_pipeline_components.py::test_trainer_single",
+      "outcome": "passed",
+      "duration": 0.01880931854248047,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'DT' in trainer.models",
+          "condition": "'DT' in trainer.models"
+        },
+        {
+          "description": "Assertion: trainer.models['DT'] is not None",
+          "condition": "trainer.models['DT'] is not None"
+        },
+        {
+          "description": "Assertion: 'DT' in trainer.training_times",
+          "condition": "'DT' in trainer.training_times"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 3/3 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_new_pipeline_components.py::test_validator_single",
+      "outcome": "passed",
+      "duration": 0.6705448627471924,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'DT' in validator.best_params",
+          "condition": "'DT' in validator.best_params"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 1/1 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_new_pipeline_components.py::test_xai_manager_single",
+      "outcome": "passed",
+      "duration": 2.19478440284729,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'RF' in xai.results",
+          "condition": "'RF' in xai.results"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 1/1 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_new_pipeline_components.py::test_tester_single",
+      "outcome": "passed",
+      "duration": 0.5013589859008789,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'DT' in tester.test_results",
+          "condition": "'DT' in tester.test_results"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 1/1 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_no_data_leakage.py::test_scaler_fit_only_on_train",
+      "outcome": "passed",
+      "duration": 0.11077308654785156,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_train (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9",
+            "col_10",
+            "col_11",
+            "col_12",
+            "col_13",
+            "col_14",
+            "col_15",
+            "col_16",
+            "col_17",
+            "col_18",
+            "col_19"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_test (DataFrame)",
+          "headers": [
+            "f'feature_{i}' for i in range(n_features)"
+          ],
+          "sample_row": {
+            "f'feature_{i}' for i in range(n_features)": 2.79
+          },
+          "shape": [
+            0,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: pipeline.is_fitted",
+          "condition": "pipeline.is_fitted"
+        },
+        {
+          "description": "Assertion: pipeline.scaler is not None",
+          "condition": "pipeline.scaler is not None"
+        },
+        {
+          "description": "Assertion: X_test_transformed.shape[0] == n_test",
+          "condition": "X_test_transformed.shape[0] == n_test"
+        },
+        {
+          "description": "Assertion: X_test_transformed.shape[1] == n_features",
+          "condition": "X_test_transformed.shape[1] == n_features"
+        },
+        {
+          "description": "Assertion: np.abs(test_scaled_mean.mean()) < 5.0",
+          "condition": "np.abs(test_scaled_mean.mean()) < 5.0"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 5/5 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_no_data_leakage.py::test_feature_selector_fit_only_on_train",
+      "outcome": "passed",
+      "duration": 0.36601829528808594,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_train (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9",
+            "col_10",
+            "col_11",
+            "col_12",
+            "col_13",
+            "col_14",
+            "col_15",
+            "col_16",
+            "col_17",
+            "col_18",
+            "col_19"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_test (DataFrame)",
+          "headers": [
+            "f'feature_{i}' for i in range(n_features)"
+          ],
+          "sample_row": {
+            "f'feature_{i}' for i in range(n_features)": 2.79
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: pipeline.feature_selector is not None",
+          "condition": "pipeline.feature_selector is not None"
+        },
+        {
+          "description": "Assertion: pipeline.selected_features is not None",
+          "condition": "pipeline.selected_features is not None"
+        },
+        {
+          "description": "Assertion: len(pipeline.selected_features) == k_selected",
+          "condition": "len(pipeline.selected_features) == k_selected"
+        },
+        {
+          "description": "Assertion: X_test_transformed.shape[1] == k_selected",
+          "condition": "X_test_transformed.shape[1] == k_selected"
+        },
+        {
+          "description": "Assertion: X_test_transformed.shape[0] == n_test",
+          "condition": "X_test_transformed.shape[0] == n_test"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 5/5 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_no_data_leakage.py::test_imputer_fit_only_on_train",
+      "outcome": "passed",
+      "duration": 0.1549694538116455,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_train (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9",
+            "col_10",
+            "col_11",
+            "col_12",
+            "col_13",
+            "col_14",
+            "col_15",
+            "col_16",
+            "col_17",
+            "col_18",
+            "col_19"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_test (DataFrame)",
+          "headers": [
+            "f'feature_{i}' for i in range(n_features)"
+          ],
+          "sample_row": {
+            "f'feature_{i}' for i in range(n_features)": 2.79
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: pipeline.imputer is not None",
+          "condition": "pipeline.imputer is not None"
+        },
+        {
+          "description": "Assertion: not np.isnan(X_test_transformed).any()",
+          "condition": "not np.isnan(X_test_transformed).any()"
+        },
+        {
+          "description": "Assertion: np.abs(test_imputed_values.mean() - train_median_feature0) < 30.0",
+          "condition": "np.abs(test_imputed_values.mean() - train_median_feature0) < 30.0"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 3/3 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_no_data_leakage.py::test_transform_test_no_fitting",
+      "outcome": "passed",
+      "duration": 0.1925971508026123,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_train (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9",
+            "col_10",
+            "col_11",
+            "col_12",
+            "col_13",
+            "col_14",
+            "col_15",
+            "col_16",
+            "col_17",
+            "col_18",
+            "col_19"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_test (DataFrame)",
+          "headers": [
+            "f'feature_{i}' for i in range(n_features)"
+          ],
+          "sample_row": {
+            "f'feature_{i}' for i in range(n_features)": 2.79
+          },
+          "shape": [
+            200,
+            50
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: np.array_equal(pipeline.scaler.center_",
+          "condition": "np.array_equal(pipeline.scaler.center_"
+        },
+        {
+          "description": "Assertion: np.array_equal(pipeline.scaler.scale_",
+          "condition": "np.array_equal(pipeline.scaler.scale_"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_no_global_fit_regression.py::test_no_global_fit_regression",
+      "outcome": "failed",
+      "duration": 0.09767675399780273,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [
+            "f'f{i}' for i in range(5)"
+          ],
+          "sample_row": {
+            "f'f{i}' for i in range(5)": 2.79
+          },
+          "shape": [
+            20,
+            5
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "return_value (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            100,
+            10
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: MockPipeline.call_count == 2",
+          "condition": "MockPipeline.call_count == 2"
+        }
+      ],
+      "success_reason": "",
+      "failure_reason": "Invalid value provided",
+      "error_message": "tests/test_no_global_fit_regression.py:60: in test_no_global_fit_regression\n    evaluator.run()\nsrc/phases/phase3_evaluation.py:118: in run\n    raise ValueError(\"No algorithms available for evaluation. Check dependencies and config.\")\nE   ValueError: No algorithms available for evaluation. Check dependencies and config.",
+      "traceback": "tests/test_no_global_fit_regression.py:60: in test_no_global_fit_regression\n    evaluator.run()\nsrc/phases/phase3_evaluation.py:118: in run\n    raise ValueError(\"No algorithms available for evaluation. Check dependencies and config.\")\nE   ValueError: No algorithms available for evaluation. Check dependencies and config."
+    },
+    {
+      "test_name": "tests/test_no_smote_leakage_phase3.py::test_no_smote_leakage_phase3",
+      "outcome": "passed",
+      "duration": 0.2228238582611084,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X (DataFrame)",
+          "headers": [
+            "f'f{i}' for i in range(10)"
+          ],
+          "sample_row": {
+            "f'f{i}' for i in range(10)": 2.79
+          },
+          "shape": [
+            100,
+            10
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: \"Applying SMOTE before splitting\" not in caplog.text",
+          "condition": "\"Applying SMOTE before splitting\" not in caplog.text"
+        },
+        {
+          "description": "Assertion: counts[0] == counts[1]",
+          "condition": "counts[0] == counts[1]"
+        },
+        {
+          "description": "Assertion: counts[0] > 10 # Should be 90",
+          "condition": "counts[0] > 10 # Should be 90"
+        },
+        {
+          "description": "Assertion: pipeline.smote is not None",
+          "condition": "pipeline.smote is not None"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_performance_and_ram.py::test_ram_optimization_during_loading",
+      "outcome": "passed",
+      "duration": 0.29349327087402344,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "df (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            100,
+            10
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: optimized_mem < initial_mem",
+          "condition": "optimized_mem < initial_mem"
+        },
+        {
+          "description": "Assertion: df_opt['float_col'].dtype == 'float32'",
+          "condition": "df_opt['float_col'].dtype == 'float32'"
+        },
+        {
+          "description": "Assertion: df_opt['int_col'].dtype in ['int16'",
+          "condition": "df_opt['int_col'].dtype in ['int16'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 3/3 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_performance_and_ram.py::test_multi_threading_config",
+      "outcome": "passed",
+      "duration": 0.0026001930236816406,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: rf.n_jobs == -1",
+          "condition": "rf.n_jobs == -1"
+        },
+        {
+          "description": "Assertion: lr.n_jobs == -1",
+          "condition": "lr.n_jobs == -1"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_performance_and_ram.py::test_system_monitor_ram_check",
+      "outcome": "passed",
+      "duration": 0.0043718814849853516,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'used_percent' in mem_info",
+          "condition": "'used_percent' in mem_info"
+        },
+        {
+          "description": "Assertion: 'process_mem_mb' in mem_info",
+          "condition": "'process_mem_mb' in mem_info"
+        },
+        {
+          "description": "Assertion: mem_info['process_mem_mb'] > 0",
+          "condition": "mem_info['process_mem_mb'] > 0"
+        },
+        {
+          "description": "Assertion: isinstance(is_safe",
+          "condition": "isinstance(is_safe"
+        },
+        {
+          "description": "Assertion: isinstance(msg",
+          "condition": "isinstance(msg"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 5/5 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_phase2_outputs.py::test_phase2_outputs",
+      "outcome": "passed",
+      "duration": 0.07291436195373535,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: output_paths[\"preprocessed_data\"].exists()",
+          "condition": "output_paths[\"preprocessed_data\"].exists()"
+        },
+        {
+          "description": "Assertion: output_paths[\"feature_names\"].exists()",
+          "condition": "output_paths[\"feature_names\"].exists()"
+        },
+        {
+          "description": "Assertion: output_paths[\"summary\"].exists()",
+          "condition": "output_paths[\"summary\"].exists()"
+        },
+        {
+          "description": "Assertion: \"dataset_source\" in df.columns",
+          "condition": "\"dataset_source\" in df.columns"
+        },
+        {
+          "description": "Assertion: df[\"dataset_source\"].isin([0",
+          "condition": "df[\"dataset_source\"].isin([0"
+        },
+        {
+          "description": "Assertion: \"label\" in df.columns",
+          "condition": "\"label\" in df.columns"
+        },
+        {
+          "description": "Assertion: \"feature_names\" in feature_data",
+          "condition": "\"feature_names\" in feature_data"
+        },
+        {
+          "description": "Assertion: \"dataset_source\" in feature_data[\"feature_names\"] or \"dataset_source\" not in df.",
+          "condition": "\"dataset_source\" in feature_data[\"feature_names\"] or \"dataset_source\" not in df.drop(columns=[\"label\"]).columns"
+        },
+        {
+          "description": "Assertion: \"Phase 2: Apply Best Configuration\" in summary_content",
+          "condition": "\"Phase 2: Apply Best Configuration\" in summary_content"
+        },
+        {
+          "description": "Assertion: \"dataset_source\" in summary_content or \"Dataset Source Distribution\" in summary_",
+          "condition": "\"dataset_source\" in summary_content or \"Dataset Source Distribution\" in summary_content"
+        },
+        {
+          "description": "Assertion: \"Stateless preprocessing only\" in summary_content",
+          "condition": "\"Stateless preprocessing only\" in summary_content"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 11/11 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_phase3_cnn_tabnet.py::test_phase3_cnn_tabnet_profiles",
+      "outcome": "passed",
+      "duration": 0.002901792526245117,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'cnn_profile' in config.preprocessing_profiles",
+          "condition": "'cnn_profile' in config.preprocessing_profiles"
+        },
+        {
+          "description": "Assertion: cnn_profile.get('apply_scaling') is True",
+          "condition": "cnn_profile.get('apply_scaling') is True"
+        },
+        {
+          "description": "Assertion: cnn_profile.get('apply_feature_selection') is False",
+          "condition": "cnn_profile.get('apply_feature_selection') is False"
+        },
+        {
+          "description": "Assertion: cnn_profile.get('cnn_reshape') is True",
+          "condition": "cnn_profile.get('cnn_reshape') is True"
+        },
+        {
+          "description": "Assertion: cnn_profile.get('apply_resampling') is True",
+          "condition": "cnn_profile.get('apply_resampling') is True"
+        },
+        {
+          "description": "Assertion: 'tabnet_profile' in config.preprocessing_profiles",
+          "condition": "'tabnet_profile' in config.preprocessing_profiles"
+        },
+        {
+          "description": "Assertion: tabnet_profile.get('apply_scaling') is False",
+          "condition": "tabnet_profile.get('apply_scaling') is False"
+        },
+        {
+          "description": "Assertion: tabnet_profile.get('apply_feature_selection') is False",
+          "condition": "tabnet_profile.get('apply_feature_selection') is False"
+        },
+        {
+          "description": "Assertion: tabnet_profile.get('use_class_weight') is True",
+          "condition": "tabnet_profile.get('use_class_weight') is True"
+        },
+        {
+          "description": "Assertion: tabnet_profile.get('class_weight') == 'balanced'",
+          "condition": "tabnet_profile.get('class_weight') == 'balanced'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 10/10 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_phase3_cnn_tabnet.py::test_phase3_model_names",
+      "outcome": "passed",
+      "duration": 0.0029129981994628906,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'cnn' in algos_lower or 'CNN' in config.phase3_algorithms",
+          "condition": "'cnn' in algos_lower or 'CNN' in config.phase3_algorithms"
+        },
+        {
+          "description": "Assertion: 'tabnet' in algos_lower or 'TabNet' in config.phase3_algorithms",
+          "condition": "'tabnet' in algos_lower or 'TabNet' in config.phase3_algorithms"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_phase3_cnn_tabnet.py::test_phase3_metrics_df_format",
+      "outcome": "passed",
+      "duration": 0.005120754241943359,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "metrics_df (DataFrame)",
+          "headers": [],
+          "sample_row": {},
+          "shape": [
+            9,
+            0
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 'algo' in metrics_df_ensured.columns",
+          "condition": "'algo' in metrics_df_ensured.columns"
+        },
+        {
+          "description": "Assertion: list(algos.values) == ['LR'",
+          "condition": "list(algos.values) == ['LR'"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 2/2 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_phase3_synthetic.py::test_phase3_synthetic_produces_outputs",
+      "outcome": "failed",
+      "duration": 0.11392474174499512,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: results_file.exists()",
+          "condition": "results_file.exists()"
+        },
+        {
+          "description": "Assertion: len(results_df) > 0",
+          "condition": "len(results_df) > 0"
+        },
+        {
+          "description": "Assertion: \"model_name\" in results_df.columns",
+          "condition": "\"model_name\" in results_df.columns"
+        },
+        {
+          "description": "Assertion: \"f1_score\" in results_df.columns",
+          "condition": "\"f1_score\" in results_df.columns"
+        },
+        {
+          "description": "Assertion: len(dimension_scores_df) > 0",
+          "condition": "len(dimension_scores_df) > 0"
+        },
+        {
+          "description": "Assertion: \"model_name\" in dimension_scores_df.columns",
+          "condition": "\"model_name\" in dimension_scores_df.columns"
+        },
+        {
+          "description": "Assertion: len(report_files) > 0",
+          "condition": "len(report_files) > 0"
+        }
+      ],
+      "success_reason": "",
+      "failure_reason": "Invalid value provided",
+      "error_message": "tests/test_phase3_synthetic.py:51: in test_phase3_synthetic_produces_outputs\n    result = phase3.run()\n             ^^^^^^^^^^^^\nsrc/phases/phase3_evaluation.py:118: in run\n    raise ValueError(\"No algorithms available for evaluation. Check dependencies and config.\")\nE   ValueError: No algorithms available for evaluation. Check dependencies and config.",
+      "traceback": "tests/test_phase3_synthetic.py:51: in test_phase3_synthetic_produces_outputs\n    result = phase3.run()\n             ^^^^^^^^^^^^\nsrc/phases/phase3_evaluation.py:118: in run\n    raise ValueError(\"No algorithms available for evaluation. Check dependencies and config.\")\nE   ValueError: No algorithms available for evaluation. Check dependencies and config."
+    },
+    {
+      "test_name": "tests/test_preprocessing_pipeline.py::test_sanitize_numeric_values_removes_inf_and_clips",
+      "outcome": "passed",
+      "duration": 0.06478118896484375,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_df (DataFrame)",
+          "headers": [
+            "f\"feature_{i}\" for i in range(n_features)"
+          ],
+          "sample_row": {
+            "f\"feature_{i}\" for i in range(n_features)": 2.79
+          },
+          "shape": [
+            4,
+            2
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: X_sanitized.shape == X_df.shape",
+          "condition": "X_sanitized.shape == X_df.shape"
+        },
+        {
+          "description": "Assertion: list(X_sanitized.columns) == list(X_df.columns)",
+          "condition": "list(X_sanitized.columns) == list(X_df.columns)"
+        },
+        {
+          "description": "Assertion: inf_count == 0",
+          "condition": "inf_count == 0"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[4",
+          "condition": "X_sanitized.loc[4"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[5",
+          "condition": "X_sanitized.loc[5"
+        },
+        {
+          "description": "Assertion: finite_sanitized.min() >= q_low",
+          "condition": "finite_sanitized.min() >= q_low"
+        },
+        {
+          "description": "Assertion: finite_sanitized.max() <= q_high",
+          "condition": "finite_sanitized.max() <= q_high"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 7/7 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_preprocessing_pipeline.py::test_sanitize_numeric_values_replace_inf_with_max",
+      "outcome": "passed",
+      "duration": 0.02239823341369629,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_df (DataFrame)",
+          "headers": [
+            "feature_0",
+            "feature_1",
+            "feature_2"
+          ],
+          "sample_row": {
+            "feature_0": 2.79,
+            "feature_1": -9.5,
+            "feature_2": -4.5
+          },
+          "shape": [
+            100,
+            3
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: inf_count == 0",
+          "condition": "inf_count == 0"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[0",
+          "condition": "X_sanitized.loc[0"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[1",
+          "condition": "X_sanitized.loc[1"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[2",
+          "condition": "X_sanitized.loc[2"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_preprocessing_pipeline.py::test_sanitize_numeric_values_abs_cap",
+      "outcome": "passed",
+      "duration": 0.016202926635742188,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_df (DataFrame)",
+          "headers": [
+            "feature_0",
+            "feature_1",
+            "feature_2"
+          ],
+          "sample_row": {
+            "feature_0": 2.79,
+            "feature_1": -9.5,
+            "feature_2": -4.5
+          },
+          "shape": [
+            50,
+            3
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: X_sanitized.values.min() >= -abs_cap",
+          "condition": "X_sanitized.values.min() >= -abs_cap"
+        },
+        {
+          "description": "Assertion: X_sanitized.values.max() <= abs_cap",
+          "condition": "X_sanitized.values.max() <= abs_cap"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[0",
+          "condition": "X_sanitized.loc[0"
+        },
+        {
+          "description": "Assertion: X_sanitized.loc[1",
+          "condition": "X_sanitized.loc[1"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_preprocessing_pipeline.py::test_sanitize_numeric_values_integration_with_clean_data",
+      "outcome": "passed",
+      "duration": 0.08192896842956543,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_df (DataFrame)",
+          "headers": [
+            "f\"feature_{i}\" for i in range(5)"
+          ],
+          "sample_row": {
+            "f\"feature_{i}\" for i in range(5)": 2.79
+          },
+          "shape": [
+            100,
+            5
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: inf_count == 0",
+          "condition": "inf_count == 0"
+        },
+        {
+          "description": "Assertion: np.abs(X_cleaned.loc[2",
+          "condition": "np.abs(X_cleaned.loc[2"
+        },
+        {
+          "description": "Assertion: X_cleaned.shape[0] == X_df.shape[0]",
+          "condition": "X_cleaned.shape[0] == X_df.shape[0]"
+        },
+        {
+          "description": "Assertion: X_cleaned.shape[1] == X_df.shape[1]",
+          "condition": "X_cleaned.shape[1] == X_df.shape[1]"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 4/4 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_preprocessing_pipeline.py::test_transform_test_requires_fitted_pipeline",
+      "outcome": "passed",
+      "duration": 0.09357786178588867,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_test_df (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73
+          },
+          "shape": [
+            10,
+            5
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_train (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73
+          },
+          "shape": [
+            20,
+            5
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_test_fitted (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73
+          },
+          "shape": [
+            10,
+            5
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: not pipeline.is_fitted",
+          "condition": "not pipeline.is_fitted"
+        },
+        {
+          "description": "Assertion: pipeline.is_fitted",
+          "condition": "pipeline.is_fitted"
+        },
+        {
+          "description": "Assertion: isinstance(result",
+          "condition": "isinstance(result"
+        },
+        {
+          "description": "Assertion: result.shape[0] == 10",
+          "condition": "result.shape[0] == 10"
+        },
+        {
+          "description": "Assertion: result.shape[1] == 5",
+          "condition": "result.shape[1] == 5"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 5/5 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    },
+    {
+      "test_name": "tests/test_tabnet.py::test_tabnet_pipeline_full_flow",
+      "outcome": "failed",
+      "duration": 138.69065976142883,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [],
+      "validation_criteria": [
+        {
+          "description": "Assertion: 1 in results",
+          "condition": "1 in results"
+        },
+        {
+          "description": "Assertion: 2 in results",
+          "condition": "2 in results"
+        },
+        {
+          "description": "Assertion: 3 in results",
+          "condition": "3 in results"
+        },
+        {
+          "description": "Assertion: 5 in results",
+          "condition": "5 in results"
+        },
+        {
+          "description": "Assertion: runner.best_config is not None",
+          "condition": "runner.best_config is not None"
+        },
+        {
+          "description": "Assertion: (test_results_dir / 'phase1_config_search' / 'best_config.json').exists()",
+          "condition": "(test_results_dir / 'phase1_config_search' / 'best_config.json').exists()"
+        },
+        {
+          "description": "Assertion: algo in found_algos",
+          "condition": "algo in found_algos"
+        }
+      ],
+      "success_reason": "",
+      "failure_reason": "Assertion failed - Expected condition not met",
+      "error_message": "tests/test_tabnet.py:99: in test_tabnet_pipeline_full_flow\n    assert algo in found_algos, f\"{algo} missing from evaluation. Found: {found_algos}\"\nE   AssertionError: LR missing from evaluation. Found: ['NO_MODELS_EVALUATED']\nE   assert 'LR' in ['NO_MODELS_EVALUATED']",
+      "traceback": "tests/test_tabnet.py:99: in test_tabnet_pipeline_full_flow\n    assert algo in found_algos, f\"{algo} missing from evaluation. Found: {found_algos}\"\nE   AssertionError: LR missing from evaluation. Found: ['NO_MODELS_EVALUATED']\nE   assert 'LR' in ['NO_MODELS_EVALUATED']"
+    },
+    {
+      "test_name": "tests/test_test_transform_is_fold_fitted.py::test_test_transform_is_fold_fitted",
+      "outcome": "passed",
+      "duration": 0.09774184226989746,
+      "input_description": "N/A",
+      "output_description": "N/A",
+      "input_matrices": [
+        {
+          "name": "X_train (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            10,
+            10
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        },
+        {
+          "name": "X_test (DataFrame)",
+          "headers": [
+            "col_0",
+            "col_1",
+            "col_2",
+            "col_3",
+            "col_4",
+            "col_5",
+            "col_6",
+            "col_7",
+            "col_8",
+            "col_9"
+          ],
+          "sample_row": {
+            "col_0": 2.79,
+            "col_1": -9.5,
+            "col_2": -4.5,
+            "col_3": -5.54,
+            "col_4": 4.73,
+            "col_5": 3.53,
+            "col_6": 7.84,
+            "col_7": -8.26,
+            "col_8": -1.56,
+            "col_9": -9.4
+          },
+          "shape": [
+            10,
+            10
+          ],
+          "dtype": "DataFrame",
+          "datasets": [],
+          "fusion": null
+        }
+      ],
+      "validation_criteria": [
+        {
+          "description": "Assertion: not np.isnan(X_test_prep).any()",
+          "condition": "not np.isnan(X_test_prep).any()"
+        },
+        {
+          "description": "Assertion: np.isfinite(X_test_prep).all()",
+          "condition": "np.isfinite(X_test_prep).all()"
+        },
+        {
+          "description": "Assertion: not np.isnan(X_test_prep_t).any()",
+          "condition": "not np.isnan(X_test_prep_t).any()"
+        },
+        {
+          "description": "Assertion: X_test_prep_t[0",
+          "condition": "X_test_prep_t[0"
+        },
+        {
+          "description": "Assertion: X_test_prep_t[1",
+          "condition": "X_test_prep_t[1"
+        }
+      ],
+      "success_reason": "All validation criteria satisfied: 5/5 passed",
+      "failure_reason": "",
+      "error_message": "",
+      "traceback": ""
+    }
+  ]
+}
