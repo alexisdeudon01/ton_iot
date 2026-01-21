@@ -162,8 +162,9 @@ class DetailedTestPlugin:
                 import psutil
                 process = psutil.Process()
                 mem_mb = process.memory_info().rss / (1024 * 1024)
-                logger.info(f"[VERBOSE] RAM Usage during test: {mem_mb:.2f} MB")
-            except ImportError:
+                # Use print instead of logger to avoid "I/O operation on closed file" during shutdown
+                print(f"\n[VERBOSE] RAM Usage during test {report.nodeid}: {mem_mb:.2f} MB")
+            except (ImportError, Exception):
                 pass
 
             test_name = report.nodeid
@@ -173,7 +174,6 @@ class DetailedTestPlugin:
             outcome = report.outcome  # 'passed', 'failed', 'skipped'
 
             # Get test item from report if available
-            # Note: report doesn't directly have 'item', we use nodeid to find info
             docstring = ""
             # In a real pytest plugin, we'd have access to the item here via other hooks
 
@@ -185,7 +185,6 @@ class DetailedTestPlugin:
             input_matrices = []
             validation_criteria = []
             if test_name in self.test_source_code:
-                # We don't have 'item' here easily, so we pass None or use nodeid
                 input_matrices = self._extract_input_matrices_from_code(test_name, "")
                 validation_criteria = self._extract_validation_criteria_from_code(test_name)
 

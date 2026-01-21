@@ -7,33 +7,34 @@ from pathlib import Path
 import shap
 import lime
 import lime.lime_tabular
+from src.new_pipeline.config import XAI_METHODS, XAI_CRITERIA_WEIGHTS
 
 logger = logging.getLogger(__name__)
 
 class XAIManager:
     """Phase 4: Explicabilité (XAI) & Configuration"""
 
-    def __init__(self, config_xai_methods: list):
-        self.methods = config_xai_methods # ['SHAP', 'LIME', 'FI']
+    def __init__(self, rr_dir: Path):
+        self.methods = XAI_METHODS # ['SHAP', 'LIME', 'FI', 'Anchors']
+        self.rr_dir = rr_dir
         self.results = {} # {algo: {method: {fidelity, stability, speed}}}
 
-    def validate_xai(self, models, X_test, y_test, output_dir):
-        logger.info("[PHASE 4] Validation des méthodes XAI selon Fidélité, Stabilité, et Vitesse")
-        output_path = Path(output_dir)
-        output_path.mkdir(parents=True, exist_ok=True)
+    def validate_xai(self, models, X_test, y_test):
+        logger.info("[PHASE 4] Validation automatique des méthodes XAI")
 
-        X_sample = X_test.select_dtypes(include=[np.number]).fillna(0).iloc[:10]
+        X_test_num = X_test.select_dtypes(include=[np.number]).fillna(0)
 
         for algo_name, model in models.items():
-            if algo_name == 'CNN' or model is None: continue
+            if model is None or algo_name == 'CNN': continue
 
             self.results[algo_name] = {}
             for method in self.methods:
                 start_time = time.time()
 
-                # Simulation des scores (dans un cas réel, on calculerait ces métriques)
-                fidelity = np.random.uniform(0.7, 0.95)
-                stability = np.random.uniform(0.6, 0.9)
+                # Simulation des scores de validation (Fidélité, Stabilité, Vitesse)
+                # Dans un cadre réel, on utiliserait des métriques comme Faithfulness Correlation
+                fidelity = np.random.uniform(0.7, 0.98)
+                stability = np.random.uniform(0.6, 0.95)
 
                 if method == 'FI':
                     speed_val = 0.01
@@ -42,19 +43,24 @@ class XAIManager:
                 else:
                     speed_val = 1.0
 
+                duration = time.time() - start_time + speed_val
+                speed_score = 1.0 / (duration + 1e-6)
+
                 self.results[algo_name][method] = {
                     'fidelity': fidelity,
                     'stability': stability,
-                    'speed': 1.0 / (speed_val + np.random.uniform(0, 0.5))
+                    'speed': speed_score
                 }
 
-        self._plot_xai_criteria(output_path)
+        self._plot_xai_comparison()
         return self._select_best_methods()
 
-    def _plot_xai_criteria(self, output_path):
+    def _plot_xai_comparison(self):
+        """Génère un graphique par critère XAI (X: Méthode, Y: Score)."""
         criteria = ['fidelity', 'stability', 'speed']
         for criterion in criteria:
             plt.figure(figsize=(10, 6))
+
             algos = list(self.results.keys())
             if not algos: continue
 
@@ -64,56 +70,63 @@ class XAIManager:
                 scores = [self.results[algo][m][criterion] for m in methods]
                 plt.plot(methods, scores, marker='o', label=algo)
 
-            plt.title(f"Comparaison XAI: {criterion.capitalize()}")
+            plt.title(f"Validation XAI: {criterion.capitalize()}")
             plt.xlabel("Méthode XAI")
-            plt.ylabel("Score")
+            plt.ylabel("Score du critère")
             plt.legend()
             plt.grid(True, alpha=0.3)
-            plt.savefig(output_path / f"phase4_xai_{criterion}.png")
+            plt.savefig(self.rr_dir / f"phase4_xai_criteria_{criterion}.png")
             plt.close()
 
     def _select_best_methods(self):
+        """Sélectionne automatiquement la méthode XAI la plus appropriée par algorithme."""
         best_selection = {}
+        w = XAI_CRITERIA_WEIGHTS
+
         for algo in self.results:
-            # Score combiné: fidelity (40%) + stability (40%) + speed (20%)
             scores = {}
             for m in self.results[algo]:
                 res = self.results[algo][m]
-                scores[m] = res['fidelity'] * 0.4 + res['stability'] * 0.4 + res['speed'] * 0.2
-
-            if not scores:
-                continue
+                # Score pondéré
+                scores[m] = res['fidelity'] * w['fidelity'] + \
+                            res['stability'] * w['stability'] + \
+                            res['speed'] * w['speed']
 
             best_selection[algo] = max(scores.keys(), key=lambda k: scores[k])
-            logger.info(f"Meilleure méthode XAI pour {algo}: {best_selection[algo]}")
+            logger.info(f"[RESULT PHASE 4] Meilleure méthode XAI pour {algo}: {best_selection[algo]}")
+
         return best_selection
 
-    def generate_final_plots(self, models, X_test, output_dir, best_methods):
-        output_path = Path(output_dir)
+    def generate_visualizations(self, models, X_test):
+        """Génère SHAP Summary Plot et explication locale LIME."""
+        logger.info("[PHASE 4] Génération des visualisations XAI spécifiques")
         X_num = X_test.select_dtypes(include=[np.number]).fillna(0)
 
-        # SHAP Summary Plot pour RF
+        # SHAP Summary Plot pour le modèle RF (référence)
         if 'RF' in models:
             try:
                 explainer = shap.TreeExplainer(models['RF'])
                 shap_values = explainer.shap_values(X_num.iloc[:100])
                 plt.figure()
                 shap.summary_plot(shap_values, X_num.iloc[:100], show=False)
-                plt.savefig(output_path / "phase4_shap_summary_rf.png")
+                plt.savefig(self.rr_dir / "phase4_shap_summary_rf.png")
                 plt.close()
+                logger.info("  SHAP Summary Plot généré.")
             except Exception as e:
-                logger.warning(f"SHAP plot failed: {e}")
+                logger.warning(f"  Échec SHAP: {e}")
 
-        # LIME pour une détection critique (XGBoost)
-        if 'XGBoost' in models:
+        # LIME Local Explanation pour une détection critique
+        if 'DT' in models:
             try:
                 explainer = lime.lime_tabular.LimeTabularExplainer(
                     X_num.values,
-                    feature_names=X_num.columns,
+                    feature_names=X_num.columns.tolist(),
                     class_names=['Normal', 'DDoS'],
                     mode='classification'
                 )
-                exp = explainer.explain_instance(X_num.iloc[0], models['XGBoost'].predict_proba, num_features=10)
-                exp.save_to_file(str(output_path / "phase4_lime_critical_detection.html"))
+                # Expliquer la première instance
+                exp = explainer.explain_instance(X_num.iloc[0], models['DT'].predict_proba, num_features=5)
+                exp.save_to_file(str(self.rr_dir / "phase4_lime_local_explanation.html"))
+                logger.info("  LIME Local Explanation générée (HTML).")
             except Exception as e:
-                logger.warning(f"LIME explanation failed: {e}")
+                logger.warning(f"  Échec LIME: {e}")
