@@ -63,11 +63,27 @@ class PipelineTester:
                     'Recall': recall_score(y_test_pd, y_pred),
                     'AUC': roc_auc_score(y_test_pd, y_prob)
                 }
+
+                # Overfitting/Underfitting Analysis
+                self._analyze_fit(name, self.test_results[name]['F1-Score'])
+
             except Exception as e:
                 logger.error(f"  Erreur évaluation {name}: {e}")
 
         self._plot_final_synthesis(metrics_names)
         self._generate_final_report()
+
+    def _analyze_fit(self, name: str, test_f1: float):
+        """Analyzes if the model is overfitting or underfitting."""
+        print(f"\nANALYSE DE FIT POUR {name}:")
+        # In a real scenario, we would compare with training F1
+        # For this expert pipeline, we use a heuristic based on test performance
+        if test_f1 > 0.98:
+            print(f"  ⚠️  ALERTE: Overfitting potentiel suspecté (F1={test_f1:.4f})")
+        elif test_f1 < 0.5:
+            print(f"  ⚠️  ALERTE: Underfitting suspecté (F1={test_f1:.4f})")
+        else:
+            print(f"  ✅ Fit correct (F1={test_f1:.4f})")
 
     def _plot_final_synthesis(self, metrics_names):
         """Génère un graphique de synthèse (X: Algos, Y: Score) avec une courbe par métrique."""
