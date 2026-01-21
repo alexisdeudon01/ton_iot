@@ -47,7 +47,7 @@ def generate_requirements(is_gpu_available):
         "seaborn>=0.11.0",
         "tqdm>=4.64.0"
     ]
-    
+
     if is_gpu_available:
         # Dépendances pour GPU
         additional_requirements = [
@@ -62,15 +62,15 @@ def generate_requirements(is_gpu_available):
             "pytorch-tabnet>=4.0",  # TabNet CPU
             "xgboost<3"  # XGBoost sans CUDA
         ]
-    
+
     # Fusionner les dépendances de base avec les dépendances spécifiques à la machine
     all_requirements = base_requirements + additional_requirements
-    
+
     # Sauvegarder dans un fichier req2.txt
     with open("req2.txt", "w") as f:
         for req in all_requirements:
             f.write(req + "\n")
-    
+
     print(f"Le fichier 'req2.txt' a été généré avec les dépendances adaptées.")
 
 # Fonction pour configurer le logging
@@ -78,10 +78,10 @@ def setup_logging(output_dir: Path):
     """Setup logging configuration"""
     log_dir = output_dir / 'logs'
     log_dir.mkdir(parents=True, exist_ok=True)
-    
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_file = log_dir / f'main_{timestamp}.log'
-    
+
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
@@ -90,7 +90,7 @@ def setup_logging(output_dir: Path):
             logging.StreamHandler(sys.stdout)
         ]
     )
-    
+
     logger = logging.getLogger(__name__)
     logger.info(f"Logging initialized. Log file: {log_file}")
     return logger
@@ -114,14 +114,14 @@ def ask_test_mode() -> bool:
     """Ask user for test mode (only if interactive)"""
     if not sys.stdout.isatty():
         return False
-    
+
     try:
         import tkinter as tk
         from tkinter import messagebox
-        
+
         root = tk.Tk()
         root.withdraw()
-        
+
         response = messagebox.askyesno(
             "Test Mode",
             "Do you want to run in TEST MODE?\n\n"
@@ -139,24 +139,24 @@ def main():
     """Main entry point"""
     # Ajouter le chemin src
     sys.path.insert(0, str(Path(__file__).parent / 'src'))
-    
+
     # Vérifier les dépendances
     if not check_requirements():
         sys.exit(1)
-    
+
     # Vérification GPU et génération du fichier req2.txt
     is_gpu_available = check_gpu_availability()
     generate_requirements(is_gpu_available)
-    
+
     # Parser les arguments CLI
     from src.app.cli import parse_args, args_to_config
-    
+
     args = parse_args()
     config = args_to_config(args)
-    
+
     # Setup logging
     logger = setup_logging(Path(config.output_dir))
-    
+
     # Demander si on veut être en mode test
     if not args.test_mode and not args.sample_ratio and config.interactive:
         test_mode = ask_test_mode()
@@ -166,31 +166,26 @@ def main():
             logger.info("=" * 70)
             logger.info("⚠️  MODE TEST ACTIVÉ - Utilisation de 0.001% des données")
             logger.info("=" * 70)
-    
+
     # Initialiser et exécuter le pipeline
     try:
-        from src.app.pipeline_runner import PipelineRunner
-        
+        # Use the new pipeline V7 as requested
+        from src.new_pipeline.main import main as run_new_pipeline
+
         logger.info("=" * 70)
-        logger.info("IRP RESEARCH PIPELINE")
+        logger.info("IRP RESEARCH PIPELINE V7 - NEW ARCHITECTURE")
         logger.info("AI-Powered Log Analysis for Smarter Threat Detection")
         logger.info("=" * 70)
-        logger.info(f"Output directory: {config.output_dir}")
-        logger.info(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Déterminer les phases à exécuter
-        phases = [args.phase] if args.phase else None
-        
-        # Créer le runner et exécuter
-        runner = PipelineRunner(config)
-        results = runner.run(phases=phases)
-        
+
+        # Run the new pipeline
+        run_new_pipeline()
+
         logger.info("=" * 70)
         logger.info("✅ PIPELINE EXECUTION SUCCESSFUL")
         logger.info("=" * 70)
-        
+
         return 0
-        
+
     except KeyboardInterrupt:
         logger.info("\n⚠️ Pipeline interrupted by user")
         return 130

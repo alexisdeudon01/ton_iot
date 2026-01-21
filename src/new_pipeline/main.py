@@ -1,12 +1,13 @@
 import logging
-import sys
 import os
 import shutil
+import sys
 import time
 from pathlib import Path
-import pandas as pd
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
 
 # Ensure project root is in sys.path
@@ -14,37 +15,39 @@ _root = Path(__file__).resolve().parent.parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from src.new_pipeline.config import RR_DIR, TON_IOT_PATH, CIC_DDOS_DIR, ALGORITHMS
+from src.core.feature_categorization import categorize_features, get_category_scores
+from src.new_pipeline.config import ALGORITHMS, CIC_DDOS_DIR, RR_DIR, TON_IOT_PATH
 from src.new_pipeline.data_loader import RealDataLoader
+from src.new_pipeline.tester import PipelineTester
 from src.new_pipeline.trainer import PipelineTrainer
 from src.new_pipeline.validator import PipelineValidator
 from src.new_pipeline.xai_manager import XAIManager
-from src.new_pipeline.tester import PipelineTester
 from src.system_monitor import SystemMonitor
-from src.core.feature_categorization import categorize_features, get_category_scores
+
 
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler("new_pipeline.log")
-        ]
+            logging.FileHandler("new_pipeline.log"),
+        ],
     )
+
 
 def main():
     # 0. Initialize System Monitor with 50% RAM limit and background thread
     monitor = SystemMonitor(max_memory_percent=50.0)
-    monitor.start_monitoring(interval=0.1) # High frequency for better plots
+    monitor.start_monitoring(interval=0.1)  # High frequency for better plots
 
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    print("\n" + "#"*80)
+    print("\n" + "#" * 80)
     print("### PIPELINE DDOS SENIOR EXPERT V7 - MULTI-DATASET & RESOURCE MANAGED ###")
     print("### RAM LIMIT: 50% | DEDICATED MONITORING THREAD | PROACTIVE GC ###")
-    print("#"*80)
+    print("#" * 80)
 
     try:
         # Clean rr directory
@@ -63,29 +66,33 @@ def main():
         train_df, val_df, test_df = loader.get_splits()
 
         # Feature Categorization
-        print("\n" + "-"*40)
+        print("\n" + "-" * 40)
         print("MICRO-TÂCHE: Catégorisation des features")
-        all_features = [c for c in train_df.columns if c not in ['is_ddos', 'label', 'type', 'dataset']]
+        all_features = [
+            c
+            for c in train_df.columns
+            if c not in ["is_ddos", "label", "type", "dataset"]
+        ]
         categorized = categorize_features(all_features)
         cat_scores = get_category_scores(categorized)
         print(f"RÉSULTAT: Features catégorisées en {len(categorized)} groupes.")
         print(f"SCORES CATÉGORIES: {cat_scores}")
 
         X_train = train_df[all_features]
-        y_train = train_df['is_ddos']
+        y_train = train_df["is_ddos"]
         X_val = val_df[all_features]
-        y_val = val_df['is_ddos']
+        y_val = val_df["is_ddos"]
         X_test = test_df[all_features]
-        y_test = test_df['is_ddos']
+        y_test = test_df["is_ddos"]
 
         # 2. Iterative Model Evaluation Loop
         # For each algorithm, we do Training -> Validation -> XAI -> Testing
         results = {}
 
         for algo in ALGORITHMS:
-            print("\n" + "="*80)
+            print("\n" + "=" * 80)
             print(f"ÉVALUATION COMPLÈTE DE L'ALGORITHME: {algo}")
-            print("="*80)
+            print("=" * 80)
 
             # 2.1 Training
             monitor.set_phase(f"Training {algo}")
@@ -108,16 +115,19 @@ def main():
             tester.evaluate_all(X_test, y_test, algo_name=algo)
 
             results[algo] = {
-                'trainer': trainer,
-                'validator': validator,
-                'xai': xai,
-                'tester': tester
+                "trainer": trainer,
+                "validator": validator,
+                "xai": xai,
+                "tester": tester,
             }
 
         # 3. Final Visualizations & Resource Plots
         monitor.set_phase("Finalizing")
-        print("\n" + "-"*40)
+        print("\n" + "-" * 40)
         print("MICRO-TÂCHE: Génération des graphiques finaux")
+
+        # ER Diagram
+        generate_er_dependency_diagram(RR_DIR / "pipeline_er_diagram.png")
 
         # Resource consumption
         monitor.plot_resource_consumption(str(RR_DIR / "resource_consumption.png"))
@@ -125,7 +135,9 @@ def main():
 
         # 3.1 Correlation Matrix on a sample of data
         plt.figure(figsize=(12, 10))
-        sns.heatmap(X_test.sample(min(1000, len(X_test))).corr(), cmap='coolwarm', annot=False)
+        sns.heatmap(
+            X_test.sample(min(1000, len(X_test))).corr(), cmap="coolwarm", annot=False
+        )
         plt.title("Correlation Matrix (Sample)")
         plt.savefig(RR_DIR / "correlation_matrix.png")
         plt.close()
@@ -133,38 +145,43 @@ def main():
         # 3.2 Feature Importance Heatmap (Across Algos)
         fi_data = {}
         for algo, res in results.items():
-            if algo in ['RF', 'DT']:
-                fi_data[algo] = res['trainer'].models[algo].feature_importances_
+            if algo in ["RF", "DT"]:
+                fi_data[algo] = res["trainer"].models[algo].feature_importances_
 
         if fi_data:
             fi_df = pd.DataFrame(fi_data, index=all_features)
             plt.figure(figsize=(12, 15))
-            sns.heatmap(fi_df.sort_values(by='RF', ascending=False).head(30), annot=True, cmap='YlGnBu')
+            sns.heatmap(
+                fi_df.sort_values(by="RF", ascending=False).head(30),
+                annot=True,
+                cmap="YlGnBu",
+            )
             plt.title("Top 30 Feature Importances Comparison")
             plt.savefig(RR_DIR / "feature_importance_heatmap.png")
             plt.close()
 
         # 3.3 Category Metrics Visualization
         cat_metrics_df = pd.DataFrame(cat_scores).T
-        cat_metrics_df.plot(kind='bar', figsize=(10, 6))
+        cat_metrics_df.plot(kind="bar", figsize=(10, 6))
         plt.title("Feature Category Metrics (Performance, Explainability, Resources)")
         plt.ylabel("Score (1-10)")
         plt.xticks(rotation=0)
-        plt.grid(axis='y', alpha=0.3)
+        plt.grid(axis="y", alpha=0.3)
         plt.savefig(RR_DIR / "category_metrics.png")
         plt.close()
 
         print(f"RÉSULTAT: Graphiques sauvegardés dans {RR_DIR}")
 
-        print("\n" + "#"*80)
+        print("\n" + "#" * 80)
         print(f"### PIPELINE TERMINÉ AVEC SUCCÈS ###")
         print(f"### TOUS LES RÉSULTATS SONT DANS: {RR_DIR} ###")
-        print("#"*80)
+        print("#" * 80)
 
     except Exception as e:
         logger.error(f"Pipeline failed: {e}", exc_info=True)
     finally:
         monitor.stop_monitoring()
+
 
 if __name__ == "__main__":
     main()
