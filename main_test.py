@@ -324,17 +324,26 @@ class DetailedTestPlugin:
             for name, value in self.test_fixtures[nodeid].items():
                 if hasattr(value, 'shape'):
                     # Fix for "9,0" shape: ensure we report columns correctly
-                    n_cols = value.shape[1] if len(value.shape) > 1 else 0
-                    headers = list(value.columns) if hasattr(value, 'columns') else [f"col_{i}" for i in range(n_cols)]
+                    shape = getattr(value, 'shape', (0, 0))
+                    n_cols = shape[1] if len(shape) > 1 else 0
+
+                    if hasattr(value, 'columns'):
+                        headers = list(value.columns)
+                    else:
+                        headers = [f"col_{i}" for i in range(n_cols)]
+
                     sample_row = {}
                     if hasattr(value, 'iloc') and len(value) > 0:
-                        sample_row = value.iloc[0].to_dict()
+                        try:
+                            sample_row = value.iloc[0].to_dict()
+                        except Exception:
+                            sample_row = {"error": "could not extract row"}
 
                     matrices.append(MatrixInfo(
                         name=f"{name} (Actual)",
                         headers=headers[:20],
                         sample_row=sample_row,
-                        shape=value.shape,
+                        shape=shape,
                         dtype=str(type(value).__name__)
                     ))
             if matrices:

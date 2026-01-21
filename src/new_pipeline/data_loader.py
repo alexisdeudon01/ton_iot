@@ -56,6 +56,7 @@ class RealDataLoader:
                     break
 
         if self.df[self.target_col].dtype == 'object':
+            # On suppose que 'normal' ou 'benign' est la classe 0
             self.df['is_ddos'] = (~self.df[self.target_col].str.lower().isin(['normal', 'benign'])).astype(int)
         else:
             self.df['is_ddos'] = (self.df[self.target_col] != 0).astype(int)
@@ -65,12 +66,24 @@ class RealDataLoader:
         prop_ddos = (counts.get(1, 0) / total_rows) * 100
         print(f"RÉSULTAT: Cible '{self.target_col}' identifiée. DDoS: {prop_ddos:.2f}%, Normal: {prop_normal:.2f}%")
 
-        # Sauvegarde du dataset harmonisé dans rr
+        # Sauvegarde du dataset consolidé (CSV) dans output/
+        print("\n" + "-"*40)
+        print(f"MICRO-TÂCHE: Sauvegarde du dataset consolidé (CSV) dans output/")
+        output_dir = Path("output")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        consolidated_path = output_dir / "consolidated_data.csv"
+        self.df.to_csv(consolidated_path, index=False)
+        print(f"RÉSULTAT: Fichier CSV sauvegardé: {consolidated_path}")
+
+        # Sauvegarde du dataset harmonisé (Parquet) dans rr/
         print("\n" + "-"*40)
         print(f"MICRO-TÂCHE: Sauvegarde du dataset harmonisé dans {self.rr_dir}")
         harmonized_path = self.rr_dir / "dataset_harmonized.parquet"
         self.df.to_parquet(harmonized_path, index=False)
-        print(f"RÉSULTAT: Fichier sauvegardé: {harmonized_path}")
+        print(f"RÉSULTAT: Fichier Parquet sauvegardé: {harmonized_path}")
+
+        # Visualisation de la répartition des features
+        self._plot_feature_distributions()
 
         # Splits Train (60%), Val (20%), Test (20%)
         print("\n" + "-"*40)
@@ -88,7 +101,7 @@ class RealDataLoader:
         # Validation Statistique (KS Test)
         self._validate_dataset_consistency(train_df, test_df)
 
-        # Visualisation de la répartition
+        # Visualisation de la répartition des classes
         self._plot_class_distribution(counts)
 
         report = {
@@ -101,19 +114,54 @@ class RealDataLoader:
 
         return report
 
+    def _plot_feature_distributions(self):
+        """Génère un graphique sur la répartition des features (Top 10 numériques)."""
+        print("\n" + "-"*40)
+        print("MICRO-TÂCHE: Analyse de la répartition des features (Top 10)")
+        if self.df is None: return
+
+        num_cols = self.df.select_dtypes(include=[np.number]).columns
+        num_cols = [c for c in num_cols if c not in ['is_ddos', self.target_col]][:10]
+
+        plt.figure(figsize=(15, 10))
+        # Normalisation rapide pour l'affichage (Unités normalisées)
+        df_norm = (self.df[num_cols] - self.df[num_cols].mean()) / self.df[num_cols].std()
+        df_melted = df_norm.melt()
+        sns.boxplot(data=df_melted, x='variable', y='value')
+        plt.xticks(rotation=45)
+        plt.title("Distribution des 10 premières features numériques (Unités normalisées Z-score)")
+        plt.savefig(self.rr_dir / "phase1_feature_distributions.png")
+        plt.close()
+        print(f"RÉSULTAT: Graphique des distributions sauvegardé dans {self.rr_dir}")
+
     def _validate_dataset_consistency(self, train_df: pd.DataFrame, test_df: pd.DataFrame):
         """Valide la cohérence des données entre Train et Test via KS Test."""
         print("\n" + "-"*40)
         print("MICRO-TÂCHE: Validation statistique KS Test (Train vs Test)")
+        print("JUSTIFICATION: Le test de Kolmogorov-Smirnov permet de vérifier si deux échantillons "
+              "proviennent de la même distribution, crucial pour garantir que le modèle généralisera bien.")
         num_cols = train_df.select_dtypes(include=[np.number]).columns
         num_cols = [c for c in num_cols if c not in ['is_ddos', self.target_col]]
 
         inconsistent_features = []
+        p_values = []
         for col in num_cols[:20]:
             res = ks_2samp(train_df[col].dropna(), test_df[col].dropna())
             p_val = float(res.pvalue) # type: ignore
+            p_values.append(p_val)
             if p_val < 0.05:
                 inconsistent_features.append(col)
+
+        # Graphique de justification KS
+        plt.figure(figsize=(10, 6))
+        plt.hist(p_values, bins=20, color='salmon', edgecolor='black')
+        plt.axvline(0.05, color='red', linestyle='--', label='Seuil de rejet (0.05)')
+        plt.title("Distribution des p-values (KS Test Train vs Test)")
+        plt.xlabel("p-value")
+        plt.ylabel("Nombre de features")
+        plt.legend()
+        plt.savefig(self.rr_dir / "phase1_ks_validation_justification.png")
+        plt.close()
 
         if inconsistent_features:
             print(f"RÉSULTAT: {len(inconsistent_features)} features potentiellement incohérentes détectées.")
