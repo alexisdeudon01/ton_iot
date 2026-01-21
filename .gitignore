@@ -1,4 +1,4 @@
-*.parquet
+.parquet
 *.code-workspace
 # Virtual Environments
 .toniot/

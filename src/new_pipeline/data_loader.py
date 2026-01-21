@@ -40,6 +40,11 @@ class LateFusionDataLoader:
             logger.info("Parquet datasets already exist. Skipping conversion.")
             return
 
+        # Clean previous attempts
+        import shutil
+        if self.paths.cic_parquet.exists(): shutil.rmtree(self.paths.cic_parquet)
+        if self.paths.ton_parquet.exists(): shutil.rmtree(self.paths.ton_parquet)
+
         self._prepare_cic()
         self._prepare_ton()
         logger.info("Phase 0 completed successfully.")
@@ -58,11 +63,15 @@ class LateFusionDataLoader:
         }
 
         first_chunk = True
-        schema_cols = None
+        common_schema = None
 
         for csv_path in csv_files:
             logger.info(f"Processing {csv_path.name}...")
             try:
+                # Read first few rows to get columns
+                sample = pd.read_csv(csv_path, nrows=1)
+                sample.columns = [c.strip() for c in sample.columns]
+                
                 chunks = pd.read_csv(csv_path, chunksize=self.p0.chunksize, low_memory=self.p0.low_memory)
                 for i, chunk in enumerate(chunks):
                     chunk.columns = [c.strip() for c in chunk.columns]
@@ -88,15 +97,18 @@ class LateFusionDataLoader:
                         else:
                             chunk[col] = pd.to_numeric(chunk[col], errors='coerce').replace([np.inf, -np.inf], np.nan).astype('float64').fillna(0.0)
 
-                    # Ensure column order is identical for all chunks
-                    if schema_cols is None:
-                        schema_cols = chunk.columns.tolist()
+                    # Strict schema enforcement for Dask append
+                    if common_schema is None:
+                        common_schema = chunk.dtypes.to_dict()
+                        cols_order = chunk.columns.tolist()
                     else:
-                        # Add missing columns with default values
-                        for col in schema_cols:
+                        # Add missing columns
+                        for col, dtype in common_schema.items():
                             if col not in chunk.columns:
-                                chunk[col] = 0.0 if chunk.dtypes.get(col) != object else "N/A"
-                        chunk = chunk[schema_cols]
+                                chunk[col] = "N/A" if dtype == object else 0.0
+                                chunk[col] = chunk[col].astype(dtype)
+                        # Drop extra columns not in first chunk
+                        chunk = chunk[cols_order].astype(common_schema)
 
                     target_path = self.paths.cic_parquet
                     target_path.mkdir(parents=True, exist_ok=True)
@@ -114,7 +126,8 @@ class LateFusionDataLoader:
 
         rename_map = {'ts': 'timestamp'}
         first_chunk = True
-        schema_cols = None
+        common_schema = None
+        cols_order = None
         
         chunks = pd.read_csv(self.paths.ton_file, chunksize=self.p0.chunksize, low_memory=self.p0.low_memory)
 
@@ -122,15 +135,6 @@ class LateFusionDataLoader:
             chunk.columns = [c.strip() for c in chunk.columns]
             chunk.rename(columns=rename_map, inplace=True)
             
-            # Force consistent dtypes
-            for col in chunk.columns:
-                if col in ['src_ip', 'dst_ip', 'proto', 'timestamp', 'source']:
-                    chunk[col] = chunk[col].astype(str).fillna("N/A")
-                elif col in [self.p0.ton_type_col, self.p0.label_col]:
-                    continue
-                else:
-                    chunk[col] = pd.to_numeric(chunk[col], errors='coerce').replace([np.inf, -np.inf], np.nan).astype('float64').fillna(0.0)
-
             if self.p0.ton_type_col in chunk.columns:
                 chunk = chunk[chunk[self.p0.ton_type_col].str.strip().str.lower().isin(self.p0.ton_allowed_types)]
                 chunk[self.p0.label_col] = (chunk[self.p0.ton_type_col].str.strip().str.lower() == "ddos").astype(int)
@@ -138,14 +142,25 @@ class LateFusionDataLoader:
             
             for col in self.p0.drop_columns_if_present:
                 if col in chunk.columns: chunk.drop(columns=[col], inplace=True)
-            
-            if schema_cols is None:
-                schema_cols = chunk.columns.tolist()
+
+            # Force consistent dtypes
+            for col in chunk.columns:
+                if col in ['src_ip', 'dst_ip', 'proto', 'timestamp', 'source']:
+                    chunk[col] = chunk[col].astype(str).fillna("N/A")
+                elif col == self.p0.label_col:
+                    chunk[col] = chunk[col].astype('int64')
+                else:
+                    chunk[col] = pd.to_numeric(chunk[col], errors='coerce').replace([np.inf, -np.inf], np.nan).astype('float64').fillna(0.0)
+
+            if common_schema is None:
+                common_schema = chunk.dtypes.to_dict()
+                cols_order = chunk.columns.tolist()
             else:
-                for col in schema_cols:
+                for col, dtype in common_schema.items():
                     if col not in chunk.columns:
-                        chunk[col] = 0.0 if chunk.dtypes.get(col) != object else "N/A"
-                chunk = chunk[schema_cols]
+                        chunk[col] = "N/A" if dtype == object else 0.0
+                        chunk[col] = chunk[col].astype(dtype)
+                chunk = chunk[cols_order].astype(common_schema)
 
             target_path = self.paths.ton_parquet
             target_path.mkdir(parents=True, exist_ok=True)
@@ -160,7 +175,8 @@ class LateFusionDataLoader:
         def load_robust_sample(path, n_rows):
             ddf = dd.read_parquet(path)
             try:
-                df = ddf.sample(frac=min(1.0, (n_rows*5)/len(ddf)), random_state=42).compute()
+                # Sample more to ensure we have enough after head
+                df = ddf.sample(frac=min(1.0, (n_rows*10)/len(ddf)), random_state=42).compute()
                 return df.head(n_rows)
             except:
                 return ddf.head(n_rows)
@@ -217,7 +233,7 @@ class LateFusionDataLoader:
         mapping_df = pd.DataFrame(mapping)
         mapping_df.to_csv(self.p1.alignment_artifacts_dir / self.p1.mapping_pairs_csv, index=False)
         with open(self.p1.alignment_artifacts_dir / self.p1.f_common_json, 'w') as f:
-            json.dump(f_common, f)
+            json.dump(sorted(f_common), f) # Sorted for determinism
             
         logger.info(f"Phase 1 completed. Found {len(f_common)} common features.")
-        return f_common
+        return sorted(f_common)
