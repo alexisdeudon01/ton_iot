@@ -21,7 +21,10 @@ class FeatureSelector:
         logger.info(f"Initialized FeatureSelector (Top-K: {self.p3.top_k})")
 
     def select_features(self, cic_train_path: Path, ton_train_path: Path, f_common: List[str]) -> List[str]:
-        """Select top features from both datasets using a hybrid approach and intersect."""
+        """
+        Select top features from both datasets using a hybrid approach and intersect.
+        CORRECTION: Tri déterministe de f_fusion pour la reproductibilité.
+        """
         logger.info("Starting Phase 3: Hybrid Feature Selection")
         start_time = time.time()
         
@@ -60,13 +63,13 @@ class FeatureSelector:
         top_cic = get_hybrid_top_k(df_cic, "CICDDoS2019")
         top_ton = get_hybrid_top_k(df_ton, "ToN-IoT")
         
-        # Intersection
-        f_fusion = list(top_cic.intersection(top_ton))
+        # Intersection et Tri Déterministe (CORRECTION)
+        f_fusion = sorted(list(top_cic.intersection(top_ton)))
         logger.info(f"Intersection found {len(f_fusion)} common top features.")
         
         if len(f_fusion) < self.p3.min_fusion_features:
             logger.warning(f"Intersection too small ({len(f_fusion)} < {self.p3.min_fusion_features}). Falling back to F_common.")
-            f_fusion = f_common
+            f_fusion = sorted(f_common)
         
         # Save F_fusion artifact
         self.p3.selection_artifacts_dir.mkdir(parents=True, exist_ok=True)
