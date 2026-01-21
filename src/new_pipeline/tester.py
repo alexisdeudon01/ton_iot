@@ -1,34 +1,37 @@
 import logging
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict
 import torch
 import dask.dataframe as dd
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+
+from src.core.memory_manager import MemoryAwareProcessor
+from src.core.results import TestResult
+from src.evaluation.visualization_service import VisualizationService
 
 logger = logging.getLogger(__name__)
 
 class PipelineTester:
-    """Phase 5: Testing (Évaluation Finale) with Dask support"""
+    """Phase 5: Testing (Évaluation Finale) with Memory Safety"""
 
-    def __init__(self, models, rr_dir: Path):
+    def __init__(self, models, memory_mgr: MemoryAwareProcessor, viz_service: VisualizationService, rr_dir: Path):
         self.models = models
+        self.memory_mgr = memory_mgr
+        self.viz = viz_service
         self.rr_dir = rr_dir
         self.test_results = {}
 
-    def evaluate_all(self, X_test, y_test, algo_name: Optional[str] = None):
+    def evaluate_all(self, X_test, y_test, algo_name: Optional[str] = None) -> List[TestResult]:
         logger.info("[PHASE 5] Évaluation finale sur le jeu de Test")
 
-        # Handle Dask dataframes by sampling for evaluation
+        # 1. Memory Safe Conversion
         if isinstance(X_test, dd.DataFrame):
-            print(f"INFO: Conversion Dask -> Pandas pour l'évaluation (Sampling 100k rows)")
-            X_test_pd = X_test.head(100000)
-            y_test_pd = y_test.head(100000)
+            X_test_pd = self.memory_mgr.safe_compute(X_test, "final_testing")
+            y_test_pd = self.memory_mgr.safe_compute(y_test, "final_testing_labels")
         else:
-            X_test_pd = X_test
-            y_test_pd = y_test
+            X_test_pd, y_test_pd = X_test, y_test
 
         X_test_num = X_test_pd.select_dtypes(include=[np.number]).fillna(0)
         metrics_names = ['Accuracy', 'F1-Score', 'Precision', 'Recall', 'AUC']
@@ -70,8 +73,13 @@ class PipelineTester:
             except Exception as e:
                 logger.error(f"  Erreur évaluation {name}: {e}")
 
-        self._plot_final_synthesis(metrics_names)
-        self._generate_final_report()
+        self.viz.plot_final_metrics(self.test_results, metrics_names)
+        report_path = self._generate_final_report()
+        
+        return [
+            TestResult(name, **metrics, report_path=report_path)
+            for name, metrics in self.test_results.items()
+        ]
 
     def _analyze_fit(self, name: str, test_f1: float):
         """Analyzes if the model is overfitting or underfitting."""
@@ -85,26 +93,7 @@ class PipelineTester:
         else:
             print(f"  ✅ Fit correct (F1={test_f1:.4f})")
 
-    def _plot_final_synthesis(self, metrics_names):
-        """Génère un graphique de synthèse (X: Algos, Y: Score) avec une courbe par métrique."""
-        plt.figure(figsize=(12, 7))
-
-        algos = list(self.test_results.keys())
-        if not algos: return
-
-        for metric in metrics_names:
-            scores = [self.test_results[algo][metric] for algo in algos]
-            plt.plot(algos, scores, marker='o', label=metric, linewidth=2)
-
-        plt.title("Synthèse des Performances Finales (Comparaison des Algos)")
-        plt.xlabel("Algorithmes")
-        plt.ylabel("Score")
-        plt.legend()
-        plt.grid(True, linestyle='--', alpha=0.7)
-        plt.savefig(self.rr_dir / "phase5_final_synthesis.png")
-        plt.close()
-
-    def _generate_final_report(self):
+    def _generate_final_report(self) -> Path:
         """Génère le rapport texte final."""
         report_file = self.rr_dir / "final_report_expert.txt"
         df_res = pd.DataFrame(self.test_results).T

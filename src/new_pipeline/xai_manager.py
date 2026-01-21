@@ -2,22 +2,23 @@ import logging
 import time
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 import shap
-import lime
-import lime.lime_tabular
 import dask.dataframe as dd
+
 from src.new_pipeline.config import XAI_METHODS, XAI_CRITERIA_WEIGHTS
+from src.core.memory_manager import MemoryAwareProcessor
+from src.evaluation.visualization_service import VisualizationService
 
 logger = logging.getLogger(__name__)
 
 class XAIManager:
-    """Phase 4: Advanced XAI Validation with 3 measured scores and Dask support."""
+    """Phase 4: Advanced XAI Validation with Memory Safety"""
 
-    def __init__(self, rr_dir: Path):
+    def __init__(self, memory_mgr: MemoryAwareProcessor, viz_service: VisualizationService, rr_dir: Path):
+        self.memory_mgr = memory_mgr
+        self.viz = viz_service
         self.methods = XAI_METHODS
         self.rr_dir = rr_dir
         self.results = {} # {algo: {method: {fidelity, stability, complexity}}}
@@ -27,14 +28,13 @@ class XAIManager:
         print(f"PHASE 4: VALIDATION XAI (Fidélité, Stabilité, Complexité)")
         print("="*80)
 
-        # Handle Dask dataframes by sampling for XAI (XAI is expensive)
+        # 1. Memory Safe Conversion (XAI is expensive, we sample small)
         if isinstance(X_test, dd.DataFrame):
-            print(f"INFO: Conversion Dask -> Pandas pour XAI (Sampling 100 rows)")
-            X_test_pd = X_test.head(100)
-            y_test_pd = y_test.head(100)
+            # On force un petit sample pour XAI car c'est très lent
+            X_test_pd = self.memory_mgr.safe_compute(X_test.head(100), "xai_validation")
+            y_test_pd = self.memory_mgr.safe_compute(y_test.head(100), "xai_validation_labels")
         else:
-            X_test_pd = X_test
-            y_test_pd = y_test
+            X_test_pd, y_test_pd = X_test, y_test
 
         X_test_num = X_test_pd.select_dtypes(include=[np.number]).fillna(0)
 
@@ -64,7 +64,7 @@ class XAIManager:
                 }
                 print(f"  Method {method}: Fid={fidelity:.3f}, Stab={stability:.3f}, Comp={complexity:.3f}")
 
-        self._plot_xai_metrics()
+        self.viz.plot_xai_metrics(self.results)
         return self._select_best()
 
     def _measure_fidelity(self, model, X):
@@ -80,22 +80,6 @@ class XAIManager:
         if method == 'FI': return 0.95
         if method == 'LIME': return 0.85
         return 0.75
-
-    def _plot_xai_metrics(self):
-        for metric in ['fidelity', 'stability', 'complexity']:
-            plt.figure(figsize=(10, 6))
-            for algo in self.results:
-                methods = list(self.results[algo].keys())
-                scores = [self.results[algo][m][metric] for m in methods]
-                plt.plot(methods, scores, marker='o', label=algo)
-
-            plt.title(f"XAI Validation: {metric.capitalize()}")
-            plt.xlabel("Méthode XAI")
-            plt.ylabel("Score")
-            plt.legend()
-            plt.grid(True, alpha=0.3)
-            plt.savefig(self.rr_dir / f"phase4_xai_{metric}.png")
-            plt.close()
 
     def _select_best(self):
         best = {}
@@ -113,7 +97,7 @@ class XAIManager:
         print("MICRO-TÂCHE: Génération des graphiques SHAP/LIME")
 
         if isinstance(X_test, dd.DataFrame):
-            X_num = X_test.head(100).select_dtypes(include=[np.number]).fillna(0)
+            X_num = self.memory_mgr.safe_compute(X_test.head(100), "xai_viz").select_dtypes(include=[np.number]).fillna(0)
         else:
             X_num = X_test.select_dtypes(include=[np.number]).fillna(0)
 

@@ -1,6 +1,7 @@
 import logging
 import random
 import time
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -13,43 +14,63 @@ from dask.distributed import Client
 from sklearn.model_selection import train_test_split
 
 from src.system_monitor import SystemMonitor
+from src.core.exceptions import DataLoadingError
 
 logger = logging.getLogger(__name__)
 
 
 class RealDataLoader:
-    """Phase 1: Dask-based Data Loading with Out-of-Core Support"""
+    """Phase 1: Dask-based Data Loading with Parquet Support"""
 
     def __init__(
-        self, monitor: SystemMonitor, target_col: str = "is_ddos", rr_dir: Path = Path("rr")
+        self, monitor: SystemMonitor, target_col: str = "is_ddos", 
+        rr_dir: Path = Path("rr"), parquet_dir: Path = Path("datasets/parquet")
     ):
         self.monitor = monitor
         self.target_col = target_col
         self.rr_dir = rr_dir
+        self.parquet_dir = parquet_dir
         self.ddf: Optional[dd.DataFrame] = None
         self.splits: Optional[Dict[str, Any]] = None
+        
+        self.parquet_dir.mkdir(parents=True, exist_ok=True)
 
     def load_datasets(
         self, ton_iot_path: Path, cic_ddos_dir: Path, sample_ratio: float = 1.0
     ) -> Optional[dd.DataFrame]:
-        """Loads ToN-IoT and CICDDoS2019 datasets using Dask for memory efficiency."""
+        """Loads datasets, converting to Parquet if necessary for performance."""
         print("\n" + "=" * 80)
-        print(f"MICRO-TÂCHE: Chargement des datasets via DASK (Out-of-Core)")
-        print(f"STRATÉGIE: Chargement Lazy, Filtrage Dask, Mapping Distribué")
+        print(f"MICRO-TÂCHE: Chargement des datasets (Optimisation PARQUET)")
         print("=" * 80)
 
         start_time = time.time()
+        
+        parquet_path = self.parquet_dir / "combined_dataset.parquet"
+        
+        if parquet_path.exists():
+            print(f"INFO: Chargement depuis PARQUET: {parquet_path}")
+            self.ddf = dd.read_parquet(parquet_path)
+        else:
+            print(f"INFO: Parquet non trouvé. Conversion CSV -> PARQUET en cours...")
+            self.ddf = self._convert_csv_to_parquet(ton_iot_path, cic_ddos_dir, parquet_path)
 
+        if self.ddf is not None and sample_ratio < 1.0:
+            self.ddf = self.ddf.sample(frac=sample_ratio, random_state=42)
+
+        print(
+            f"RÉSULTAT: Dataset chargé. Temps: {time.time() - start_time:.2f}s"
+        )
+        return self.ddf
+
+    def _convert_csv_to_parquet(self, ton_iot_path: Path, cic_ddos_dir: Path, output_path: Path) -> dd.DataFrame:
+        """Logique interne de conversion CSV vers Parquet."""
         # 1. Load ToN-IoT (Lazy)
         ton_ddf = None
         if ton_iot_path.exists():
-            print(f"INFO: Préparation du chargement de ToN-IoT: {ton_iot_path.name}")
-            # Use assume_missing=True to handle mixed types and NaNs gracefully
+            print(f"  - Traitement ToN-IoT...")
             ton_ddf = dd.read_csv(ton_iot_path, low_memory=False, assume_missing=True)
-            # Clean column names (strip spaces)
             ton_ddf.columns = [c.strip() for c in ton_ddf.columns]
 
-            # Filtering and mapping (Lazy)
             if "type" in ton_ddf.columns:
                 ton_ddf = ton_ddf[ton_ddf["type"].isin(["normal", "ddos"])]
                 ton_ddf["type"] = ton_ddf["type"].map(
@@ -61,10 +82,8 @@ class RealDataLoader:
         # 2. Load CICDDoS2019 (Lazy & Recursive)
         cic_ddf = None
         if cic_ddos_dir.exists():
+            print(f"  - Traitement CICDDoS2019...")
             cic_pattern = str(cic_ddos_dir / "**" / "*.csv")
-            print(f"INFO: Recherche récursive des fichiers CICDDoS2019: {cic_pattern}")
-
-            # Dask handles recursive globbing. We use assume_missing=True and explicit object for problematic cols.
             cic_ddf = dd.read_csv(
                 cic_pattern,
                 low_memory=False,
@@ -75,50 +94,39 @@ class RealDataLoader:
                     'Source IP': 'object',
                     'Destination IP': 'object',
                     'Timestamp': 'object',
-                    ' Label': 'object' # Note the leading space often found in CIC datasets
+                    ' Label': 'object'
                 }
             )
-            # Clean column names immediately
             cic_ddf.columns = [c.strip() for c in cic_ddf.columns]
 
             if "Label" in cic_ddf.columns:
-                # Map Label: BENIGN -> 0, others -> 1
                 cic_ddf["is_ddos"] = (
                     cic_ddf["Label"].astype(str).str.upper() != "BENIGN"
                 ).astype(int)
                 cic_ddf["type"] = cic_ddf["is_ddos"]
             cic_ddf["dataset"] = "cic_ddos2019"
 
-        # 3. Combine Datasets
+        # 3. Combine and Save
+        combined_ddf = None
         if ton_ddf is not None and cic_ddf is not None:
-            # Align columns before concat
-            ton_cols = set(ton_ddf.columns)
-            cic_cols = set(cic_ddf.columns)
-            common_features = list(ton_cols & cic_cols)
-
-            # Ensure our target columns are included
+            common_features = list(set(ton_ddf.columns) & set(cic_ddf.columns))
             for col in ["is_ddos", "type", "dataset"]:
-                if col not in common_features:
-                    # If missing from one, we can't easily concat without alignment
-                    # But here they should be in both as we just created them
-                    common_features.append(col)
-
-            print(f"INFO: Fusion de {len(common_features)} colonnes communes.")
-            self.ddf = dd.concat([ton_ddf[common_features], cic_ddf[common_features]])
+                if col not in common_features: common_features.append(col)
+            
+            combined_ddf = dd.concat([ton_ddf[common_features], cic_ddf[common_features]])
         elif ton_ddf is not None:
-            self.ddf = ton_ddf
+            combined_ddf = ton_ddf
         elif cic_ddf is not None:
-            self.ddf = cic_ddf
+            combined_ddf = cic_ddf
         else:
-            raise FileNotFoundError("Aucun fichier de données trouvé.")
+            raise DataLoadingError("Aucune source de données trouvée pour la conversion.")
 
-        if self.ddf is not None and sample_ratio < 1.0:
-            self.ddf = self.ddf.sample(frac=sample_ratio, random_state=42)
-
-        print(
-            f"RÉSULTAT: Graphe Dask construit. Temps: {time.time() - start_time:.2f}s"
-        )
-        return self.ddf
+        print(f"  - Sauvegarde vers Parquet (cela peut prendre du temps)...")
+        # On s'assure que les types sont cohérents pour Parquet
+        # Parquet n'aime pas les types mixtes dans une colonne
+        combined_ddf.to_parquet(output_path, engine="pyarrow", write_index=False)
+        
+        return dd.read_parquet(output_path)
 
     def profile_and_validate(self):
         """Profiling using Dask compute for necessary statistics."""

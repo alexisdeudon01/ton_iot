@@ -25,13 +25,15 @@ from src.core.feature_categorization import (
 from src.core.dependency_graph import generate_er_dependency_diagram
 from src.datastructure.base import IRPDaskFrame, IRPDataFrame
 from src.datastructure.flow import NetworkFlow
-from src.new_pipeline.config import ALGORITHMS, CIC_DDOS_DIR, RR_DIR, TON_IOT_PATH
+from src.new_pipeline.config import config
 from src.new_pipeline.data_loader import RealDataLoader
 from src.new_pipeline.tester import PipelineTester
 from src.new_pipeline.trainer import PipelineTrainer
 from src.new_pipeline.validator import PipelineValidator
 from src.new_pipeline.xai_manager import XAIManager
 from src.system_monitor import SystemMonitor
+from src.core.memory_manager import MemoryAwareProcessor
+from src.evaluation.visualization_service import VisualizationService
 
 
 def setup_logging():
@@ -46,24 +48,25 @@ def setup_logging():
 
 
 def main(sample_ratio: float = 1.0):
-    # 0. Initialize Dask Client for resource management
-    # We limit memory per worker to stay within 50% total RAM
+    # 0. Initialize Support Layer (Layer 3)
     total_ram_gb = psutil.virtual_memory().total / (1024**3)
-    memory_limit = f"{total_ram_gb * 0.45:.1f}GB" # 45% to be safe
+    memory_limit = f"{total_ram_gb * 0.45:.1f}GB"
 
     cluster = None
     client = None
 
-    # Initialize System Monitor for plotting
-    monitor = SystemMonitor(max_memory_percent=50.0)
+    monitor = SystemMonitor(max_memory_percent=config.max_memory_percent)
     monitor.start_monitoring(interval=0.1)
+    
+    memory_mgr = MemoryAwareProcessor(safety_margin=0.7)
+    viz_service = VisualizationService(config.rr_dir)
 
     setup_logging()
     logger = logging.getLogger(__name__)
 
     try:
         cluster = LocalCluster(
-            n_workers=2,
+            n_workers=config.dask_workers,
             threads_per_worker=2,
             memory_limit=memory_limit,
             dashboard_address=":8787"
@@ -71,23 +74,23 @@ def main(sample_ratio: float = 1.0):
         client = Client(cluster)
 
         print("\n" + "#" * 80)
-        print("### PIPELINE DDOS SENIOR EXPERT V8 - DASK POWERED & RESOURCE MANAGED ###")
+        print("### PIPELINE DDOS 3-LAYER ARCHITECTURE - PARQUET & JOBLIB ###")
         print(f"### DASK CLIENT: {client.dashboard_link} ###")
-        print(f"### RAM LIMIT: 50% ({memory_limit}) | DASK OUT-OF-CORE ###")
+        print(f"### RAM LIMIT: {config.max_memory_percent}% | DASK OUT-OF-CORE ###")
         print(f"### SAMPLE RATIO: {sample_ratio*100:.4f}% ###")
         print("#" * 80)
 
         # Clean rr directory
-        if RR_DIR.exists():
-            shutil.rmtree(RR_DIR)
-        RR_DIR.mkdir(parents=True, exist_ok=True)
+        if config.rr_dir.exists():
+            shutil.rmtree(config.rr_dir)
+        config.rr_dir.mkdir(parents=True, exist_ok=True)
 
-        # 1. Phase 1: Data Loading
+        # 1. Phase 1: Data Loading (Layer 1 using Layer 3)
         monitor.set_phase("Phase 1: Data Loading")
-        loader = RealDataLoader(monitor, rr_dir=RR_DIR)
+        loader = RealDataLoader(monitor, rr_dir=config.rr_dir, parquet_dir=config.parquet_dir)
 
-        # Load ToN-IoT and CICDDoS2019
-        loader.load_datasets(TON_IOT_PATH, CIC_DDOS_DIR, sample_ratio=sample_ratio)
+        # Load with Parquet optimization
+        loader.load_datasets(config.ton_iot_path, config.cic_ddos_dir, sample_ratio=sample_ratio)
 
         loader.profile_and_validate()
         train_ddf, val_ddf, test_ddf = loader.get_splits()
@@ -127,36 +130,38 @@ def main(sample_ratio: float = 1.0):
         # 2. Iterative Model Evaluation Loop
         results = {}
 
-        for algo in ALGORITHMS:
+        for algo in config.algorithms:
             print("\n" + "=" * 80)
             print(f"ÉVALUATION COMPLÈTE DE L'ALGORITHME: {algo}")
             print("=" * 80)
 
             # 2.1 Training
             monitor.set_phase(f"Training {algo}")
-            trainer = PipelineTrainer(random_state=42)
-            trainer.train_single(algo, X_train, y_train)
+            trainer = PipelineTrainer(memory_mgr, viz_service, config.models_dir, config.random_state)
+            train_res = trainer.train_single(algo, X_train, y_train)
 
             # 2.2 Validation & Tuning
             monitor.set_phase(f"Validation {algo}")
-            validator = PipelineValidator(trainer.models, random_state=42)
-            validator.validate_tuning(X_val, y_val, RR_DIR, algo_name=algo)
+            validator = PipelineValidator(trainer.models, memory_mgr, viz_service, config.random_state)
+            val_res = validator.validate_tuning(X_val, y_val, algo_name=algo)
 
             # 2.3 XAI
             monitor.set_phase(f"XAI {algo}")
-            xai = XAIManager(rr_dir=RR_DIR)
+            xai = XAIManager(memory_mgr, viz_service, config.rr_dir)
             xai.validate_xai(trainer.models, X_test, y_test, algo_name=algo)
 
             # 2.4 Testing
             monitor.set_phase(f"Testing {algo}")
-            tester = PipelineTester(trainer.models, rr_dir=RR_DIR)
-            tester.evaluate_all(X_test, y_test, algo_name=algo)
+            tester = PipelineTester(trainer.models, memory_mgr, viz_service, config.rr_dir)
+            test_res = tester.evaluate_all(X_test, y_test, algo_name=algo)
 
             results[algo] = {
                 "trainer": trainer,
                 "validator": validator,
                 "xai": xai,
                 "tester": tester,
+                "train_res": train_res,
+                "test_res": test_res
             }
 
         # 3. Final Visualizations & Resource Plots
@@ -165,20 +170,20 @@ def main(sample_ratio: float = 1.0):
         print("MICRO-TÂCHE: Génération des graphiques finaux")
 
         # ER Diagram
-        generate_er_dependency_diagram(RR_DIR / "pipeline_er_diagram.png")
+        generate_er_dependency_diagram(config.rr_dir / "pipeline_er_diagram.png")
 
         # Resource consumption
-        monitor.plot_resource_consumption(str(RR_DIR / "resource_consumption.png"))
-        monitor.generate_timeline_heatmap(str(RR_DIR / "execution_timeline.png"))
+        monitor.plot_resource_consumption(str(config.rr_dir / "resource_consumption.png"))
+        monitor.generate_timeline_heatmap(str(config.rr_dir / "execution_timeline.png"))
 
         # 3.1 Correlation Matrix on a sample of data
-        X_sample = X_test.head(1000)
+        X_sample = memory_mgr.safe_compute(X_test.head(1000), "correlation_matrix")
         plt.figure(figsize=(12, 10))
         sns.heatmap(
             X_sample.corr(), cmap="coolwarm", annot=False
         )
         plt.title("Correlation Matrix (Sample)")
-        plt.savefig(RR_DIR / "correlation_matrix.png")
+        plt.savefig(config.rr_dir / "correlation_matrix.png")
         plt.close()
 
         # 3.2 Feature Importance Heatmap (Across Algos)
@@ -196,7 +201,7 @@ def main(sample_ratio: float = 1.0):
                 cmap="YlGnBu",
             )
             plt.title("Top 30 Feature Importances Comparison")
-            plt.savefig(RR_DIR / "feature_importance_heatmap.png")
+            plt.savefig(config.rr_dir / "feature_importance_heatmap.png")
             plt.close()
 
         # 3.3 Category Metrics Visualization
@@ -206,14 +211,14 @@ def main(sample_ratio: float = 1.0):
         plt.ylabel("Score (1-10)")
         plt.xticks(rotation=45)
         plt.grid(axis="y", alpha=0.3)
-        plt.savefig(RR_DIR / "category_metrics.png")
+        plt.savefig(config.rr_dir / "category_metrics.png")
         plt.close()
 
-        print(f"RÉSULTAT: Graphiques sauvegardés dans {RR_DIR}")
+        print(f"RÉSULTAT: Graphiques sauvegardés dans {config.rr_dir}")
 
         print("\n" + "#" * 80)
         print(f"### PIPELINE TERMINÉ AVEC SUCCÈS ###")
-        print(f"### TOUS LES RÉSULTATS SONT DANS: {RR_DIR} ###")
+        print(f"### TOUS LES RÉSULTATS SONT DANS: {config.rr_dir} ###")
         print("#" * 80)
 
     except Exception as e:
