@@ -4,6 +4,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from typing import Optional
 import torch
 
 logger = logging.getLogger(__name__)
@@ -16,13 +17,16 @@ class PipelineTester:
         self.rr_dir = rr_dir
         self.test_results = {}
 
-    def evaluate_all(self, X_test, y_test):
+    def evaluate_all(self, X_test, y_test, algo_name: Optional[str] = None):
         logger.info("[PHASE 5] Évaluation finale sur le jeu de Test")
 
         X_test_num = X_test.select_dtypes(include=[np.number]).fillna(0)
         metrics_names = ['Accuracy', 'F1-Score', 'Precision', 'Recall', 'AUC']
 
-        for name, model in self.models.items():
+        algos_to_eval = [algo_name] if algo_name else list(self.models.keys())
+
+        for name in algos_to_eval:
+            model = self.models.get(name)
             if model is None: continue
             logger.info(f"Évaluation finale de {name}...")
 

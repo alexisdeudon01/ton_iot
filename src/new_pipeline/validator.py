@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 import numpy as np
 from pathlib import Path
+from typing import Optional
 from src.new_pipeline.config import HYPERPARAMS
 
 logger = logging.getLogger(__name__)
@@ -15,13 +16,15 @@ class PipelineValidator:
         self.random_state = random_state
         self.best_params = {}
 
-    def validate_tuning(self, X_val, y_val, rr_dir: Path):
+    def validate_tuning(self, X_val, y_val, rr_dir: Path, algo_name: Optional[str] = None):
         logger.info("[PHASE 3] Début de la validation (Tuning hyperparamètres)")
 
         X_val_num = X_val.select_dtypes(include=[np.number]).fillna(0)
 
-        for name in ['LR', 'DT', 'RF']:
-            if name not in self.models: continue
+        algos_to_tune = [algo_name] if algo_name else ['LR', 'DT', 'RF', 'KNN']
+
+        for name in algos_to_tune:
+            if name not in self.models or self.models[name] is None: continue
 
             # On récupère la grille depuis la config
             grid = HYPERPARAMS.get(name, {})

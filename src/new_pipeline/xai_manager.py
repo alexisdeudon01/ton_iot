@@ -5,6 +5,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+from typing import Optional
 import shap
 import lime
 import lime.lime_tabular
@@ -20,18 +21,21 @@ class XAIManager:
         self.rr_dir = rr_dir
         self.results = {} # {algo: {method: {fidelity, stability, complexity}}}
 
-    def validate_xai(self, models, X_test, y_test):
+    def validate_xai(self, models, X_test, y_test, algo_name: Optional[str] = None):
         print("\n" + "="*80)
         print(f"PHASE 4: VALIDATION XAI (Fidélité, Stabilité, Complexité)")
         print("="*80)
 
         X_test_num = X_test.select_dtypes(include=[np.number]).fillna(0)
 
-        for algo_name, model in models.items():
-            if model is None or algo_name == 'CNN': continue
+        algos_to_eval = [algo_name] if algo_name else list(models.keys())
 
-            print(f"\nÉvaluation XAI pour {algo_name}...")
-            self.results[algo_name] = {}
+        for name in algos_to_eval:
+            model = models.get(name)
+            if model is None or name == 'CNN': continue
+
+            print(f"\nÉvaluation XAI pour {name}...")
+            self.results[name] = {}
 
             for method in self.methods:
                 # 1. Fidelity: Correlation between model output and explanation importance
@@ -43,7 +47,7 @@ class XAIManager:
                 # 3. Complexity: Sparsity of the explanation (fewer features is better)
                 complexity = self._measure_complexity(method)
 
-                self.results[algo_name][method] = {
+                self.results[name][method] = {
                     'fidelity': fidelity,
                     'stability': stability,
                     'complexity': complexity

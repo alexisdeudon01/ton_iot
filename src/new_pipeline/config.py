@@ -9,16 +9,21 @@ matplotlib.use('Agg') # Force non-interactive backend for multi-threading safety
 # Paths
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 RR_DIR = ROOT_DIR / "rr"
-DATA_PATH = ROOT_DIR / "datasets/ton_iot/train_test_network.csv"
+TON_IOT_PATH = ROOT_DIR / "datasets/ton_iot/train_test_network.csv"
+CIC_DDOS_DIR = ROOT_DIR / "datasets/cic_ddos2019"
 
 # Algorithms to use
-ALGORITHMS = ['LR', 'DT', 'RF', 'CNN', 'TabNet']
+ALGORITHMS = ['LR', 'DT', 'RF', 'KNN', 'CNN', 'TabNet']
 
 # Hyperparameter Grids for Tuning (Phase 3)
 HYPERPARAMS = {
     'LR': {
         'C': [0.1, 1.0, 10.0],
         'max_iter': [1000]
+    },
+    'KNN': {
+        'n_neighbors': [3, 5, 7],
+        'weights': ['uniform', 'distance']
     },
     'DT': {
         'max_depth': [5, 10, 20, None],

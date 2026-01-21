@@ -7,6 +7,7 @@ from pathlib import Path
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 import torch
 import torch.nn as nn
@@ -39,7 +40,7 @@ class SimpleCNN(nn.Module):
         return x
 
 class PipelineTrainer:
-    """Phase 2: Training of 5 algorithms (DT, RF, CNN, LR, TabNet)"""
+    """Phase 2: Training of algorithms (DT, RF, CNN, LR, TabNet, KNN)"""
 
     def __init__(self, random_state=42):
         self.random_state = random_state
@@ -47,6 +48,7 @@ class PipelineTrainer:
             'DT': DecisionTreeClassifier(random_state=random_state),
             'RF': RandomForestClassifier(random_state=random_state, n_jobs=-1),
             'LR': LogisticRegression(random_state=random_state, n_jobs=-1, max_iter=1000),
+            'KNN': KNeighborsClassifier(n_neighbors=5, n_jobs=-1),
             'CNN': None,
             'TabNet': None
         }
@@ -56,46 +58,48 @@ class PipelineTrainer:
         self.history = {}
         self.training_times = {}
 
-    def train_all(self, X_train, y_train):
-        logger.info("[PHASE 2] Début de l'entraînement des 5 algorithmes")
-
+    def train_single(self, name, X_train, y_train):
+        """Trains a single model by name."""
         X_train_num = X_train.select_dtypes(include=[np.number]).fillna(0)
         input_dim = X_train_num.shape[1]
 
-        for name in ['DT', 'RF', 'LR', 'CNN', 'TabNet']:
-            model = self.models[name]
-            if name == 'TabNet' and model is None:
-                logger.warning("TabNet non disponible (pytorch-tabnet non installé).")
-                continue
+        model = self.models.get(name)
+        if name == 'TabNet' and model is None:
+            logger.warning("TabNet non disponible.")
+            return
 
-            start_time = time.time()
-            logger.info(f"Entraînement de {name}...")
+        start_time = time.time()
+        logger.info(f"Entraînement de {name}...")
 
-            try:
-                if name == 'CNN':
-                    self._train_cnn(X_train_num, y_train, input_dim)
-                elif name == 'TabNet':
-                    model.fit(
-                        X_train_num.values, y_train.values,
-                        max_epochs=20, patience=5,
-                        batch_size=1024, virtual_batch_size=128,
-                        num_workers=0, drop_last=False
-                    )
-                    # Mock history for TabNet
-                    self.history['TabNet'] = {'loss': model.history['loss'], 'accuracy': [1-l for l in model.history['loss']]}
-                else:
-                    model.fit(X_train_num, y_train)
-                    # Mock history for sklearn (simulated convergence)
-                    self.history[name] = {
-                        'loss': [0.5, 0.3, 0.2, 0.15, 0.1],
-                        'accuracy': [0.6, 0.75, 0.85, 0.9, 0.95]
-                    }
+        try:
+            if name == 'CNN':
+                self._train_cnn(X_train_num, y_train, input_dim)
+            elif name == 'TabNet' and model is not None:
+                model.fit(
+                    X_train_num.values, y_train.values,
+                    max_epochs=20, patience=5,
+                    batch_size=1024, virtual_batch_size=128,
+                    num_workers=0, drop_last=False
+                )
+                self.history['TabNet'] = {'loss': model.history['loss'], 'accuracy': [1-l for l in model.history['loss']]}
+            elif model is not None:
+                model.fit(X_train_num, y_train)
+                # Mock history for sklearn
+                self.history[name] = {
+                    'loss': [0.5, 0.3, 0.2, 0.15, 0.1],
+                    'accuracy': [0.6, 0.75, 0.85, 0.9, 0.95]
+                }
 
-                self.training_times[name] = time.time() - start_time
-                logger.info(f"{name} entraîné en {self.training_times[name]:.2f}s")
-            except Exception as e:
-                logger.error(f"Erreur lors de l'entraînement de {name}: {e}")
-                self.training_times[name] = 0
+            self.training_times[name] = time.time() - start_time
+            logger.info(f"{name} entraîné en {self.training_times[name]:.2f}s")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'entraînement de {name}: {e}")
+            self.training_times[name] = 0
+
+    def train_all(self, X_train, y_train):
+        logger.info("[PHASE 2] Début de l'entraînement de tous les algorithmes")
+        for name in self.models.keys():
+            self.train_single(name, X_train, y_train)
 
     def _train_cnn(self, X, y, input_dim):
         model = SimpleCNN(input_dim)

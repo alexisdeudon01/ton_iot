@@ -1,28 +1,28 @@
-# Phase -> Step -> Test Mapping
+# Phase -> Step -> Test Mapping (New Pipeline V7)
 
-This document maps each phase and step of the IRP Research Pipeline to its corresponding tests to ensure full coverage.
+This document maps each phase and step of the New DDoS Detection Pipeline to its corresponding tests.
 
-## Phase 1: Preprocessing Configuration Search
-- **Step 1.1: Loading and Harmonizing**: Covered by `tests/test_preprocessing_pipeline.py` (basic flow) and `tests/_legacy_tests/test_dataset_loader_oom_fix.py`.
-- **Step 1.2: Early Fusion**: Covered by `tests/test_dataset_source_flag.py`.
-- **Step 1.3: Evaluating 108 Configs**: Covered by `tests/_legacy_tests/test_phase1_108_configs.py` and `tests/_legacy_tests/test_phase1_config_search.py`.
+## Phase 1: Data Loading & Preprocessing
+- **Step 1.1: Multi-dataset Loading (ToN-IoT & CICDDoS2019)**: Covered by `tests/test_new_pipeline_components.py` (Data Loader).
+- **Step 1.2: Filtering & Mapping (Normal/DDoS only)**: Covered by `tests/test_new_pipeline_components.py`.
+- **Step 1.3: Feature Categorization**: Covered by `tests/test_new_pipeline_components.py` (Categorization).
+- **Step 1.4: Resource-Aware Loading (50% RAM)**: Covered by `tests/test_performance_and_ram.py`.
 
-## Phase 2: Apply Best Configuration
-- **Step 2.1: Load and Harmonize**: Covered by `tests/test_phase2_outputs.py`.
-- **Step 2.2: Stateless Preprocessing**: Covered by `tests/test_preprocessing_pipeline.py` (stateless checks).
-- **Step 2.3: Save Outputs**: Covered by `tests/test_phase2_outputs.py`.
+## Phase 2: Iterative Training
+- **Step 2.1: Single Model Training (KNN, LR, DT, RF, CNN, TabNet)**: Covered by `tests/test_algo_handling.py` and `tests/test_new_pipeline_components.py`.
+- **Step 2.2: Convergence Tracking**: Covered by `tests/test_new_pipeline_components.py`.
 
-## Phase 3: Comprehensive Evaluation
-- **Step 3.1: Load and Prepare**: Covered by `tests/test_phase3_synthetic.py`.
-- **Step 3.2: Model-Aware Preprocessing per Fold**: Covered by `tests/test_model_aware_profiles.py` and `tests/test_no_smote_leakage_phase3.py`.
-- **Step 3.3: Model Training and Evaluation**: Covered by `tests/test_cnn.py`, `tests/test_tabnet.py`, and `tests/test_phase3_cnn_tabnet.py`.
-- **Step 3.4: Ratio Validation and KDE**: Covered by `tests/test_evaluation_3d_comprehensive.py`.
+## Phase 3: Validation & Tuning
+- **Step 3.1: Dynamic Hyperparameter Tuning**: Covered by `tests/test_new_pipeline_components.py` (Validator).
+- **Step 3.2: Performance Metrics (F1, AUC)**: Covered by `tests/test_evaluation_3d_comprehensive.py`.
 
-## Phase 4: AHP Preferences
-- **Step 4.1: Define Preferences**: Covered by `tests/test_ahp_topsis.py`.
+## Phase 4: XAI Validation
+- **Step 4.1: Fidelity, Stability, Complexity Scores**: Covered by `tests/test_new_pipeline_components.py` (XAIManager).
+- **Step 4.2: SHAP/LIME Visualizations**: Covered by `tests/_legacy_tests/test_explainability.py`.
 
-## Phase 5: TOPSIS Ranking
-- **Step 5.1: Rank Models**: Covered by `tests/test_ahp_topsis.py`.
+## Phase 5: Final Testing
+- **Step 5.1: Consolidated Results Report**: Covered by `tests/test_new_pipeline_components.py` (Tester).
+- **Step 5.2: Resource Consumption Plots**: Covered by `tests/test_performance_and_ram.py`.
 
 ## Cross-Cutting Concerns
 - **Data Leakage**: Covered by `tests/test_no_data_leakage.py` and `tests/test_test_transform_is_fold_fitted.py`.

@@ -6,19 +6,22 @@ import time
 from pathlib import Path
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Ensure project root is in sys.path
 _root = Path(__file__).resolve().parent.parent.parent
 if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
-from src.new_pipeline.config import RR_DIR, DATA_PATH
+from src.new_pipeline.config import RR_DIR, TON_IOT_PATH, CIC_DDOS_DIR, ALGORITHMS
 from src.new_pipeline.data_loader import RealDataLoader
 from src.new_pipeline.trainer import PipelineTrainer
 from src.new_pipeline.validator import PipelineValidator
 from src.new_pipeline.xai_manager import XAIManager
 from src.new_pipeline.tester import PipelineTester
 from src.system_monitor import SystemMonitor
+from src.core.feature_categorization import categorize_features, get_category_scores
 
 def setup_logging():
     logging.basicConfig(
@@ -39,7 +42,7 @@ def main():
     logger = logging.getLogger(__name__)
 
     print("\n" + "#"*80)
-    print("### PIPELINE DDOS SENIOR EXPERT V6 - FULL DATA & RESOURCE MANAGED ###")
+    print("### PIPELINE DDOS SENIOR EXPERT V7 - MULTI-DATASET & RESOURCE MANAGED ###")
     print("### RAM LIMIT: 50% | DEDICATED MONITORING THREAD | PROACTIVE GC ###")
     print("#"*80)
 
@@ -51,50 +54,106 @@ def main():
 
         # 1. Phase 1: Data Loading (100% Data)
         monitor.set_phase("Phase 1: Data Loading")
-        loader = RealDataLoader(DATA_PATH.parent, monitor, rr_dir=RR_DIR)
+        loader = RealDataLoader(monitor, rr_dir=RR_DIR)
 
-        # Load all CSVs using multi-threading (one thread per file)
-        # We use 100% of data as requested
-        loader.load_all_csv_multithreaded(sample_ratio=1.0)
+        # Load ToN-IoT and CICDDoS2019
+        loader.load_datasets(TON_IOT_PATH, CIC_DDOS_DIR, sample_ratio=1.0)
 
         loader.profile_and_validate()
         train_df, val_df, test_df = loader.get_splits()
 
-        X_train = train_df.drop(['is_ddos', 'label', 'type'], axis=1, errors='ignore')
+        # Feature Categorization
+        print("\n" + "-"*40)
+        print("MICRO-TÂCHE: Catégorisation des features")
+        all_features = [c for c in train_df.columns if c not in ['is_ddos', 'label', 'type', 'dataset']]
+        categorized = categorize_features(all_features)
+        cat_scores = get_category_scores(categorized)
+        print(f"RÉSULTAT: Features catégorisées en {len(categorized)} groupes.")
+        print(f"SCORES CATÉGORIES: {cat_scores}")
+
+        X_train = train_df[all_features]
         y_train = train_df['is_ddos']
-        X_val = val_df.drop(['is_ddos', 'label', 'type'], axis=1, errors='ignore')
+        X_val = val_df[all_features]
         y_val = val_df['is_ddos']
-        X_test = test_df.drop(['is_ddos', 'label', 'type'], axis=1, errors='ignore')
+        X_test = test_df[all_features]
         y_test = test_df['is_ddos']
 
-        # 2. Phase 2: Training
-        monitor.set_phase("Phase 2: Training")
-        trainer = PipelineTrainer(random_state=42)
-        trainer.train_all(X_train, y_train)
-        trainer.plot_results(RR_DIR)
+        # 2. Iterative Model Evaluation Loop
+        # For each algorithm, we do Training -> Validation -> XAI -> Testing
+        results = {}
 
-        # 3. Phase 3: Validation
-        monitor.set_phase("Phase 3: Validation")
-        validator = PipelineValidator(trainer.models, random_state=42)
-        validator.validate_tuning(X_val, y_val, RR_DIR)
+        for algo in ALGORITHMS:
+            print("\n" + "="*80)
+            print(f"ÉVALUATION COMPLÈTE DE L'ALGORITHME: {algo}")
+            print("="*80)
 
-        # 4. Phase 4: XAI
-        monitor.set_phase("Phase 4: XAI")
-        xai = XAIManager(rr_dir=RR_DIR)
-        xai.validate_xai(trainer.models, X_test, y_test)
-        xai.generate_visualizations(trainer.models, X_test)
+            # 2.1 Training
+            monitor.set_phase(f"Training {algo}")
+            trainer = PipelineTrainer(random_state=42)
+            trainer.train_single(algo, X_train, y_train)
 
-        # 5. Phase 5: Testing
-        monitor.set_phase("Phase 5: Testing")
-        tester = PipelineTester(trainer.models, rr_dir=RR_DIR)
-        tester.evaluate_all(X_test, y_test)
+            # 2.2 Validation & Tuning
+            monitor.set_phase(f"Validation {algo}")
+            validator = PipelineValidator(trainer.models, random_state=42)
+            validator.validate_tuning(X_val, y_val, RR_DIR, algo_name=algo)
 
-        # 6. Resource Plots & Timeline
+            # 2.3 XAI
+            monitor.set_phase(f"XAI {algo}")
+            xai = XAIManager(rr_dir=RR_DIR)
+            xai.validate_xai(trainer.models, X_test, y_test, algo_name=algo)
+
+            # 2.4 Testing
+            monitor.set_phase(f"Testing {algo}")
+            tester = PipelineTester(trainer.models, rr_dir=RR_DIR)
+            tester.evaluate_all(X_test, y_test, algo_name=algo)
+
+            results[algo] = {
+                'trainer': trainer,
+                'validator': validator,
+                'xai': xai,
+                'tester': tester
+            }
+
+        # 3. Final Visualizations & Resource Plots
         monitor.set_phase("Finalizing")
         print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Génération des graphiques de consommation des ressources")
+        print("MICRO-TÂCHE: Génération des graphiques finaux")
+
+        # Resource consumption
         monitor.plot_resource_consumption(str(RR_DIR / "resource_consumption.png"))
         monitor.generate_timeline_heatmap(str(RR_DIR / "execution_timeline.png"))
+
+        # 3.1 Correlation Matrix on a sample of data
+        plt.figure(figsize=(12, 10))
+        sns.heatmap(X_test.sample(min(1000, len(X_test))).corr(), cmap='coolwarm', annot=False)
+        plt.title("Correlation Matrix (Sample)")
+        plt.savefig(RR_DIR / "correlation_matrix.png")
+        plt.close()
+
+        # 3.2 Feature Importance Heatmap (Across Algos)
+        fi_data = {}
+        for algo, res in results.items():
+            if algo in ['RF', 'DT']:
+                fi_data[algo] = res['trainer'].models[algo].feature_importances_
+
+        if fi_data:
+            fi_df = pd.DataFrame(fi_data, index=all_features)
+            plt.figure(figsize=(12, 15))
+            sns.heatmap(fi_df.sort_values(by='RF', ascending=False).head(30), annot=True, cmap='YlGnBu')
+            plt.title("Top 30 Feature Importances Comparison")
+            plt.savefig(RR_DIR / "feature_importance_heatmap.png")
+            plt.close()
+
+        # 3.3 Category Metrics Visualization
+        cat_metrics_df = pd.DataFrame(cat_scores).T
+        cat_metrics_df.plot(kind='bar', figsize=(10, 6))
+        plt.title("Feature Category Metrics (Performance, Explainability, Resources)")
+        plt.ylabel("Score (1-10)")
+        plt.xticks(rotation=0)
+        plt.grid(axis='y', alpha=0.3)
+        plt.savefig(RR_DIR / "category_metrics.png")
+        plt.close()
+
         print(f"RÉSULTAT: Graphiques sauvegardés dans {RR_DIR}")
 
         print("\n" + "#"*80)
