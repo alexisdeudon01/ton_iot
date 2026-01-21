@@ -1,0 +1,150 @@
+```mermaid
+erDiagram
+    %% === CLASSES DE BASE ===
+    IRPBaseStructure {
+        dict metadata "Dict[str, Any]"
+        str project_name "= 'IRP DDoS Detection'"
+        method add_metadata "add_metadata(key: str, value: Any)"
+    }
+
+    %% === STRUCTURES DE DONNÉES ===
+    IRPDataFrame {
+        property _constructor "retourne IRPDataFrame"
+        method "__init__" "__init__(*args, **kwargs)"
+        method "hérite de pandas" "pd.DataFrame methods"
+        dict metadata "hérite de IRPBaseStructure"
+        str project_name "hérite de IRPBaseStructure"
+        method add_metadata "hérite de IRPBaseStructure"
+    }
+
+    IRPDaskFrame {
+        expr expr "expression Dask"
+        str name "nom du dataframe"
+        dict meta "metadata Dask"
+        tuple divisions "divisions Dask"
+        dict metadata "hérite de IRPBaseStructure"
+        str project_name "hérite de IRPBaseStructure"
+        method add_metadata "hérite de IRPBaseStructure"
+        method "hérite de dask" "dd.DataFrame methods"
+    }
+
+    NetworkFlow {
+        str flow_id "PK - identifiant unique"
+        str source_ip "IP source"
+        str dest_ip "IP destination"
+        list packets "List[pd.Series] - liste des paquets"
+        float start_time "timestamp début (optionnel)"
+        float end_time "timestamp fin (optionnel)"
+        dict metadata "hérite de IRPBaseStructure"
+        str project_name "hérite de IRPBaseStructure"
+        method add_metadata "hérite de IRPBaseStructure"
+        method add_packet "add_packet(packet: pd.Series, timestamp_col: str = 'ts')"
+        method get_direction "get_direction(packet: pd.Series) -> str"
+        method to_dataframe "to_dataframe() -> pd.DataFrame"
+        method "__repr__" "__repr__() -> str"
+    }
+
+    Packet {
+        float timestamp "ts - timestamp du paquet"
+        str src_ip "IP source"
+        str dst_ip "IP destination"
+        str protocol "protocole réseau"
+        int size "taille du paquet"
+        dict autres_features "autres features du dataset"
+        note "Représenté comme pd.Series dans NetworkFlow"
+    }
+
+    %% === PIPELINES ===
+    DatasetLoader {
+        Path data_dir "répertoire des datasets"
+        SystemMonitor monitor "moniteur système (optionnel)"
+        set loaded_files "Set[str] - fichiers déjà chargés"
+        Callable progress_callback "callback pour progression (optionnel)"
+        Path loaded_files_cache_file "chemin du cache"
+        method _load_file_cache "_load_file_cache() -> Set[str]"
+        method _save_file_cache "_save_file_cache()"
+        method _get_adaptive_chunk_size "_get_adaptive_chunk_size(sample_ratio: float) -> int"
+        method load_cic_ddos2019 "load_cic_ddos2019(sample_ratio: float) -> pd.DataFrame"
+        method load_ton_iot "load_ton_iot(sample_ratio: float) -> pd.DataFrame"
+        method get_adaptive_chunk_size "get_adaptive_chunk_size(sample_ratio: float) -> int"
+    }
+
+    PreprocessingPipeline {
+        int random_state "seed aléatoire (défaut: 42)"
+        int n_features "nombre de features à sélectionner (défaut: 20)"
+        RobustScaler scaler "scaler pour normalisation"
+        SimpleImputer imputer "imputer pour valeurs manquantes"
+        SelectKBest feature_selector "sélecteur de features"
+        bool is_fitted "état de fit du pipeline"
+        list selected_features "liste des features sélectionnées"
+        method prepare_data "prepare_data(X, y, apply_scaling=True, apply_resampling=True)"
+        method transform_test "transform_test(X_test) -> np.ndarray"
+        method clean_data "clean_data(X, impute=True) -> pd.DataFrame"
+        method select_features "select_features(X, y, k=None) -> np.ndarray"
+        method scale_features "scale_features(X, fit=True) -> np.ndarray"
+        method resample_data "resample_data(X, y, method='SMOTE') -> tuple"
+    }
+
+    %% === CONFIGURATION ===
+    PipelineConfig {
+        bool test_mode "mode test (défaut: False)"
+        float sample_ratio "ratio d'échantillonnage (défaut: 1.0)"
+        int random_state "seed aléatoire (défaut: 42)"
+        str output_dir "répertoire de sortie (défaut: 'output')"
+        bool interactive "UI Tkinter optionnelle (défaut: False)"
+        int cic_max_files "max fichiers CIC (optionnel)"
+        bool synthetic_mode "mode synthétique Phase 3 (défaut: False)"
+        bool phase1_search_enabled "Phase 1 activée (défaut: True)"
+        int phase1_n_configs "nombre configs Phase 1 (défaut: 108)"
+        dict preprocessing_options "options preprocessing (Dict[str, List[Any]])"
+        bool phase2_enabled "Phase 2 activée (défaut: True)"
+        bool phase3_enabled "Phase 3 activée (défaut: True)"
+        list phase3_algorithms "['Logistic_Regression', 'Decision_Tree', 'Random_Forest', 'CNN', 'TabNet']"
+        int phase3_cv_folds "folds CV (défaut: 5)"
+        dict preprocessing_profiles "profils preprocessing par modèle"
+        list dimension2_metrics "['training_time', 'inference_latency', 'peak_memory_mb', 'memory_efficiency']"
+        bool phase4_enabled "Phase 4 activée (défaut: True)"
+        dict ahp_preferences "préférences AHP (défaut: dim1=0.5, dim2=0.3, dim3=0.2)"
+        float ahp_consistency_threshold "seuil cohérence AHP (défaut: 0.1)"
+        bool phase5_enabled "Phase 5 activée (défaut: True)"
+        list topsis_output_formats "formats sortie TOPSIS (défaut: ['csv', 'md'])"
+        dict explainability_methods "méthodes explainability (native, SHAP, LIME)"
+        dict dataset_paths "chemins datasets (ton_iot, cic_ddos2019)"
+        method __post_init__ "__post_init__() - validation config"
+    }
+
+    %% === MODÈLES ===
+    ModelRegistry {
+        dict registry "Dict[str, Callable] - registre des modèles"
+        method get_model_registry "get_model_registry(config: PipelineConfig) -> Dict[str, Callable]"
+        str LR "Logistic Regression"
+        str DT "Decision Tree"
+        str RF "Random Forest"
+        str KNN "K-Nearest Neighbors"
+        str CNN "CNN (optionnel - nécessite PyTorch)"
+        str TabNet "TabNet (optionnel - nécessite pytorch-tabnet)"
+    }
+
+    %% === RELATIONS D'HÉRITAGE ===
+    IRPBaseStructure ||--o{ IRPDataFrame : "hérite de"
+    IRPBaseStructure ||--o{ IRPDaskFrame : "hérite de"
+    IRPBaseStructure ||--o{ NetworkFlow : "hérite de"
+
+    %% === RELATIONS DE COMPOSITION ===
+    NetworkFlow ||--o{ Packet : "contient (1:N)"
+    NetworkFlow ||--|| IRPDataFrame : "convertit en (to_dataframe)"
+
+    %% === RELATIONS D'UTILISATION ===
+    DatasetLoader ||--o{ IRPDaskFrame : "produit/charge"
+    PreprocessingPipeline ||--o{ IRPDataFrame : "traite"
+    PreprocessingPipeline ||--o{ IRPDaskFrame : "traite"
+
+    %% === RELATIONS DE CONFIGURATION ===
+    PipelineConfig ||--|| PreprocessingPipeline : "configure"
+    PipelineConfig ||--|| ModelRegistry : "configure"
+    PipelineConfig ||--|| DatasetLoader : "configure"
+
+    %% === RELATIONS DE COLLABORATION ===
+    PreprocessingPipeline }o--o{ ModelRegistry : "prépare données pour"
+    PreprocessingPipeline }o--o{ DatasetLoader : "utilise"
+```
