@@ -1,0 +1,90 @@
+---
+config:
+  layout: elk
+query: Code ownership analysis
+generationTime: 2026-01-21T15:55:42.906Z
+---
+flowchart TD
+
+    Root["/ROOT<br/>@Your Name"] --> Processed_datasets["/Processed_datasets<br/>@Your Name"]
+    Processed_datasets["/Processed_datasets<br/>@Your Name"] --> Processed_datasets_Processed_Windows_dataset["/Processed_datasets/Processed_Windows_dataset<br/>@Your Name"]
+    Root["/ROOT<br/>@Your Name"] --> datasets["/datasets<br/>@Your Name"]
+    datasets["/datasets<br/>@Your Name"] --> datasets_cic_ddos2019["/datasets/cic_ddos2019<br/>@Your Name"]
+    datasets_cic_ddos2019["/datasets/cic_ddos2019<br/>@Your Name"] --> datasets_cic_ddos2019_examples["/datasets/cic_ddos2019/examples<br/>@Your Name"]
+    datasets_cic_ddos2019_examples["/datasets/cic_ddos2019/examples<br/>@Your Name"] --> datasets_cic_ddos2019_examples_Test_Day02["/datasets/cic_ddos2019/examples/Test-Day02<br/>@Your Name"]
+    datasets_cic_ddos2019_examples["/datasets/cic_ddos2019/examples<br/>@Your Name"] --> datasets_cic_ddos2019_examples_Training_Day01["/datasets/cic_ddos2019/examples/Training-Day01<br/>@Your Name"]
+    datasets["/datasets<br/>@Your Name"] --> datasets_ton_iot["/datasets/ton_iot<br/>@Your Name"]
+    Root["/ROOT<br/>@Your Name"] --> output["/output<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_phase1_config_search["/output/phase1_config_search<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_phase1_preprocessing["/output/phase1_preprocessing<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_phase3_evaluation["/output/phase3_evaluation<br/>@Your Name"]
+    output_phase3_evaluation["/output/phase3_evaluation<br/>@Your Name"] --> output_phase3_evaluation_algorithm_reports["/output/phase3_evaluation/algorithm_reports<br/>@Your Name"]
+    output_phase3_evaluation["/output/phase3_evaluation<br/>@Your Name"] --> output_phase3_evaluation_metrics["/output/phase3_evaluation/metrics<br/>@Your Name"]
+    output_phase3_evaluation["/output/phase3_evaluation<br/>@Your Name"] --> output_phase3_evaluation_visualizations["/output/phase3_evaluation/visualizations<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_phase5_ranking["/output/phase5_ranking<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_realtime_visualizations["/output/realtime_visualizations<br/>@Your Name"]
+    output_realtime_visualizations["/output/realtime_visualizations<br/>@Your Name"] --> output_realtime_visualizations_algorithm_visualizations["/output/realtime_visualizations/algorithm_visualizations<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_static_analysis["/output/static_analysis<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_test["/output_test<br/>@Your Name"]
+    output_test["/output_test<br/>@Your Name"] --> output_test_cnn["/output/test/cnn<br/>@Your Name"]
+    output_test_cnn["/output/test/cnn<br/>@Your Name"] --> output_test_cnn_phase3_evaluation["/output/test/cnn/phase3_evaluation<br/>@Your Name"]
+    output_test_cnn_phase3_evaluation["/output/test/cnn/phase3_evaluation<br/>@Your Name"] --> output_test_cnn_phase3_evaluation_algorithm_reports["/output/test/cnn/phase3_evaluation/algorithm_reports<br/>@Your Name"]
+    output_test_cnn_phase3_evaluation["/output/test/cnn/phase3_evaluation<br/>@Your Name"] --> output_test_cnn_phase3_evaluation_visualizations["/output/test/cnn/phase3_evaluation/visualizations<br/>@Your Name"]
+    output_test["/output_test<br/>@Your Name"] --> output_test_cnn_full["/output/test/cnn_full<br/>@Your Name"]
+    output_test_cnn_full["/output/test/cnn_full<br/>@Your Name"] --> output_test_cnn_full_phase1_config_search["/output/test/cnn_full/phase1_config_search<br/>@Your Name"]
+    output_test["/output_test<br/>@Your Name"] --> output_test_full_pipeline_cnn["/output/test/full_pipeline_cnn<br/>@Your Name"]
+    output_test_full_pipeline_cnn["/output/test/full_pipeline_cnn<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase1_config_search["/output/test/full_pipeline_cnn/phase1_config_search<br/>@Your Name"]
+    output_test_full_pipeline_cnn["/output/test/full_pipeline_cnn<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase2_apply_best_config["/output/test/full_pipeline_cnn/phase2_apply_best_config<br/>@Your Name"]
+    output_test_full_pipeline_cnn["/output/test/full_pipeline_cnn<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase3_evaluation["/output/test/full_pipeline_cnn/phase3_evaluation<br/>@Your Name"]
+    output_test_full_pipeline_cnn_phase3_evaluation["/output/test/full_pipeline_cnn/phase3_evaluation<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase3_evaluation_algorithm_reports["/output/test/full_pipeline_cnn/phase3_evaluation/algorithm_reports<br/>@Your Name"]
+    output_test_full_pipeline_cnn_phase3_evaluation["/output/test/full_pipeline_cnn/phase3_evaluation<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase3_evaluation_metrics["/output/test/full_pipeline_cnn/phase3_evaluation/metrics<br/>@Your Name"]
+    output_test_full_pipeline_cnn_phase3_evaluation["/output/test/full_pipeline_cnn/phase3_evaluation<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase3_evaluation_visualizations["/output/test/full_pipeline_cnn/phase3_evaluation/visualizations<br/>@Your Name"]
+    output_test_full_pipeline_cnn["/output/test/full_pipeline_cnn<br/>@Your Name"] --> output_test_full_pipeline_cnn_phase4_ahp_preferences["/output/test/full_pipeline_cnn/phase4_ahp_preferences<br/>@Your Name"]
+    output_test["/output_test<br/>@Your Name"] --> output_test_full_pipeline_tabnet["/output/test/full_pipeline_tabnet<br/>@Your Name"]
+    output_test_full_pipeline_tabnet["/output/test/full_pipeline_tabnet<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase1_config_search["/output/test/full_pipeline_tabnet/phase1_config_search<br/>@Your Name"]
+    output_test_full_pipeline_tabnet["/output/test/full_pipeline_tabnet<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase2_apply_best_config["/output/test/full_pipeline_tabnet/phase2_apply_best_config<br/>@Your Name"]
+    output_test_full_pipeline_tabnet["/output/test/full_pipeline_tabnet<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase3_evaluation["/output/test/full_pipeline_tabnet/phase3_evaluation<br/>@Your Name"]
+    output_test_full_pipeline_tabnet_phase3_evaluation["/output/test/full_pipeline_tabnet/phase3_evaluation<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase3_evaluation_algorithm_reports["/output/test/full_pipeline_tabnet/phase3_evaluation/algorithm_reports<br/>@Your Name"]
+    output_test_full_pipeline_tabnet_phase3_evaluation["/output/test/full_pipeline_tabnet/phase3_evaluation<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase3_evaluation_metrics["/output/test/full_pipeline_tabnet/phase3_evaluation/metrics<br/>@Your Name"]
+    output_test_full_pipeline_tabnet_phase3_evaluation["/output/test/full_pipeline_tabnet/phase3_evaluation<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase3_evaluation_visualizations["/output/test/full_pipeline_tabnet/phase3_evaluation/visualizations<br/>@Your Name"]
+    output_test_full_pipeline_tabnet["/output/test/full_pipeline_tabnet<br/>@Your Name"] --> output_test_full_pipeline_tabnet_phase4_ahp_preferences["/output/test/full_pipeline_tabnet/phase4_ahp_preferences<br/>@Your Name"]
+    output_test["/output_test<br/>@Your Name"] --> output_test_tabnet["/output/test/tabnet<br/>@Your Name"]
+    output_test_tabnet["/output/test/tabnet<br/>@Your Name"] --> output_test_tabnet_phase3_evaluation["/output/test/tabnet/phase3_evaluation<br/>@Your Name"]
+    output_test_tabnet_phase3_evaluation["/output/test/tabnet/phase3_evaluation<br/>@Your Name"] --> output_test_tabnet_phase3_evaluation_algorithm_reports["/output/test/tabnet/phase3_evaluation/algorithm_reports<br/>@Your Name"]
+    output_test_tabnet_phase3_evaluation["/output/test/tabnet/phase3_evaluation<br/>@Your Name"] --> output_test_tabnet_phase3_evaluation_visualizations["/output/test/tabnet/phase3_evaluation/visualizations<br/>@Your Name"]
+    output["/output<br/>@Your Name"] --> output_test_reports["/output/test_reports<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260120_204923["/output/test_reports/test_run_20260120_204923<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260120_210418["/output/test_reports/test_run_20260120_210418<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260120_212924["/output/test_reports/test_run_20260120_212924<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260120_213145["/output/test_reports/test_run_20260120_213145<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260120_213736["/output/test_reports/test_run_20260120_213736<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260121_075940["/output/test_reports/test_run_20260121_075940<br/>@Your Name"]
+    output_test_reports["/output/test_reports<br/>@Your Name"] --> output_test_reports_test_run_20260121_081930["/output/test_reports/test_run_20260121_081930<br/>@Your Name"]
+    Root["/ROOT<br/>@Your Name"] --> output_test["/output_test<br/>@Your Name"]
+    output_test["/output_test<br/>@Your Name"] --> output_test_phase3_evaluation["/output_test/phase3_evaluation<br/>@Your Name"]
+    output_test_phase3_evaluation["/output_test/phase3_evaluation<br/>@Your Name"] --> output_test_phase3_evaluation_metrics["/output_test/phase3_evaluation/metrics<br/>@Your Name"]
+    output_test_phase3_evaluation["/output_test/phase3_evaluation<br/>@Your Name"] --> output_test_phase3_evaluation_visualizations["/output_test/phase3_evaluation/visualizations<br/>@Your Name"]
+    Root["/ROOT<br/>@Your Name"] --> rr["/rr<br/>@Your Name"]
+    Root["/ROOT<br/>@Your Name"] --> src["/src<br/>@Your Name, @Alexis Deudon"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_app["/src/app<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_config["/src/config<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_core["/src/core<br/>@Your Name, @Alexis Deudon"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_datastructure["/src/datastructure<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_evaluation["/src/evaluation<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_models["/src/models<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_new_pipeline["/src/new_pipeline<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_phases["/src/phases<br/>@Your Name, @Alexis Deudon"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_ui["/src/ui<br/>@Your Name"]
+    src["/src<br/>@Your Name, @Alexis Deudon"] --> src_utils["/src/utils<br/>@Your Name"]
+    Root["/ROOT<br/>@Your Name"] --> tests["/tests<br/>@Your Name, @Alexis Deudon"]
+    tests["/tests<br/>@Your Name, @Alexis Deudon"] --> tests_legacy_tests["/tests/_legacy_tests<br/>@Your Name"]
+
+    class output,output_test_full_pipeline_cnn,output_test_full_pipeline_cnn_phase2_apply_best_config,output_test_full_pipeline_cnn_phase3_evaluation,output_test_full_pipeline_cnn_phase3_evaluation_algorithm_reports,output_test_full_pipeline_tabnet,output_test_full_pipeline_tabnet_phase2_apply_best_config,output_test_full_pipeline_tabnet_phase3_evaluation,output_test_full_pipeline_tabnet_phase3_evaluation_algorithm_reports,rr,src,src_core,src_evaluation,src_models,src_new_pipeline,src_phases,tests ActivelyMaintained
+    class datasets,datasets_cic_ddos2019,output_phase1_preprocessing,output_phase3_evaluation,output_phase3_evaluation_algorithm_reports,output_phase3_evaluation_visualizations,output_phase5_ranking,output_static_analysis,output_test_full_pipeline_cnn_phase1_config_search,output_test_full_pipeline_cnn_phase3_evaluation_metrics,output_test_full_pipeline_cnn_phase3_evaluation_visualizations,output_test_full_pipeline_cnn_phase4_ahp_preferences,output_test_reports,src_app,src_config ModeratelyMaintained
+    class Processed_datasets,Processed_datasets_Processed_Windows_dataset,datasets_cic_ddos2019_examples,datasets_cic_ddos2019_examples_Test_Day02,datasets_cic_ddos2019_examples_Training_Day01,datasets_ton_iot,output_phase1_config_search,output_phase3_evaluation_metrics,output_realtime_visualizations,output_realtime_visualizations_algorithm_visualizations,output_test,output_test_cnn,output_test_cnn_phase3_evaluation,output_test_cnn_phase3_evaluation_algorithm_reports,output_test_cnn_phase3_evaluation_visualizations,output_test_cnn_full,output_test_cnn_full_phase1_config_search,output_test_full_pipeline_tabnet_phase1_config_search,output_test_full_pipeline_tabnet_phase3_evaluation_metrics,output_test_full_pipeline_tabnet_phase3_evaluation_visualizations,output_test_full_pipeline_tabnet_phase4_ahp_preferences,output_test_tabnet,output_test_tabnet_phase3_evaluation,output_test_tabnet_phase3_evaluation_algorithm_reports,output_test_tabnet_phase3_evaluation_visualizations,output_test_reports_test_run_20260120_204923,output_test_reports_test_run_20260120_210418,output_test_reports_test_run_20260120_212924,output_test_reports_test_run_20260120_213145,output_test_reports_test_run_20260120_213736,output_test_reports_test_run_20260121_075940,output_test_reports_test_run_20260121_081930,output_test_phase3_evaluation,output_test_phase3_evaluation_metrics,output_test_phase3_evaluation_visualizations,src_datastructure,src_ui,src_utils,tests_legacy_tests LightlyMaintained
+    class Root root
+
+    classDef ActivelyMaintained fill:#07B88C,stroke:#055a47,stroke-width:2px,color:#ffffff;
+    classDef ModeratelyMaintained fill:#EBBE09,stroke:#b8930a,stroke-width:2px,color:#000000;
+    classDef LightlyMaintained fill:#EB6309,stroke:#a84507,stroke-width:2px,color:#ffffff;
+    classDef root fill:#e0095f,stroke:#a00641,stroke-width:3px,color:#ffffff;
