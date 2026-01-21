@@ -45,164 +45,128 @@ class LateFusionDataLoader:
         logger.info("Phase 0 completed successfully.")
 
     def _prepare_cic(self):
-        """Consolidate CICDDoS2019 CSVs into Parquet with column harmonization and dtype enforcement."""
+        """Consolidate CICDDoS2019 CSVs into Parquet with strict schema enforcement."""
         logger.info(f"Consolidating CICDDoS2019 from {self.paths.cic_dir}")
         csv_files = list(self.paths.cic_dir.rglob("*.csv"))
         if not csv_files:
             raise DataLoadingError(f"No CSV files found in {self.paths.cic_dir}")
 
         rename_map = {
-            'Source IP': 'src_ip',
-            'Destination IP': 'dst_ip',
-            'Source Port': 'src_port',
-            'Destination Port': 'dst_port',
-            'Protocol': 'proto',
-            'Timestamp': 'timestamp'
+            'Source IP': 'src_ip', 'Destination IP': 'dst_ip',
+            'Source Port': 'src_port', 'Destination Port': 'dst_port',
+            'Protocol': 'proto', 'Timestamp': 'timestamp'
         }
 
         first_chunk = True
-        total_rows = 0
+        schema_cols = None
 
         for csv_path in csv_files:
             logger.info(f"Processing {csv_path.name}...")
             try:
-                chunks = pd.read_csv(
-                    csv_path, 
-                    chunksize=self.p0.chunksize, 
-                    low_memory=self.p0.low_memory
-                )
-                
+                chunks = pd.read_csv(csv_path, chunksize=self.p0.chunksize, low_memory=self.p0.low_memory)
                 for i, chunk in enumerate(chunks):
-                    # Cleaning column names
                     chunk.columns = [c.strip() for c in chunk.columns]
-                    
-                    # Harmonization
                     chunk.rename(columns=rename_map, inplace=True)
                     
-                    # Force consistent dtypes to avoid "Appended dtypes differ" error
-                    for col in chunk.columns:
-                        if col in ['src_ip', 'dst_ip', 'proto', 'timestamp', 'Flow ID', 'SimillarHTTP', 'source']:
-                            chunk[col] = chunk[col].astype(str)
-                        elif col == self.p0.cic_label_col:
-                            continue # Handle label separately
-                        else:
-                            chunk[col] = pd.to_numeric(chunk[col], errors='coerce').astype('float64')
-
                     # Label mapping
                     if self.p0.cic_label_col in chunk.columns:
-                        chunk[self.p0.label_col] = (
-                            chunk[self.p0.cic_label_col].astype(str).str.strip().str.upper() != self.p0.cic_benign_value
-                        ).astype(int)
+                        chunk[self.p0.label_col] = (chunk[self.p0.cic_label_col].astype(str).str.strip().str.upper() != self.p0.cic_benign_value).astype(int)
                         chunk.drop(columns=[self.p0.cic_label_col], inplace=True)
                     
-                    # Drop Unnamed
-                    for col in self.p0.drop_columns_if_present:
-                        if col in chunk.columns:
-                            chunk.drop(columns=[col], inplace=True)
-                    
-                    # Source col
                     if self.p0.cic_add_source_col:
                         chunk[self.p0.cic_source_col] = str(csv_path)
-                    
-                    # Ensure label is last
-                    cols = [c for c in chunk.columns if c != self.p0.label_col] + [self.p0.label_col]
-                    chunk = chunk[cols]
-                    
-                    # Write to Parquet
+
+                    for col in self.p0.drop_columns_if_present:
+                        if col in chunk.columns: chunk.drop(columns=[col], inplace=True)
+
+                    # Force consistent dtypes and handle Inf/NaN
+                    for col in chunk.columns:
+                        if col in ['src_ip', 'dst_ip', 'proto', 'timestamp', 'Flow ID', 'SimillarHTTP', 'source']:
+                            chunk[col] = chunk[col].astype(str).fillna("N/A")
+                        elif col == self.p0.label_col:
+                            chunk[col] = chunk[col].astype('int64')
+                        else:
+                            chunk[col] = pd.to_numeric(chunk[col], errors='coerce').replace([np.inf, -np.inf], np.nan).astype('float64').fillna(0.0)
+
+                    # Ensure column order is identical for all chunks
+                    if schema_cols is None:
+                        schema_cols = chunk.columns.tolist()
+                    else:
+                        # Add missing columns with default values
+                        for col in schema_cols:
+                            if col not in chunk.columns:
+                                chunk[col] = 0.0 if chunk.dtypes.get(col) != object else "N/A"
+                        chunk = chunk[schema_cols]
+
                     target_path = self.paths.cic_parquet
                     target_path.mkdir(parents=True, exist_ok=True)
-                    
                     dd_chunk = dd.from_pandas(chunk, npartitions=1)
-                    # Use pyarrow engine and ensure schema consistency
                     dd_chunk.to_parquet(target_path, engine="pyarrow", append=not first_chunk, ignore_divisions=True)
-                    
                     first_chunk = False
-                    total_rows += len(chunk)
-                    if i % 5 == 0:
-                        logger.info(f"  Chunk {i} processed. Total rows so far: {total_rows}")
             except Exception as e:
                 logger.error(f"Error processing {csv_path}: {e}")
 
     def _prepare_ton(self):
-        """Filter and convert ToN-IoT CSV to Parquet with column harmonization and dtype enforcement."""
+        """Filter and convert ToN-IoT CSV to Parquet with strict schema enforcement."""
         logger.info(f"Processing ToN-IoT from {self.paths.ton_file}")
         if not self.paths.ton_file.exists():
             raise DataLoadingError(f"ToN-IoT file not found: {self.paths.ton_file}")
 
-        rename_map = {
-            'ts': 'timestamp'
-        }
-
+        rename_map = {'ts': 'timestamp'}
         first_chunk = True
-        total_rows = 0
+        schema_cols = None
         
-        chunks = pd.read_csv(
-            self.paths.ton_file, 
-            chunksize=self.p0.chunksize, 
-            low_memory=self.p0.low_memory
-        )
+        chunks = pd.read_csv(self.paths.ton_file, chunksize=self.p0.chunksize, low_memory=self.p0.low_memory)
 
         for i, chunk in enumerate(chunks):
             chunk.columns = [c.strip() for c in chunk.columns]
-            
-            # Harmonization
             chunk.rename(columns=rename_map, inplace=True)
-
+            
             # Force consistent dtypes
             for col in chunk.columns:
                 if col in ['src_ip', 'dst_ip', 'proto', 'timestamp', 'source']:
-                    chunk[col] = chunk[col].astype(str)
+                    chunk[col] = chunk[col].astype(str).fillna("N/A")
                 elif col in [self.p0.ton_type_col, self.p0.label_col]:
                     continue
                 else:
-                    chunk[col] = pd.to_numeric(chunk[col], errors='coerce').astype('float64')
+                    chunk[col] = pd.to_numeric(chunk[col], errors='coerce').replace([np.inf, -np.inf], np.nan).astype('float64').fillna(0.0)
 
-            # Filter type
             if self.p0.ton_type_col in chunk.columns:
                 chunk = chunk[chunk[self.p0.ton_type_col].str.strip().str.lower().isin(self.p0.ton_allowed_types)]
-                chunk[self.p0.label_col] = (
-                    chunk[self.p0.ton_type_col].str.strip().str.lower() == "ddos"
-                ).astype(int)
+                chunk[self.p0.label_col] = (chunk[self.p0.ton_type_col].str.strip().str.lower() == "ddos").astype(int)
                 chunk.drop(columns=[self.p0.ton_type_col], inplace=True)
             
-            # Drop Unnamed
             for col in self.p0.drop_columns_if_present:
-                if col in chunk.columns:
-                    chunk.drop(columns=[col], inplace=True)
+                if col in chunk.columns: chunk.drop(columns=[col], inplace=True)
             
-            # Ensure label is last
-            cols = [c for c in chunk.columns if c != self.p0.label_col] + [self.p0.label_col]
-            chunk = chunk[cols]
-            
+            if schema_cols is None:
+                schema_cols = chunk.columns.tolist()
+            else:
+                for col in schema_cols:
+                    if col not in chunk.columns:
+                        chunk[col] = 0.0 if chunk.dtypes.get(col) != object else "N/A"
+                chunk = chunk[schema_cols]
+
             target_path = self.paths.ton_parquet
             target_path.mkdir(parents=True, exist_ok=True)
-            
             dd_chunk = dd.from_pandas(chunk, npartitions=1)
             dd_chunk.to_parquet(target_path, engine="pyarrow", append=not first_chunk, ignore_divisions=True)
-            
             first_chunk = False
-            total_rows += len(chunk)
-            if i % 5 == 0:
-                logger.info(f"  Chunk {i} processed. Total rows so far: {total_rows}")
 
     def align_features(self) -> List[str]:
         """Phase 1: Feature Alignment (F_common) with advanced statistics."""
         logger.info("Starting Phase 1: Feature Alignment")
         
-        # Load samples (stratified if possible)
-        def load_stratified_sample(path, n_rows):
+        def load_robust_sample(path, n_rows):
             ddf = dd.read_parquet(path)
-            # Simple stratified sample: 50% label 0, 50% label 1
-            n_half = n_rows // 2
             try:
-                df_0 = ddf[ddf[self.p0.label_col] == 0].head(n_half)
-                df_1 = ddf[ddf[self.p0.label_col] == 1].head(n_half)
-                return pd.concat([df_0, df_1])
+                df = ddf.sample(frac=min(1.0, (n_rows*5)/len(ddf)), random_state=42).compute()
+                return df.head(n_rows)
             except:
                 return ddf.head(n_rows)
 
-        df_cic = load_stratified_sample(self.paths.cic_parquet, self.p1.align_sample_rows)
-        df_ton = load_stratified_sample(self.paths.ton_parquet, self.p1.align_sample_rows)
+        df_cic = load_robust_sample(self.paths.cic_parquet, self.p1.align_sample_rows)
+        df_ton = load_robust_sample(self.paths.ton_parquet, self.p1.align_sample_rows)
 
         cic_num = df_cic.select_dtypes(include=[np.number]).drop(columns=[self.p0.label_col], errors='ignore')
         ton_num = df_ton.select_dtypes(include=[np.number]).drop(columns=[self.p0.label_col], errors='ignore')
@@ -210,33 +174,18 @@ class LateFusionDataLoader:
         def get_descriptors(df):
             desc = {}
             for col in df.columns:
-                # Ensure numeric and handle NaNs
-                data = pd.to_numeric(df[col], errors='coerce')
-                if data.isna().all():
-                    continue
-                
+                data = pd.to_numeric(df[col], errors='coerce').replace([np.inf, -np.inf], np.nan)
+                if data.isna().all(): continue
                 median_val = data.median()
                 data = data.fillna(median_val if not np.isnan(median_val) else 0)
-                
-                # Entropy calculation
                 counts = data.value_counts()
                 ent = entropy(counts)
-                
                 desc[col] = {
-                    'mean': float(data.mean()),
-                    'std': float(data.std()),
-                    'median': float(data.median()),
-                    'skew': float(data.skew()),
-                    'kurtosis': float(data.kurtosis()),
-                    'entropy': float(ent),
-                    'zeros': float((data == 0).mean()),
-                    'min': float(data.min()),
-                    'max': float(data.max())
+                    'mean': float(data.mean()), 'std': float(data.std()), 'median': float(data.median()),
+                    'skew': float(data.skew()), 'kurtosis': float(data.kurtosis()), 'entropy': float(ent),
+                    'zeros': float((data == 0).mean()), 'min': float(data.min()), 'max': float(data.max())
                 }
-            
-            desc_df = pd.DataFrame(desc).T
-            # Fill any remaining NaNs in descriptors (e.g. skew on constant data)
-            return desc_df.fillna(0)
+            return pd.DataFrame(desc).T.fillna(0)
 
         logger.info("Computing statistical descriptors...")
         desc_cic = get_descriptors(cic_num)
@@ -244,46 +193,29 @@ class LateFusionDataLoader:
 
         mapping = []
         f_common = []
-
-        # Ensure we only iterate over columns that have descriptors
         cic_cols = [c for c in cic_num.columns if c in desc_cic.index]
         ton_cols = [t for t in ton_num.columns if t in desc_ton.index]
 
         for c_col in cic_cols:
             best_match = None
             max_sim = -1
-            
             for t_col in ton_cols:
-                # Cosine similarity on descriptors
-                sim = cosine_similarity(
-                    desc_cic.loc[c_col].values.reshape(1, -1),
-                    desc_ton.loc[t_col].values.reshape(1, -1)
-                )[0][0]
-                
+                sim = cosine_similarity(desc_cic.loc[c_col].values.reshape(1, -1), desc_ton.loc[t_col].values.reshape(1, -1))[0][0]
                 if sim > max_sim:
                     max_sim = sim
                     best_match = t_col
             
-            if max_sim > self.p1.descriptor_sim_threshold:
-                v_cic = cic_num[c_col].fillna(cic_num[c_col].median())
-                v_ton = ton_num[best_match].fillna(ton_num[best_match].median())
+            if max_sim > 0.5:
+                v_cic = cic_num[c_col].fillna(0)
+                v_ton = ton_num[best_match].fillna(0)
                 ks_stat, p_val = stats.ks_2samp(v_cic, v_ton)
                 w_dist = wasserstein_distance(v_cic, v_ton)
-                
-                mapping.append({
-                    'cic_feature': c_col,
-                    'ton_feature': best_match,
-                    'cosine_sim': max_sim,
-                    'ks_pvalue': p_val,
-                    'wasserstein': w_dist
-                })
-                
-                if p_val > self.p1.ks_pvalue_threshold:
+                mapping.append({'cic_feature': c_col, 'ton_feature': best_match, 'cosine_sim': max_sim, 'ks_pvalue': p_val, 'wasserstein': w_dist})
+                if max_sim > self.p1.descriptor_sim_threshold or p_val > self.p1.ks_pvalue_threshold:
                     f_common.append(c_col)
 
         mapping_df = pd.DataFrame(mapping)
         mapping_df.to_csv(self.p1.alignment_artifacts_dir / self.p1.mapping_pairs_csv, index=False)
-        
         with open(self.p1.alignment_artifacts_dir / self.p1.f_common_json, 'w') as f:
             json.dump(f_common, f)
             
