@@ -87,7 +87,9 @@ class XAIManager:
         best = {}
         for algo in self.results:
             scores = {m: (self.results[algo][m]['fidelity'] + self.results[algo][m]['stability'] + self.results[algo][m]['complexity'])/3 for m in self.results[algo]}
-            best[algo] = max(scores, key=scores.get)
+            if not scores:
+                continue
+            best[algo] = max(scores.keys(), key=lambda k: scores[k])
             print(f"RÉSULTAT: Meilleure méthode pour {algo} -> {best[algo]}")
         return best
 

@@ -62,23 +62,26 @@ class SystemMonitor:
 
     def _monitor_loop(self, interval: float):
         while not self._stop_event.is_set():
-            mem = psutil.virtual_memory()
-            cpu = psutil.cpu_percent(interval=None)
-            proc_mem = self.process.memory_info().rss / (1024 * 1024) # MB
+            try:
+                mem = psutil.virtual_memory()
+                cpu = psutil.cpu_percent(interval=None)
+                proc_mem = self.process.memory_info().rss / (1024 * 1024) # MB
 
-            with self.lock:
-                self.history['timestamp'].append(time.time() - self.start_time)
-                self.history['cpu_percent'].append(cpu)
-                self.history['ram_percent'].append(mem.percent)
-                self.history['process_ram_mb'].append(proc_mem)
-                self.history['phase'].append(self.current_phase)
+                with self.lock:
+                    self.history['timestamp'].append(time.time() - self.start_time)
+                    self.history['cpu_percent'].append(cpu)
+                    self.history['ram_percent'].append(mem.percent)
+                    self.history['process_ram_mb'].append(proc_mem)
+                    self.history['phase'].append(self.current_phase)
 
-            # Proactive Memory Management
-            if mem.percent > self.max_memory_percent:
-                gc.collect()
-                # If still too high, we might need to sleep to let system breathe
-                if mem.percent > self.max_memory_percent + 5:
-                    time.sleep(0.5)
+                # Proactive Memory Management
+                if mem.percent > self.max_memory_percent:
+                    gc.collect()
+                    # If still too high, we might need to sleep to let system breathe
+                    if mem.percent > self.max_memory_percent + 5:
+                        time.sleep(0.5)
+            except Exception as e:
+                pass # Avoid crashing the monitor thread
 
             time.sleep(interval)
 
@@ -107,7 +110,7 @@ class SystemMonitor:
         ax1.axhline(y=100, color='r', linestyle='--')
         ax1.set_ylabel("CPU Usage (%)")
         ax1.set_title("CPU Consumption per Phase")
-        ax1.legend(loc='upper right', fontsize='small', ncol=2)
+        ax1.legend(loc='upper right', fontsize='x-small', ncol=2)
         ax1.grid(True, alpha=0.3)
 
         # RAM Plot
@@ -119,7 +122,7 @@ class SystemMonitor:
         ax2.set_ylabel("RAM Usage (%)")
         ax2.set_xlabel("Time (s)")
         ax2.set_title("Memory Consumption per Phase")
-        ax2.legend(loc='upper right', fontsize='small', ncol=2)
+        ax2.legend(loc='upper right', fontsize='x-small', ncol=2)
         ax2.grid(True, alpha=0.3)
 
         plt.tight_layout()
@@ -136,18 +139,27 @@ class SystemMonitor:
             return
 
         # Create a simplified timeline
-        timeline = df.groupby('phase')['timestamp'].agg(['min', 'max', 'count'])
-        timeline['duration'] = timeline['max'] - timeline['min']
+        timeline_data = []
+        for phase in df['phase'].unique():
+            phase_df = df[df['phase'] == phase]
+            timeline_data.append({
+                'Phase': phase,
+                'Start': phase_df['timestamp'].min(),
+                'End': phase_df['timestamp'].max(),
+                'Duration': phase_df['timestamp'].max() - phase_df['timestamp'].min()
+            })
 
-        plt.figure(figsize=(12, 4))
-        y_labels = timeline.index.tolist()
-        for i, phase in enumerate(y_labels):
-            plt.barh(i, timeline.loc[phase, 'duration'], left=timeline.loc[phase, 'min'], label=phase)
+        t_df = pd.DataFrame(timeline_data)
 
-        plt.yticks(range(len(y_labels)), y_labels)
+        plt.figure(figsize=(12, 6))
+        cmap = plt.get_cmap('tab10')
+        for i, (idx, row) in enumerate(t_df.iterrows()):
+            plt.barh(str(row['Phase']), float(row['Duration']), left=float(row['Start']), color=cmap(i % 10))
+
         plt.xlabel("Time (s)")
-        plt.title("Execution Timeline")
+        plt.title("Execution Timeline by Phase")
         plt.grid(True, axis='x', alpha=0.3)
+        plt.tight_layout()
         plt.savefig(output_path)
         plt.close()
 
