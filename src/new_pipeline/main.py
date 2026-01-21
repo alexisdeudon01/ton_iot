@@ -45,13 +45,8 @@ def main(sample_ratio: float = 1.0):
     total_ram_gb = psutil.virtual_memory().total / (1024**3)
     memory_limit = f"{total_ram_gb * 0.45:.1f}GB" # 45% to be safe
 
-    cluster = LocalCluster(
-        n_workers=2,
-        threads_per_worker=2,
-        memory_limit=memory_limit,
-        dashboard_address=":8787"
-    )
-    client = Client(cluster)
+    cluster = None
+    client = None
 
     # Initialize System Monitor for plotting
     monitor = SystemMonitor(max_memory_percent=50.0)
@@ -60,14 +55,22 @@ def main(sample_ratio: float = 1.0):
     setup_logging()
     logger = logging.getLogger(__name__)
 
-    print("\n" + "#" * 80)
-    print("### PIPELINE DDOS SENIOR EXPERT V8 - DASK POWERED & RESOURCE MANAGED ###")
-    print(f"### DASK CLIENT: {client.dashboard_link} ###")
-    print(f"### RAM LIMIT: 50% ({memory_limit}) | DASK OUT-OF-CORE ###")
-    print(f"### SAMPLE RATIO: {sample_ratio*100:.4f}% ###")
-    print("#" * 80)
-
     try:
+        cluster = LocalCluster(
+            n_workers=2,
+            threads_per_worker=2,
+            memory_limit=memory_limit,
+            dashboard_address=":8787"
+        )
+        client = Client(cluster)
+
+        print("\n" + "#" * 80)
+        print("### PIPELINE DDOS SENIOR EXPERT V8 - DASK POWERED & RESOURCE MANAGED ###")
+        print(f"### DASK CLIENT: {client.dashboard_link} ###")
+        print(f"### RAM LIMIT: 50% ({memory_limit}) | DASK OUT-OF-CORE ###")
+        print(f"### SAMPLE RATIO: {sample_ratio*100:.4f}% ###")
+        print("#" * 80)
+
         # Clean rr directory
         if RR_DIR.exists():
             shutil.rmtree(RR_DIR)
@@ -200,8 +203,8 @@ def main(sample_ratio: float = 1.0):
         logger.error(f"Pipeline failed: {e}", exc_info=True)
     finally:
         monitor.stop_monitoring()
-        client.close()
-        cluster.close()
+        if client: client.close()
+        if cluster: cluster.close()
 
 
 if __name__ == "__main__":
