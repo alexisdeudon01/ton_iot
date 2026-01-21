@@ -1,170 +1,240 @@
 import logging
-import random
-import time
 import os
+import json
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
-import dask.dataframe as dd
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
-from dask.distributed import Client
-from sklearn.model_selection import train_test_split
+import numpy as np
+import dask.dataframe as dd
+from scipy import stats
+from scipy.stats import wasserstein_distance, entropy
+from sklearn.metrics.pairwise import cosine_similarity
 
-from src.system_monitor import SystemMonitor
+from src.new_pipeline.config import config
 from src.core.exceptions import DataLoadingError
 
 logger = logging.getLogger(__name__)
 
+class LateFusionDataLoader:
+    """
+    Phase 0: Data Cleaning & Consolidation (CSV -> Parquet)
+    Phase 1: Feature Alignment (F_common)
+    """
 
-class RealDataLoader:
-    """Phase 1: Dask-based Data Loading with Parquet Support"""
-
-    def __init__(
-        self, monitor: SystemMonitor, target_col: str = "is_ddos", 
-        rr_dir: Path = Path("rr"), parquet_dir: Path = Path("datasets/parquet")
-    ):
-        self.monitor = monitor
-        self.target_col = target_col
-        self.rr_dir = rr_dir
-        self.parquet_dir = parquet_dir
-        self.ddf: Optional[dd.DataFrame] = None
-        self.splits: Optional[Dict[str, Any]] = None
+    def __init__(self):
+        self.paths = config.paths
+        self.p0 = config.phase0
+        self.p1 = config.phase1
         
-        self.parquet_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure directories exist
+        self.paths.data_parquet_root.mkdir(parents=True, exist_ok=True)
+        self.p1.alignment_artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-    def load_datasets(
-        self, ton_iot_path: Path, cic_ddos_dir: Path, sample_ratio: float = 1.0
-    ) -> Optional[dd.DataFrame]:
-        """Loads datasets, converting to Parquet if necessary for performance."""
-        print("\n" + "=" * 80)
-        print(f"MICRO-TÂCHE: Chargement des datasets (Optimisation PARQUET)")
-        print("=" * 80)
-
-        start_time = time.time()
+    def prepare_datasets(self, force: bool = False):
+        """Phase 0: Convert CSVs to Parquet with cleaning and harmonization."""
+        logger.info("Starting Phase 0: Data Cleaning & Consolidation")
         
-        parquet_path = self.parquet_dir / "combined_dataset.parquet"
-        
-        if parquet_path.exists():
-            print(f"INFO: Chargement depuis PARQUET: {parquet_path}")
-            self.ddf = dd.read_parquet(parquet_path)
-        else:
-            print(f"INFO: Parquet non trouvé. Conversion CSV -> PARQUET en cours...")
-            self.ddf = self._convert_csv_to_parquet(ton_iot_path, cic_ddos_dir, parquet_path)
+        if not force and self.paths.cic_parquet.exists() and self.paths.ton_parquet.exists():
+            logger.info("Parquet datasets already exist. Skipping conversion.")
+            return
 
-        if self.ddf is not None and sample_ratio < 1.0:
-            self.ddf = self.ddf.sample(frac=sample_ratio, random_state=42)
+        self._prepare_cic()
+        self._prepare_ton()
+        logger.info("Phase 0 completed successfully.")
 
-        print(
-            f"RÉSULTAT: Dataset chargé. Temps: {time.time() - start_time:.2f}s"
-        )
-        return self.ddf
+    def _prepare_cic(self):
+        """Consolidate CICDDoS2019 CSVs into Parquet with column harmonization."""
+        logger.info(f"Consolidating CICDDoS2019 from {self.paths.cic_dir}")
+        csv_files = list(self.paths.cic_dir.rglob("*.csv"))
+        if not csv_files:
+            raise DataLoadingError(f"No CSV files found in {self.paths.cic_dir}")
 
-    def _convert_csv_to_parquet(self, ton_iot_path: Path, cic_ddos_dir: Path, output_path: Path) -> dd.DataFrame:
-        """Logique interne de conversion CSV vers Parquet."""
-        # 1. Load ToN-IoT (Lazy)
-        ton_ddf = None
-        if ton_iot_path.exists():
-            print(f"  - Traitement ToN-IoT...")
-            ton_ddf = dd.read_csv(ton_iot_path, low_memory=False, assume_missing=True)
-            ton_ddf.columns = [c.strip() for c in ton_ddf.columns]
+        rename_map = {
+            'Source IP': 'src_ip',
+            'Destination IP': 'dst_ip',
+            'Source Port': 'src_port',
+            'Destination Port': 'dst_port',
+            'Protocol': 'proto',
+            'Timestamp': 'timestamp'
+        }
 
-            if "type" in ton_ddf.columns:
-                ton_ddf = ton_ddf[ton_ddf["type"].isin(["normal", "ddos"])]
-                ton_ddf["type"] = ton_ddf["type"].map(
-                    {"normal": 0, "ddos": 1}, meta=("type", "i8")
+        first_chunk = True
+        total_rows = 0
+
+        for csv_path in csv_files:
+            logger.info(f"Processing {csv_path.name}...")
+            try:
+                chunks = pd.read_csv(
+                    csv_path, 
+                    chunksize=self.p0.chunksize, 
+                    low_memory=self.p0.low_memory
                 )
-                ton_ddf["is_ddos"] = ton_ddf["type"]
-            ton_ddf["dataset"] = "ton_iot"
+                
+                for i, chunk in enumerate(chunks):
+                    chunk.columns = [c.strip() for c in chunk.columns]
+                    chunk.rename(columns=rename_map, inplace=True)
+                    
+                    if self.p0.cic_label_col in chunk.columns:
+                        chunk[self.p0.label_col] = (
+                            chunk[self.p0.cic_label_col].astype(str).str.strip().str.upper() != self.p0.cic_benign_value
+                        ).astype(int)
+                        chunk.drop(columns=[self.p0.cic_label_col], inplace=True)
+                    
+                    for col in self.p0.drop_columns_if_present:
+                        if col in chunk.columns:
+                            chunk.drop(columns=[col], inplace=True)
+                    
+                    if self.p0.cic_add_source_col:
+                        chunk[self.p0.cic_source_col] = str(csv_path)
+                    
+                    cols = [c for c in chunk.columns if c != self.p0.label_col] + [self.p0.label_col]
+                    chunk = chunk[cols]
+                    
+                    target_path = self.paths.cic_parquet
+                    target_path.mkdir(parents=True, exist_ok=True)
+                    
+                    dd_chunk = dd.from_pandas(chunk, npartitions=1)
+                    dd_chunk.to_parquet(target_path, engine="pyarrow", append=not first_chunk, ignore_divisions=True)
+                    
+                    first_chunk = False
+                    total_rows += len(chunk)
+                    if i % 5 == 0:
+                        logger.info(f"  Chunk {i} processed. Total rows so far: {total_rows}")
+            except Exception as e:
+                logger.error(f"Error processing {csv_path}: {e}")
 
-        # 2. Load CICDDoS2019 (Lazy & Recursive)
-        cic_ddf = None
-        if cic_ddos_dir.exists():
-            print(f"  - Traitement CICDDoS2019...")
-            cic_pattern = str(cic_ddos_dir / "**" / "*.csv")
-            cic_ddf = dd.read_csv(
-                cic_pattern,
-                low_memory=False,
-                assume_missing=True,
-                dtype={
-                    'SimillarHTTP': 'object',
-                    'Flow ID': 'object',
-                    'Source IP': 'object',
-                    'Destination IP': 'object',
-                    'Timestamp': 'object',
-                    ' Label': 'object'
-                }
-            )
-            cic_ddf.columns = [c.strip() for c in cic_ddf.columns]
+    def _prepare_ton(self):
+        """Filter and convert ToN-IoT CSV to Parquet with column harmonization."""
+        logger.info(f"Processing ToN-IoT from {self.paths.ton_file}")
+        if not self.paths.ton_file.exists():
+            raise DataLoadingError(f"ToN-IoT file not found: {self.paths.ton_file}")
 
-            if "Label" in cic_ddf.columns:
-                cic_ddf["is_ddos"] = (
-                    cic_ddf["Label"].astype(str).str.upper() != "BENIGN"
-                ).astype(int)
-                cic_ddf["type"] = cic_ddf["is_ddos"]
-            cic_ddf["dataset"] = "cic_ddos2019"
+        rename_map = {
+            'ts': 'timestamp'
+        }
 
-        # 3. Combine and Save
-        combined_ddf = None
-        if ton_ddf is not None and cic_ddf is not None:
-            common_features = list(set(ton_ddf.columns) & set(cic_ddf.columns))
-            for col in ["is_ddos", "type", "dataset"]:
-                if col not in common_features: common_features.append(col)
-            
-            combined_ddf = dd.concat([ton_ddf[common_features], cic_ddf[common_features]])
-        elif ton_ddf is not None:
-            combined_ddf = ton_ddf
-        elif cic_ddf is not None:
-            combined_ddf = cic_ddf
-        else:
-            raise DataLoadingError("Aucune source de données trouvée pour la conversion.")
-
-        print(f"  - Sauvegarde vers Parquet (cela peut prendre du temps)...")
-        # On s'assure que les types sont cohérents pour Parquet
-        # Parquet n'aime pas les types mixtes dans une colonne
-        combined_ddf.to_parquet(output_path, engine="pyarrow", write_index=False)
+        first_chunk = True
+        total_rows = 0
         
-        return dd.read_parquet(output_path)
+        chunks = pd.read_csv(
+            self.paths.ton_file, 
+            chunksize=self.p0.chunksize, 
+            low_memory=self.p0.low_memory
+        )
 
-    def profile_and_validate(self):
-        """Profiling using Dask compute for necessary statistics."""
-        if self.ddf is None:
-            raise ValueError("Load data first.")
+        for i, chunk in enumerate(chunks):
+            chunk.columns = [c.strip() for c in chunk.columns]
+            chunk.rename(columns=rename_map, inplace=True)
+            
+            if self.p0.ton_type_col in chunk.columns:
+                chunk = chunk[chunk[self.p0.ton_type_col].str.strip().str.lower().isin(self.p0.ton_allowed_types)]
+                chunk[self.p0.label_col] = (
+                    chunk[self.p0.ton_type_col].str.strip().str.lower() == "ddos"
+                ).astype(int)
+                chunk.drop(columns=[self.p0.ton_type_col], inplace=True)
+            
+            for col in self.p0.drop_columns_if_present:
+                if col in chunk.columns:
+                    chunk.drop(columns=[col], inplace=True)
+            
+            cols = [c for c in chunk.columns if c != self.p0.label_col] + [self.p0.label_col]
+            chunk = chunk[cols]
+            
+            target_path = self.paths.ton_parquet
+            target_path.mkdir(parents=True, exist_ok=True)
+            
+            dd_chunk = dd.from_pandas(chunk, npartitions=1)
+            dd_chunk.to_parquet(target_path, engine="pyarrow", append=not first_chunk, ignore_divisions=True)
+            
+            first_chunk = False
+            total_rows += len(chunk)
+            if i % 5 == 0:
+                logger.info(f"  Chunk {i} processed. Total rows so far: {total_rows}")
 
-        print("\n" + "-" * 40)
-        print("MICRO-TÂCHE: Validation et Profilage (Calcul Dask)")
+    def align_features(self) -> List[str]:
+        """Phase 1: Feature Alignment (F_common) with advanced statistics."""
+        logger.info("Starting Phase 1: Feature Alignment")
+        
+        # Load samples (stratified if possible)
+        def load_stratified_sample(path, n_rows):
+            ddf = dd.read_parquet(path)
+            # Simple stratified sample: 50% label 0, 50% label 1
+            n_half = n_rows // 2
+            df_0 = ddf[ddf[self.p0.label_col] == 0].head(n_half)
+            df_1 = ddf[ddf[self.p0.label_col] == 1].head(n_half)
+            return pd.concat([df_0, df_1])
 
-        # Compute only what's needed
-        counts = self.ddf["is_ddos"].value_counts().compute()
-        total_rows = counts.sum()
+        df_cic = load_stratified_sample(self.paths.cic_parquet, self.p1.align_sample_rows)
+        df_ton = load_stratified_sample(self.paths.ton_parquet, self.p1.align_sample_rows)
 
-        print(f"RÉSULTAT: Dataset prêt. Lignes totales: {total_rows}")
-        print(f"DISTRIBUTION:\n{counts}")
+        cic_num = df_cic.select_dtypes(include=[np.number]).drop(columns=[self.p0.label_col], errors='ignore')
+        ton_num = df_ton.select_dtypes(include=[np.number]).drop(columns=[self.p0.label_col], errors='ignore')
 
-        # Splits (Dask-based split)
-        train, test = self.ddf.random_split([0.8, 0.2], random_state=42)
-        val, test = test.random_split([0.5, 0.5], random_state=42)
+        def get_descriptors(df):
+            desc = {}
+            for col in df.columns:
+                data = df[col].fillna(df[col].median())
+                # Entropy calculation
+                counts = data.value_counts()
+                ent = entropy(counts)
+                desc[col] = {
+                    'mean': data.mean(),
+                    'std': data.std(),
+                    'median': data.median(),
+                    'skew': data.skew(),
+                    'kurtosis': data.kurtosis(),
+                    'entropy': ent,
+                    'zeros': (data == 0).mean(),
+                    'min': data.min(),
+                    'max': data.max()
+                }
+            return pd.DataFrame(desc).T
 
-        self.splits = {"train": train, "val": val, "test": test}
+        logger.info("Computing statistical descriptors...")
+        desc_cic = get_descriptors(cic_num)
+        desc_ton = get_descriptors(ton_num)
 
-        self._plot_distributions(counts)
+        mapping = []
+        f_common = []
 
-    def _plot_distributions(self, counts):
-        plt.figure(figsize=(8, 6))
-        sns.barplot(x=["Normal/Benign", "DDoS"], y=[counts.get(0, 0), counts.get(1, 0)])
-        plt.title("Class Distribution (Dask Loaded)")
-        plt.savefig(self.rr_dir / "phase1_distribution.png")
-        plt.close()
+        for c_col in cic_num.columns:
+            best_match = None
+            max_sim = -1
+            
+            for t_col in ton_num.columns:
+                sim = cosine_similarity(
+                    desc_cic.loc[c_col].values.reshape(1, -1),
+                    desc_ton.loc[t_col].values.reshape(1, -1)
+                )[0][0]
+                
+                if sim > max_sim:
+                    max_sim = sim
+                    best_match = t_col
+            
+            if max_sim > self.p1.descriptor_sim_threshold:
+                v_cic = cic_num[c_col].fillna(cic_num[c_col].median())
+                v_ton = ton_num[best_match].fillna(ton_num[best_match].median())
+                ks_stat, p_val = stats.ks_2samp(v_cic, v_ton)
+                w_dist = wasserstein_distance(v_cic, v_ton)
+                
+                mapping.append({
+                    'cic_feature': c_col,
+                    'ton_feature': best_match,
+                    'cosine_sim': max_sim,
+                    'ks_pvalue': p_val,
+                    'wasserstein': w_dist
+                })
+                
+                if p_val > self.p1.ks_pvalue_threshold:
+                    f_common.append(c_col)
 
-    def get_splits(self) -> Tuple[Any, Any, Any]:
-        if self.splits is None:
-            raise ValueError("Splits not generated.")
-        return self.splits["train"], self.splits["val"], self.splits["test"]
-
-    def get_sample_pandas(self, n_rows: int = 10000) -> pd.DataFrame:
-        """Returns a small pandas sample for visualizations or non-Dask models."""
-        if self.ddf is None:
-            return pd.DataFrame()
-        return self.ddf.head(n_rows)
+        mapping_df = pd.DataFrame(mapping)
+        mapping_df.to_csv(self.p1.alignment_artifacts_dir / self.p1.mapping_pairs_csv, index=False)
+        
+        with open(self.p1.alignment_artifacts_dir / self.p1.f_common_json, 'w') as f:
+            json.dump(f_common, f)
+            
+        logger.info(f"Phase 1 completed. Found {len(f_common)} common features.")
+        return f_common

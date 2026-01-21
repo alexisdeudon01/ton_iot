@@ -16,14 +16,17 @@ class NetworkFlow(IRPBaseStructure):
         self.start_time: Optional[float] = None
         self.end_time: Optional[float] = None
 
-    def add_packet(self, packet: pd.Series, timestamp_col: str = 'ts'):
+    def add_packet(self, packet: pd.Series, timestamp_col: str = 'timestamp'):
         """Adds a packet to the flow and updates time bounds."""
         self.packets.append(packet)
-        ts = float(packet[timestamp_col])
-        if self.start_time is None or ts < self.start_time:
-            self.start_time = ts
-        if self.end_time is None or ts > self.end_time:
-            self.end_time = ts
+        # Fallback if 'timestamp' is not found (e.g. 'ts')
+        col = timestamp_col if timestamp_col in packet.index else ('ts' if 'ts' in packet.index else None)
+        if col:
+            ts = float(packet[col])
+            if self.start_time is None or ts < self.start_time:
+                self.start_time = ts
+            if self.end_time is None or ts > self.end_time:
+                self.end_time = ts
 
     def get_direction(self, packet: pd.Series) -> str:
         """Determines if a packet is forward (src->dst) or backward (dst->src)."""

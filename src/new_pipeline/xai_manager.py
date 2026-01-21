@@ -1,115 +1,92 @@
 import logging
 import time
-import numpy as np
-import pandas as pd
+import psutil
 from pathlib import Path
-from typing import Optional, Dict, Any
-import shap
-import dask.dataframe as dd
+from typing import Dict, List, Any
 
-from src.new_pipeline.config import XAI_METHODS, XAI_CRITERIA_WEIGHTS
-from src.core.memory_manager import MemoryAwareProcessor
-from src.evaluation.visualization_service import VisualizationService
+import pandas as pd
+import numpy as np
+import joblib
+import shap
+from sklearn.inspection import permutation_importance
+
+from src.new_pipeline.config import config
 
 logger = logging.getLogger(__name__)
 
-class XAIManager:
-    """Phase 4: Advanced XAI Validation with Memory Safety"""
+class LateFusionXAI:
+    """Phase 7: Ressources & XAI (Global & Local)."""
 
-    def __init__(self, memory_mgr: MemoryAwareProcessor, viz_service: VisualizationService, rr_dir: Path):
-        self.memory_mgr = memory_mgr
-        self.viz = viz_service
-        self.methods = XAI_METHODS
-        self.rr_dir = rr_dir
-        self.results = {} # {algo: {method: {fidelity, stability, complexity}}}
+    def __init__(self, output_dir: Path):
+        self.output_dir = output_dir
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.p8 = config.phase8
+        self.p7 = config.phase7
+        logger.info(f"Initialized LateFusionXAI. Artifacts in {output_dir}")
 
-    def validate_xai(self, models, X_test, y_test, algo_name: Optional[str] = None):
-        print("\n" + "="*80)
-        print(f"PHASE 4: VALIDATION XAI (Fidélité, Stabilité, Complexité)")
-        print("="*80)
+    def run_resource_audit(self, model, X_sample: pd.DataFrame) -> Dict[str, float]:
+        """Measures inference latency, CPU usage, and peak memory."""
+        logger.info(f"Auditing resources for model on {len(X_sample)} samples...")
+        
+        process = psutil.Process()
+        mem_before = process.memory_info().rss / (1024 * 1024)
+        cpu_before = process.cpu_percent(interval=None)
+        
+        start_time = time.time()
+        _ = model.predict(X_sample)
+        end_time = time.time()
+        
+        cpu_after = process.cpu_percent(interval=None)
+        mem_after = process.memory_info().rss / (1024 * 1024)
+        
+        latency = (end_time - start_time) / len(X_sample)
+        
+        audit = {
+            'inference_latency_ms': latency * 1000,
+            'peak_memory_mb': mem_after,
+            'memory_delta_mb': mem_after - mem_before,
+            'cpu_usage_percent': cpu_after
+        }
+        logger.info(f"Resource Audit: {audit}")
+        return audit
 
-        # 1. Memory Safe Conversion (XAI is expensive, we sample small)
-        if isinstance(X_test, dd.DataFrame):
-            # On force un petit sample pour XAI car c'est très lent
-            X_test_pd = self.memory_mgr.safe_compute(X_test.head(100), "xai_validation")
-            y_test_pd = self.memory_mgr.safe_compute(y_test.head(100), "xai_validation_labels")
-        else:
-            X_test_pd, y_test_pd = X_test, y_test
-
-        X_test_num = X_test_pd.select_dtypes(include=[np.number]).fillna(0)
-
-        algos_to_eval = [algo_name] if algo_name else list(models.keys())
-
-        for name in algos_to_eval:
-            model = models.get(name)
-            if model is None or name == 'CNN': continue
-
-            print(f"\nÉvaluation XAI pour {name}...")
-            self.results[name] = {}
-
-            for method in self.methods:
-                # 1. Fidelity: Correlation between model output and explanation importance
-                fidelity = self._measure_fidelity(model, X_test_num.iloc[:20])
-
-                # 2. Stability: Consistency of explanations for similar instances
-                stability = self._measure_stability(model, X_test_num.iloc[:10])
-
-                # 3. Complexity: Sparsity of the explanation (fewer features is better)
-                complexity = self._measure_complexity(method)
-
-                self.results[name][method] = {
-                    'fidelity': fidelity,
-                    'stability': stability,
-                    'complexity': complexity
-                }
-                print(f"  Method {method}: Fid={fidelity:.3f}, Stab={stability:.3f}, Comp={complexity:.3f}")
-
-        self.viz.plot_xai_metrics(self.results)
-        return self._select_best()
-
-    def _measure_fidelity(self, model, X):
-        """Simulates fidelity measurement (Faithfulness)."""
-        return np.random.uniform(0.75, 0.98)
-
-    def _measure_stability(self, model, X):
-        """Simulates stability measurement (Consistency)."""
-        return np.random.uniform(0.7, 0.95)
-
-    def _measure_complexity(self, method):
-        """Simulates complexity (Sparsity). Higher is better (less complex)."""
-        if method == 'FI': return 0.95
-        if method == 'LIME': return 0.85
-        return 0.75
-
-    def _select_best(self):
-        best = {}
-        for algo in self.results:
-            scores = {m: (self.results[algo][m]['fidelity'] + self.results[algo][m]['stability'] + self.results[algo][m]['complexity'])/3 for m in self.results[algo]}
-            if not scores:
-                continue
-            best[algo] = max(scores.keys(), key=lambda k: scores[k])
-            print(f"RÉSULTAT: Meilleure méthode pour {algo} -> {best[algo]}")
-        return best
-
-    def generate_visualizations(self, models, X_test):
-        """SHAP Summary Plot with criteria inclusion."""
-        print("\n" + "-"*40)
-        print("MICRO-TÂCHE: Génération des graphiques SHAP/LIME")
-
-        if isinstance(X_test, dd.DataFrame):
-            X_num = self.memory_mgr.safe_compute(X_test.head(100), "xai_viz").select_dtypes(include=[np.number]).fillna(0)
-        else:
-            X_num = X_test.select_dtypes(include=[np.number]).fillna(0)
-
-        if 'RF' in models and models['RF'] is not None:
+    def run_xai(self, model, X: pd.DataFrame, y: pd.Series, name: str):
+        """Global (Permutation) and Local (SHAP) XAI."""
+        logger.info(f"Starting XAI analysis for {name}")
+        
+        # 1. Global: Permutation Importance (OBLIGATOIRE)
+        if self.p8.enable_permutation_importance:
+            logger.info("  - Computing Permutation Importance...")
+            start_pi = time.time()
+            r = permutation_importance(model, X, y, n_repeats=5, random_state=self.p8.random_state, n_jobs=-1)
+            pi_df = pd.DataFrame({'feature': X.columns, 'importance': r.importances_mean})
+            pi_df = pi_df.sort_values(by='importance', ascending=False)
+            
+            csv_path = self.output_dir / f"{name}_permutation_importance.csv"
+            pi_df.to_csv(csv_path, index=False)
+            logger.info(f"    * Global XAI saved to {csv_path} (Time: {time.time() - start_pi:.2f}s)")
+        
+        # 2. Local: SHAP (sur échantillon fixe)
+        if self.p8.enable_shap:
+            logger.info(f"  - Computing SHAP values (Sample size: {self.p8.xai_sample_rows})...")
+            X_shap = X.head(self.p8.xai_sample_rows)
             try:
-                explainer = shap.TreeExplainer(models['RF'])
-                shap_values = explainer.shap_values(X_num)
-                plt.figure()
-                shap.summary_plot(shap_values, X_num, show=False)
-                plt.title("SHAP Summary Plot (Validated for Fidelity & Stability)")
-                plt.savefig(self.rr_dir / "phase4_shap_summary.png")
+                # Heuristique pour le choix de l'explainer
+                if hasattr(model, "feature_importances_") or "Forest" in str(type(model)):
+                    explainer = shap.TreeExplainer(model)
+                    shap_values = explainer.shap_values(X_shap)
+                else:
+                    # Fallback Kernel SHAP (lent)
+                    explainer = shap.KernelExplainer(model.predict_proba, shap.sample(X, 50))
+                    shap_values = explainer.shap_values(X_shap)
+                
+                # Plotting
+                import matplotlib.pyplot as plt
+                plt.figure(figsize=(10, 8))
+                shap.summary_plot(shap_values, X_shap, show=False)
+                plot_path = self.output_dir / f"{name}_shap_summary.png"
+                plt.savefig(plot_path, dpi=300, bbox_inches='tight')
                 plt.close()
-                print("RÉSULTAT: SHAP Summary Plot généré.")
+                logger.info(f"    * Local XAI (SHAP) plot saved to {plot_path}")
             except Exception as e:
-                logger.warning(f"SHAP failed: {e}")
+                logger.warning(f"    ! SHAP failed for {name}: {e}")
