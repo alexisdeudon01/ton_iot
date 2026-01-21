@@ -48,6 +48,13 @@ def main():
 
     loader = RealDataLoader(data_path)
     profiling_report = loader.load_and_profile()
+
+    # Pour la démo et éviter que SVM ne bloque trop longtemps, on limite à 10000 lignes si c'est trop gros
+    if profiling_report['total_rows'] > 10000 and loader.df is not None:
+        logger.info("Dataset volumineux détecté. Utilisation d'un échantillon de 10000 lignes pour la démo rapide.")
+        loader.df = loader.df.sample(10000, random_state=42)
+        loader.load_and_profile() # Re-profile on sample
+
     train_df, val_df, test_df = loader.get_splits()
 
     # 2. Phase 2: Training
