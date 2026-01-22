@@ -1,10 +1,10 @@
 import queue
 import threading
 from typing import List, Callable
-from src.core.ports.event_bus import EventBus
+from src.core.ports.event_bus import EventBusPort
 from src.core.contracts.events import Event
 
-class QueueEventBus(EventBus):
+class QueueEventBus(EventBusPort):
     def __init__(self):
         self._queue = queue.Queue()
         self._subscribers: List[Callable[[Event], None]] = []

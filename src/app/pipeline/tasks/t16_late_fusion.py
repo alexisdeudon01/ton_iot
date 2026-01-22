@@ -27,15 +27,18 @@ class T16_LateFusion(Task):
         df_ton = context.table_io.read_parquet(pred_ton_art.path).collect()
         
         # Late Fusion: Average probabilities of all models for each sample
+        # We must preserve 'split' to allow T17 to filter on 'test'
         fused_cic = df_cic.group_by(["dataset", "sample_id"]).agg([
             pl.col("proba").mean(),
             pl.col("y_true").first(),
+            pl.col("split").first(),
             pl.col("source_file").first()
         ])
         
         fused_ton = df_ton.group_by(["dataset", "sample_id"]).agg([
             pl.col("proba").mean(),
             pl.col("y_true").first(),
+            pl.col("split").first(),
             pl.col("source_file").first()
         ])
         

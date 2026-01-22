@@ -2,11 +2,11 @@ import psutil
 import os
 import time
 from typing import Dict
-from src.core.ports.event_bus import EventBus
+from src.core.ports.event_bus import EventBusPort
 from src.core.contracts.events import Event
 
 class ResourceMonitor:
-    def __init__(self, event_bus: EventBus, run_id: str):
+    def __init__(self, event_bus: EventBusPort, run_id: str):
         self.event_bus = event_bus
         self.run_id = run_id
         self.process = psutil.Process(os.getpid())

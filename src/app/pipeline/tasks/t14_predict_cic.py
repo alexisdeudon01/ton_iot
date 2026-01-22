@@ -19,18 +19,20 @@ class T14_PredictCIC(Task):
         monitor.snapshot(self.name)
         
         start_ts = time.time()
-        cic_art = context.artifact_store.load_table("cic_projected")
+        cfg = context.config
         prep_art = context.artifact_store.load_preprocess("preprocess_cic")
         
-        df = context.table_io.read_parquet(cic_art.path).collect()
-        if "sample_id" not in df.columns:
-            raise KeyError(f"sample_id missing from {cic_art.path}. Columns: {df.columns}")
-            
-        X = df.select(cic_art.feature_order).to_pandas()
+        # Load splits instead of projected table
+        splits_path = os.path.join(cfg.paths.work_dir, "data", "cic_splits.parquet")
+        df = context.table_io.read_parquet(splits_path).collect()
+        
+        # We predict on the whole split set to have full results, 
+        # but evaluation will filter on split=='test'
+        X = df.select(context.artifact_store.load_table("cic_projected").feature_order).to_pandas()
         ct = joblib.load(prep_art.preprocess_path)
         X_transformed = ct.transform(X)
 
-        algos = context.config.training.algorithms
+        algos = cfg.training.algorithms
         all_preds = []
 
         for model_type in algos:
@@ -61,13 +63,13 @@ class T14_PredictCIC(Task):
                 "y_true": df["y"],
                 "dataset": "cic",
                 "model": model_type,
-                "split": "test",
+                "split": df["split"],
                 "source_file": df["source_file"]
             }).with_columns(pl.col("proba").cast(pl.Float64))
             all_preds.append(pred_df)
 
         full_pred_df = pl.concat(all_preds)
-        output_path = os.path.join(context.config.paths.work_dir, "data", "predictions_cic.parquet")
+        output_path = os.path.join(cfg.paths.work_dir, "data", "predictions_cic.parquet")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         context.table_io.write_parquet(full_pred_df, output_path)

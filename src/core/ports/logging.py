@@ -1,11 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-class StructuredLogger(ABC):
-    @abstractmethod
-    def log(self, action: str, message: str, level: str = "INFO", **kwargs) -> None:
-        pass
-
+class LoggingPort(ABC):
     @abstractmethod
     def info(self, action: str, message: str, **kwargs) -> None:
         pass
@@ -16,4 +12,8 @@ class StructuredLogger(ABC):
 
     @abstractmethod
     def warning(self, action: str, message: str, **kwargs) -> None:
+        pass
+
+    @abstractmethod
+    def debug(self, action: str, message: str, **kwargs) -> None:
         pass

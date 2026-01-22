@@ -1,1 +1,1 @@
-{"artifact_id":"preprocess_ton","preprocess_path":"./work/artifacts/preprocess_ton.joblib","num_features":["sample_id"],"cat_features":[],"feature_order":["sample_id"],"steps":{"scaler":"RobustScaler"},"version":"1.0.0"}
+{"artifact_id":"preprocess_ton","preprocess_path":"./work/artifacts/preprocess_ton.joblib","num_features":["Source Port","Destination Port","Protocol","Flow Duration","Total Fwd Packets"],"cat_features":[],"feature_order":["Source Port","Destination Port","Protocol","Flow Duration","Total Fwd Packets"],"steps":{"scaler":"RobustScaler"},"version":"1.0.0"}

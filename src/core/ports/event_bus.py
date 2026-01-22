@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from src.core.contracts.events import Event
 
-class EventBus(ABC):
+class EventBusPort(ABC):
     @abstractmethod
     def publish(self, event: Event) -> None:
         pass

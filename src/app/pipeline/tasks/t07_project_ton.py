@@ -24,9 +24,6 @@ class T07_ProjectTON(Task):
         context.logger.info("loading", f"Projecting TON to {len(f_common)} features")
         
         lf = context.table_io.read_parquet(ton_art.path)
-        
-        # Select common features + label + metadata
-        # Handle missing columns by adding them as nulls
         existing_cols = set(lf.collect_schema().names())
         
         expressions = []
@@ -35,18 +32,37 @@ class T07_ProjectTON(Task):
             if col in existing_cols:
                 expressions.append(pl.col(col))
             else:
-                expressions.append(pl.lit(0.0).alias(col)) # Fill missing with 0.0
+                expressions.append(pl.lit(0.0).alias(col))
         
-        # Add mandatory columns
         for col in ["sample_id", "y", "source_file"]:
             if col in existing_cols:
                 expressions.append(pl.col(col))
             else:
                 expressions.append(pl.lit(None).alias(col))
         
-        lf_projected = lf.select(expressions)
+        df = lf.select(expressions).collect()
+
+        # Sanity Checks
+        n_rows = df.height
+        all_null_cols = [c for c in df.columns if df[c].null_count() == n_rows]
+        constant_cols = [c for c in df.columns if df[c].n_unique() <= 1 and c not in all_null_cols]
         
-        df = lf_projected.collect()
+        missing_rates = {c: df[c].null_count() / n_rows for c in df.columns}
+        top_missing = sorted(missing_rates.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        context.logger.info("cleaning", "TON Projection Sanity Checks",
+                            all_null_columns_count=len(all_null_cols),
+                            constant_columns_count=len(constant_cols),
+                            top_10_missing_rate=top_missing)
+
+        if len(all_null_cols) / len(df.columns) > 0.2:
+             return TaskResult(
+                task_name=self.name,
+                status="failed",
+                duration_s=time.time() - start_ts,
+                error=f"Too many null columns in TON projection: {len(all_null_cols)}"
+            )
+
         context.table_io.write_parquet(df, output_path)
         context.table_io.write_csv(df, output_path.replace(".parquet", ".csv"))
         
@@ -63,17 +79,9 @@ class T07_ProjectTON(Task):
             version="1.0.0",
             source_step=self.name,
             fingerprint=str(hash(output_path)),
-            stats={}
+            stats={"all_null_count": len(all_null_cols), "constant_count": len(constant_cols)}
         )
         context.artifact_store.save_table(artifact)
         
-        context.logger.info("writing", f"Projected TON saved: {df.height} rows", 
-                            n_rows=df.height, n_cols=df.width)
-        
         monitor.snapshot(self.name)
-        return TaskResult(
-            task_name=self.name,
-            status="ok",
-            duration_s=time.time() - start_ts,
-            outputs=["ton_projected"]
-        )
+        return TaskResult(task_name=self.name, status="ok", duration_s=time.time() - start_ts, outputs=["ton_projected"])

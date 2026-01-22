@@ -21,8 +21,6 @@ class T02_CleanTON(Task):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         context.logger.info("loading", f"Reading TON dataset from {ton_path}")
-        
-        # Use scan_csv for lazy loading
         lf = pl.scan_csv(ton_path, infer_schema_length=100)
         
         # Keep only type in {"normal", "ddos"}
@@ -44,9 +42,9 @@ class T02_CleanTON(Task):
             
         df = lf.collect()
         
-        # Sanity check: label balance
-        y_counts = df["y"].value_counts().to_dicts()
-        label_balance = {str(r["y"]): r["count"] for r in y_counts}
+        # Robust balance extraction for Polars
+        y_counts = df.group_by("y").count().to_dicts()
+        label_balance = {str(r["y"]): int(r["count"]) for r in y_counts}
         
         if len(label_balance) < 2:
             context.logger.warning("cleaning", "Only one class detected in TON sample", balance=label_balance)
@@ -63,7 +61,7 @@ class T02_CleanTON(Task):
                             top_10_cols=df.columns[:10],
                             num_cols=len([c for c, t in zip(df.columns, df.dtypes) if t.is_numeric()]),
                             cat_cols=len([c for c, t in zip(df.columns, df.dtypes) if t == pl.String]),
-                            sampling_reason=reason)
+                            reason_for_row_limit=reason)
         
         context.table_io.write_parquet(df, output_path)
         context.table_io.write_csv(df, output_path.replace(".parquet", ".csv"))

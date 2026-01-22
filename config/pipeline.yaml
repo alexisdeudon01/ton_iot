@@ -1,0 +1,44 @@
+paths:
+  cic_raw_dir: "/home/tor/ton_iot/ton_iot/datasets/cic_ddos2019"
+  ton_raw_path: "/home/tor/ton_iot/ton_iot/datasets/ton_iot/train_test_network.csv"
+  output_dir: "Outputs/output"
+  data_dir: "data"
+
+memory:
+  max_ram_percent: 75.0
+  safe_frac: 0.4
+  row_group_size: 100000
+
+preprocessing:
+  impute_strategy: "median"
+  scaling: "robust"
+  use_cats: false
+  pca_variance: 0.95
+
+alignment:
+  cosine_threshold: 0.95
+  ks_threshold: 0.05
+  wasserstein_threshold: 100.0
+
+training:
+  algorithms: ["LR", "DT", "RF", "CNN", "TabNet"]
+  test_size: 0.2
+  val_size: 0.1
+  seed: 42
+
+fusion:
+  method: "weighted_avg"
+  weights:
+    LR: 0.1
+    DT: 0.2
+    RF: 0.3
+    CNN: 0.2
+    TabNet: 0.2
+  threshold: 0.5
+
+xai:
+  enabled: true
+  n_samples: 50
+  top_k: 5
+
+test_mode: true

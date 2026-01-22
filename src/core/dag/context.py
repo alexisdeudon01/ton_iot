@@ -1,8 +1,8 @@
 from typing import Dict, Any
 from src.core.contracts.config import PipelineConfig
 from src.core.ports.artifacts import ArtifactPort
-from src.core.ports.event_bus import EventBus
-from src.core.ports.logging import StructuredLogger
+from src.core.ports.event_bus import EventBusPort
+from src.core.ports.logging import LoggingPort
 from src.core.ports.table_io import TableIO
 
 class DAGContext:
@@ -11,8 +11,8 @@ class DAGContext:
         run_id: str,
         config: PipelineConfig,
         artifact_store: ArtifactPort,
-        event_bus: EventBus,
-        logger: StructuredLogger,
+        event_bus: EventBusPort,
+        logger: LoggingPort,
         table_io: TableIO
     ):
         self.run_id = run_id

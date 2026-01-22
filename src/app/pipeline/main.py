@@ -108,7 +108,7 @@ def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_ov
             print(f"\n▶️ Starting Task: {event.task_name}")
         elif event.type == "TASK_FINISHED":
             status = event.payload.get('status')
-            icon = "✅" if status == "ok" else "❌"
+            icon = "✅" if status in ["ok", "degraded"] else "❌"
             error = event.payload.get('error')
             error_msg = f" - Error: {error}" if error else ""
             print(f"{icon} Task {event.task_name} finished in {event.payload.get('duration_s', 0):.2f}s{error_msg}")

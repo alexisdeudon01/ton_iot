@@ -19,18 +19,21 @@ class T15_PredictTON(Task):
         monitor.snapshot(self.name)
         
         start_ts = time.time()
-        ton_art = context.artifact_store.load_table("ton_projected")
+        cfg = context.config
         prep_art = context.artifact_store.load_preprocess("preprocess_ton")
         
-        df = context.table_io.read_parquet(ton_art.path).collect()
+        # Load splits instead of projected table
+        splits_path = os.path.join(cfg.paths.work_dir, "data", "ton_splits.parquet")
+        df = context.table_io.read_parquet(splits_path).collect()
+        
         if "sample_id" not in df.columns:
-            raise KeyError(f"sample_id missing from {ton_art.path}. Columns: {df.columns}")
+            raise KeyError(f"sample_id missing from {splits_path}. Columns: {df.columns}")
 
-        X = df.select(ton_art.feature_order).to_pandas()
+        X = df.select(context.artifact_store.load_table("ton_projected").feature_order).to_pandas()
         ct = joblib.load(prep_art.preprocess_path)
         X_transformed = ct.transform(X)
 
-        algos = context.config.training.algorithms
+        algos = cfg.training.algorithms
         all_preds = []
 
         for model_type in algos:
@@ -61,13 +64,13 @@ class T15_PredictTON(Task):
                 "y_true": df["y"],
                 "dataset": "ton",
                 "model": model_type,
-                "split": "test",
+                "split": df["split"],
                 "source_file": df["source_file"]
-            }).with_columns(pl.col("proba").cast(pl.Float64)) # Ensure Float64 for concat
+            }).with_columns(pl.col("proba").cast(pl.Float64))
             all_preds.append(pred_df)
 
         full_pred_df = pl.concat(all_preds)
-        output_path = os.path.join(context.config.paths.work_dir, "data", "predictions_ton.parquet")
+        output_path = os.path.join(cfg.paths.work_dir, "data", "predictions_ton.parquet")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         context.table_io.write_parquet(full_pred_df, output_path)
