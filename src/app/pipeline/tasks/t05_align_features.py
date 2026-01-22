@@ -10,6 +10,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T05_AlignFeatures")
 class T05_AlignFeatures(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_consolidated")
         ton_art = context.artifact_store.load_table("ton_clean")
@@ -60,8 +64,10 @@ class T05_AlignFeatures(Task):
         )
         context.artifact_store.save_alignment(alignment)
         
-        context.logger.info("alignment", f"Aligned {len(f_common)} features.")
+        context.logger.info("alignment", f"Aligned {len(f_common)} features.", 
+                            n_common=len(f_common), features=f_common)
         
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

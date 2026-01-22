@@ -13,6 +13,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T08_BuildPreprocessCIC")
 class T08_BuildPreprocessCIC(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_projected")
         f_common = cic_art.feature_order
@@ -45,6 +49,9 @@ class T08_BuildPreprocessCIC(Task):
         )
         context.artifact_store.save_preprocess(artifact)
         
+        context.logger.info("cleaning", f"Preprocess CIC saved to {output_path}")
+        
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

@@ -14,7 +14,10 @@ class PolarsProfiler(ProfilingPort):
         dtypes = {col: str(dtype) for col, dtype in zip(columns, df_collected.dtypes)}
         
         # Missing rate
-        missing_rate = {col: df_collected[col].null_count() / n_rows for col in columns}
+        if n_rows == 0:
+            missing_rate = {col: 0.0 for col in columns}
+        else:
+            missing_rate = {col: df_collected[col].null_count() / n_rows for col in columns}
         
         # Label balance
         label_balance = {}

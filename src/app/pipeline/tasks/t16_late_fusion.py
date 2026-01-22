@@ -10,6 +10,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T16_LateFusion")
 class T16_LateFusion(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         pred_cic_art = context.artifact_store.load_prediction("predictions_cic")
         pred_ton_art = context.artifact_store.load_prediction("predictions_ton")
@@ -42,6 +46,9 @@ class T16_LateFusion(Task):
         )
         context.artifact_store.save_prediction(artifact)
         
+        context.logger.info("predicting", f"Fused predictions saved to {output_path}")
+        
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

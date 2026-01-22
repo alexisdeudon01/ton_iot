@@ -12,6 +12,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T17_Evaluate")
 class T17_Evaluate(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         pred_art = context.artifact_store.load_prediction("predictions_fused")
         
@@ -49,8 +53,10 @@ class T17_Evaluate(Task):
             run_id=context.run_id
         ))
         
-        context.logger.info("validating", f"Evaluation complete: F1={metrics['f1']:.4f}")
+        context.logger.info("validating", f"Evaluation complete: F1={metrics['f1']:.4f}", 
+                            metrics=metrics, report_path=report_path)
         
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

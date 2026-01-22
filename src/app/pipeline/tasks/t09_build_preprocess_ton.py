@@ -13,6 +13,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T09_BuildPreprocessTON")
 class T09_BuildPreprocessTON(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         ton_art = context.artifact_store.load_table("ton_projected")
         f_common = ton_art.feature_order
@@ -42,6 +46,9 @@ class T09_BuildPreprocessTON(Task):
         )
         context.artifact_store.save_preprocess(artifact)
         
+        context.logger.info("cleaning", f"Preprocess TON saved to {output_path}")
+        
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

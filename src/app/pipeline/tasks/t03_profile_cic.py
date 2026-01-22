@@ -9,6 +9,10 @@ from src.infra.profiling.profiler import PolarsProfiler
 @TaskRegistry.register("T03_ProfileCIC")
 class T03_ProfileCIC(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         artifact = context.artifact_store.load_table("cic_consolidated")
         lf = context.table_io.read_parquet(artifact.path)
@@ -24,8 +28,10 @@ class T03_ProfileCIC(Task):
             task_name=self.name
         ))
         
-        context.logger.info("profiling", f"Profiled CIC: {profile.n_rows} rows")
+        context.logger.info("profiling", f"Profiled CIC: {profile.n_rows} rows", 
+                            n_rows=profile.n_rows, n_cols=profile.n_cols)
         
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

@@ -10,6 +10,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T06_ProjectCIC")
 class T06_ProjectCIC(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_consolidated")
         align_art = context.artifact_store.load_alignment("alignment_spec")
@@ -22,8 +26,19 @@ class T06_ProjectCIC(Task):
         lf = context.table_io.read_parquet(cic_art.path)
         
         # Select common features + label + metadata
-        cols_to_keep = f_common + ["y", "source_file"]
-        lf_projected = lf.select(cols_to_keep)
+        # Handle missing columns by adding them as nulls
+        existing_cols = set(lf.collect_schema().names())
+        
+        expressions = []
+        for col in f_common:
+            if col in existing_cols:
+                expressions.append(pl.col(col))
+            else:
+                expressions.append(pl.lit(0.0).alias(col)) # Fill missing with 0.0
+        
+        expressions.extend([pl.col("y"), pl.col("source_file")])
+        
+        lf_projected = lf.select(expressions)
         
         df = lf_projected.collect()
         context.table_io.write_parquet(df, output_path)
@@ -45,6 +60,10 @@ class T06_ProjectCIC(Task):
         )
         context.artifact_store.save_table(artifact)
         
+        context.logger.info("writing", f"Projected CIC saved: {df.height} rows", 
+                            n_rows=df.height, n_cols=df.width)
+        
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

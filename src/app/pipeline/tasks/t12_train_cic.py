@@ -12,6 +12,10 @@ from src.infra.models.sklearn_models import SklearnModel
 @TaskRegistry.register("T12_TrainCIC")
 class T12_TrainCIC(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_projected")
         prep_art = context.artifact_store.load_preprocess("preprocess_cic")
@@ -47,6 +51,9 @@ class T12_TrainCIC(Task):
         )
         context.artifact_store.save_model(artifact)
         
+        context.logger.info("training", f"Model CIC {model_type} saved to {output_path}")
+        
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

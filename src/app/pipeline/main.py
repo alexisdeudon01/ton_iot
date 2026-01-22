@@ -69,11 +69,16 @@ def build_pipeline_graph() -> DAGGraph:
     
     return graph
 
-def run_pipeline(config_path: str, event_bus: QueueEventBus = None):
+def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_override: bool = None):
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
     
     config = PipelineConfig.model_validate(config_dict)
+    if test_mode_override is not None:
+        config.test_mode = test_mode_override
+        if config.test_mode:
+            config.sample_ratio = 0.01 # Force small sample in test mode
+
     run_id = str(uuid.uuid4())
     
     if event_bus is None:
@@ -95,7 +100,31 @@ def run_pipeline(config_path: str, event_bus: QueueEventBus = None):
     graph = build_pipeline_graph()
     runner = DAGRunner(graph, context)
     
-    return runner.run()
+    # Add a console subscriber for CLI mode
+    def console_logger(event):
+        if event.type == "LOG_LINE":
+            print(f"[{event.payload.get('level', 'INFO')}] {event.payload.get('action', '')}: {event.payload.get('message', '')}")
+        elif event.type == "TASK_STARTED":
+            print(f"\n▶️ Starting Task: {event.task_name}")
+        elif event.type == "TASK_FINISHED":
+            status = event.payload.get('status')
+            icon = "✅" if status == "ok" else "❌"
+            error = event.payload.get('error')
+            error_msg = f" - Error: {error}" if error else ""
+            print(f"{icon} Task {event.task_name} finished in {event.payload.get('duration_s', 0):.2f}s{error_msg}")
+
+    event_bus.subscribe(console_logger)
+    
+    results = runner.run()
+    
+    # Stop event bus if we created it here (CLI mode)
+    if isinstance(event_bus, QueueEventBus):
+        # Give a small time for last events to be processed
+        import time
+        time.sleep(0.5)
+        event_bus.stop()
+        
+    return results
 
 if __name__ == "__main__":
     run_pipeline("configs/pipeline.yaml")

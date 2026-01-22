@@ -11,6 +11,10 @@ from src.app.pipeline.registry import TaskRegistry
 @TaskRegistry.register("T01_ConsolidateCIC")
 class T01_ConsolidateCIC(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         cic_dir = context.config.paths.cic_dir_path
         output_path = os.path.join(context.config.paths.work_dir, "data", "cic_consolidated.parquet")
@@ -27,8 +31,17 @@ class T01_ConsolidateCIC(Task):
             raise FileNotFoundError(f"No CSV files found in {cic_dir}")
 
         lazy_frames = []
-        for f in csv_files:
-            lf = pl.scan_csv(f, infer_schema_length=10000, ignore_errors=True)
+        # In test mode, only process first file to be extremely fast
+        files_to_process = csv_files[:1] if context.config.test_mode else csv_files
+        
+        for f in files_to_process:
+            context.logger.info("loading", f"Processing {f}")
+            # Use n_rows in scan_csv for maximum speed in test mode
+            scan_kwargs = {"n_rows": 100} if context.config.test_mode else {}
+            lf = pl.scan_csv(f, infer_schema_length=100, ignore_errors=True, **scan_kwargs)
+            
+            # Clean column names (strip whitespace)
+            lf = lf.rename({c: c.strip() for c in lf.collect_schema().names()})
             
             # Drop Unnamed: 0 if present
             cols = lf.collect_schema().names()
@@ -40,6 +53,10 @@ class T01_ConsolidateCIC(Task):
                 pl.when(pl.col("Label") == "BENIGN").then(0).otherwise(1).alias("y"),
                 pl.lit(f).alias("source_file")
             ])
+            
+            if context.config.test_mode:
+                lf = lf.head(100) # Limit rows per file in test mode
+                
             lazy_frames.append(lf)
 
         context.logger.info("cleaning", f"Concatenating {len(lazy_frames)} CIC datasets")
@@ -47,7 +64,12 @@ class T01_ConsolidateCIC(Task):
         full_lf = pl.concat(lazy_frames, how="diagonal")
         
         # Compute and log stats before collect
+        context.logger.info("cleaning", "Collecting LazyFrame...")
         df = full_lf.collect()
+        
+        context.logger.info("writing", f"Writing Parquet to {output_path}", 
+                            n_rows=df.height, n_cols=df.width, 
+                            dtypes={c: str(t) for c, t in zip(df.columns, df.dtypes)})
         
         context.table_io.write_parquet(df, output_path, compression=context.config.io.parquet_compression)
 
@@ -70,6 +92,7 @@ class T01_ConsolidateCIC(Task):
         context.logger.info("writing", f"Saved CIC consolidated: {df.height} rows, {df.width} cols", 
                             n_rows=df.height, n_cols=df.width)
 
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",

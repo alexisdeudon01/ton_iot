@@ -24,12 +24,15 @@ class QueueEventBus(EventBus):
                 event = self._queue.get(timeout=0.1)
                 for subscriber in self._subscribers:
                     try:
+                        # Check if sys.stdout is still available to avoid lock errors at shutdown
+                        import sys
+                        if sys.stdout is None or sys.stdout.closed:
+                            break
                         subscriber(event)
-                    except Exception as e:
-                        # In a real app, we'd log this to stderr or a fallback logger
-                        print(f"Error in event subscriber: {e}")
+                    except Exception:
+                        pass
                 self._queue.task_done()
-            except queue.Empty:
+            except (queue.Empty, EOFError, AttributeError):
                 continue
 
     def stop(self):

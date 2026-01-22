@@ -12,6 +12,10 @@ from src.infra.models.sklearn_models import SklearnModel
 @TaskRegistry.register("T14_PredictCIC")
 class T14_PredictCIC(Task):
     def run(self, context: DAGContext) -> TaskResult:
+        from src.infra.resources.monitor import ResourceMonitor
+        monitor = ResourceMonitor(context.event_bus, context.run_id)
+        monitor.snapshot(self.name)
+        
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_projected")
         model_art = context.artifact_store.load_model("model_cic_RF")
@@ -31,7 +35,17 @@ class T14_PredictCIC(Task):
         model = SklearnModel(model_art.model_type, model_art.feature_order)
         model.load(model_art.model_path)
         
-        probas = model.predict_proba(X_transformed)[:, 1]
+        probas_raw = model.predict_proba(X_transformed)
+        if probas_raw.shape[1] > 1:
+            probas = probas_raw[:, 1]
+        else:
+            # Single class case
+            # If the only class is 1, proba is 1.0, else 0.0
+            # We check model.model.classes_
+            if hasattr(model.model, "classes_") and model.model.classes_[0] == 1:
+                probas = probas_raw[:, 0]
+            else:
+                probas = probas_raw[:, 0] * 0.0
         
         pred_df = pl.DataFrame({
             "proba": probas,
@@ -51,6 +65,9 @@ class T14_PredictCIC(Task):
         )
         context.artifact_store.save_prediction(artifact)
         
+        context.logger.info("predicting", f"Predictions CIC saved to {output_path}")
+        
+        monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
             status="ok",
