@@ -1,0 +1,1 @@
+{"artifact_id":"ton_projected","name":"TON Projected","path":"./work/data/ton_projected.parquet","format":"parquet","n_rows":2000,"n_cols":3,"columns":["sample_id","y","source_file"],"dtypes":{"sample_id":"Int64","y":"Int32","source_file":"String"},"feature_order":["sample_id"],"version":"1.0.0","source_step":"T07_ProjectTON","fingerprint":"7252473754771564044","stats":{}}

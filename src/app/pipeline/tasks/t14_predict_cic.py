@@ -8,6 +8,8 @@ from src.core.dag.result import TaskResult
 from src.core.contracts.artifacts import PredictionArtifact
 from src.app.pipeline.registry import TaskRegistry
 from src.infra.models.sklearn_models import SklearnModel
+from src.infra.models.torch_cnn import TorchCNNModel
+from src.infra.models.tabnet_model import TabNetModel
 
 @TaskRegistry.register("T14_PredictCIC")
 class T14_PredictCIC(Task):
@@ -18,45 +20,58 @@ class T14_PredictCIC(Task):
         
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_projected")
-        model_art = context.artifact_store.load_model("model_cic_RF")
         prep_art = context.artifact_store.load_preprocess("preprocess_cic")
         
+        df = context.table_io.read_parquet(cic_art.path).collect()
+        if "sample_id" not in df.columns:
+            raise KeyError(f"sample_id missing from {cic_art.path}. Columns: {df.columns}")
+            
+        X = df.select(cic_art.feature_order).to_pandas()
+        ct = joblib.load(prep_art.preprocess_path)
+        X_transformed = ct.transform(X)
+
+        algos = context.config.training.algorithms
+        all_preds = []
+
+        for model_type in algos:
+            context.logger.info("predicting", f"Generating predictions for CIC with {model_type}")
+            model_art = context.artifact_store.load_model(f"model_cic_{model_type}")
+            
+            if model_type in ["LR", "DT", "RF"]:
+                model = SklearnModel(model_type, model_art.feature_order)
+            elif model_type == "CNN":
+                model = TorchCNNModel(model_art.feature_order)
+            elif model_type == "TabNet":
+                model = TabNetModel(model_art.feature_order)
+                
+            model.load(model_art.model_path)
+            
+            probas_raw = model.predict_proba(X_transformed)
+            if probas_raw.shape[1] > 1:
+                probas = probas_raw[:, 1]
+            else:
+                if hasattr(model.model, "classes_") and model.model.classes_[0] == 1:
+                    probas = probas_raw[:, 0]
+                else:
+                    probas = probas_raw[:, 0] * 0.0
+            
+            pred_df = pl.DataFrame({
+                "sample_id": df["sample_id"],
+                "proba": probas,
+                "y_true": df["y"],
+                "dataset": "cic",
+                "model": model_type,
+                "split": "test",
+                "source_file": df["source_file"]
+            }).with_columns(pl.col("proba").cast(pl.Float64))
+            all_preds.append(pred_df)
+
+        full_pred_df = pl.concat(all_preds)
         output_path = os.path.join(context.config.paths.work_dir, "data", "predictions_cic.parquet")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        context.logger.info("predicting", "Generating predictions for CIC")
-        
-        df = context.table_io.read_parquet(cic_art.path).collect()
-        X = df.select(cic_art.feature_order).to_pandas()
-        
-        ct = joblib.load(prep_art.preprocess_path)
-        X_transformed = ct.transform(X)
-        
-        model = SklearnModel(model_art.model_type, model_art.feature_order)
-        model.load(model_art.model_path)
-        
-        probas_raw = model.predict_proba(X_transformed)
-        if probas_raw.shape[1] > 1:
-            probas = probas_raw[:, 1]
-        else:
-            # Single class case
-            # If the only class is 1, proba is 1.0, else 0.0
-            # We check model.model.classes_
-            if hasattr(model.model, "classes_") and model.model.classes_[0] == 1:
-                probas = probas_raw[:, 0]
-            else:
-                probas = probas_raw[:, 0] * 0.0
-        
-        pred_df = pl.DataFrame({
-            "proba": probas,
-            "y_true": df["y"],
-            "dataset": "cic",
-            "model": model_art.model_type,
-            "split": "test", # Simplified
-            "source_file": df["source_file"]
-        })
-        
-        context.table_io.write_parquet(pred_df, output_path)
+        context.table_io.write_parquet(full_pred_df, output_path)
+        context.table_io.write_csv(full_pred_df, output_path.replace(".parquet", ".csv"))
         
         artifact = PredictionArtifact(
             artifact_id="predictions_cic",

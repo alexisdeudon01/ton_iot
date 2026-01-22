@@ -30,18 +30,27 @@ class T06_ProjectCIC(Task):
         existing_cols = set(lf.collect_schema().names())
         
         expressions = []
+        # Avoid duplicating sample_id if it's already in f_common (unlikely but safe)
         for col in f_common:
+            if col == "sample_id": continue
             if col in existing_cols:
                 expressions.append(pl.col(col))
             else:
                 expressions.append(pl.lit(0.0).alias(col)) # Fill missing with 0.0
         
-        expressions.extend([pl.col("y"), pl.col("source_file")])
+        # Add mandatory columns
+        for col in ["sample_id", "y", "source_file"]:
+            if col in existing_cols:
+                expressions.append(pl.col(col))
+            else:
+                # This shouldn't happen for y/source_file/sample_id if T01/T02 worked
+                expressions.append(pl.lit(None).alias(col))
         
         lf_projected = lf.select(expressions)
         
         df = lf_projected.collect()
         context.table_io.write_parquet(df, output_path)
+        context.table_io.write_csv(df, output_path.replace(".parquet", ".csv"))
         
         artifact = TableArtifact(
             artifact_id="cic_projected",

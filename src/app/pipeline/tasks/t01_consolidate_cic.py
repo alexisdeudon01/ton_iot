@@ -16,34 +16,36 @@ class T01_ConsolidateCIC(Task):
         monitor.snapshot(self.name)
         
         start_ts = time.time()
-        cic_dir = context.config.paths.cic_dir_path
-        output_path = os.path.join(context.config.paths.work_dir, "data", "cic_consolidated.parquet")
+        cfg = context.config
+        cic_dir = cfg.paths.cic_dir_path
+        output_path = os.path.join(cfg.paths.work_dir, "data", "cic_consolidated.parquet")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-        context.logger.info("loading", f"Scanning CSVs in {cic_dir}")
         csv_files = glob.glob(os.path.join(cic_dir, "**", "*.csv"), recursive=True)
+        n_files_detected = len(csv_files)
         
-        if not csv_files:
-            # Fallback for test or specific env
-            csv_files = glob.glob(os.path.join("datasets/cic_ddos2019", "**", "*.csv"), recursive=True)
-            
         if not csv_files:
             raise FileNotFoundError(f"No CSV files found in {cic_dir}")
 
+        files_to_process = csv_files[:cfg.test_max_files_per_dataset] if cfg.test_mode else csv_files
+        n_files_used = len(files_to_process)
+
+        context.logger.info("loading", f"Processing CIC: {n_files_used}/{n_files_detected} files",
+                            test_mode=cfg.test_mode,
+                            test_max_files=cfg.test_max_files_per_dataset)
+
         lazy_frames = []
-        # In test mode, only process first file to be extremely fast
-        files_to_process = csv_files[:1] if context.config.test_mode else csv_files
-        
         for f in files_to_process:
-            context.logger.info("loading", f"Processing {f}")
-            # Use n_rows in scan_csv for maximum speed in test mode
-            scan_kwargs = {"n_rows": 100} if context.config.test_mode else {}
+            scan_kwargs = {}
+            if cfg.test_mode:
+                scan_kwargs["n_rows"] = cfg.test_row_limit_per_file
+            
             lf = pl.scan_csv(f, infer_schema_length=100, ignore_errors=True, **scan_kwargs)
             
-            # Clean column names (strip whitespace)
+            # Clean column names
             lf = lf.rename({c: c.strip() for c in lf.collect_schema().names()})
             
-            # Drop Unnamed: 0 if present
+            # Drop Unnamed: 0
             cols = lf.collect_schema().names()
             if "Unnamed: 0" in cols:
                 lf = lf.drop("Unnamed: 0")
@@ -54,24 +56,52 @@ class T01_ConsolidateCIC(Task):
                 pl.lit(f).alias("source_file")
             ])
             
-            if context.config.test_mode:
-                lf = lf.head(100) # Limit rows per file in test mode
-                
+            # Cast problematic columns to String
+            prob_cols = ["Flow Bytes/s", "Flow Packets/s", "SimillarHTTP"]
+            existing = set(lf.collect_schema().names())
+            lf = lf.with_columns([
+                pl.col(c).cast(pl.String) for c in prob_cols if c in existing
+            ])
+            
             lazy_frames.append(lf)
 
-        context.logger.info("cleaning", f"Concatenating {len(lazy_frames)} CIC datasets")
-        # Use diagonal concat as columns might differ slightly between files
         full_lf = pl.concat(lazy_frames, how="diagonal")
+        full_lf = full_lf.with_row_index("sample_id")
         
-        # Compute and log stats before collect
-        context.logger.info("cleaning", "Collecting LazyFrame...")
+        if cfg.test_mode:
+            full_lf = full_lf.head(cfg.test_max_rows_total_per_dataset)
+            reason = "test_mode"
+        else:
+            reason = "full_run"
+
         df = full_lf.collect()
         
-        context.logger.info("writing", f"Writing Parquet to {output_path}", 
-                            n_rows=df.height, n_cols=df.width, 
-                            dtypes={c: str(t) for c, t in zip(df.columns, df.dtypes)})
+        # Sanity check: label balance
+        y_counts = df["y"].value_counts().to_dicts()
+        label_balance = {str(r["y"]): r["count"] for r in y_counts}
         
-        context.table_io.write_parquet(df, output_path, compression=context.config.io.parquet_compression)
+        if len(label_balance) < 2:
+            context.logger.warning("cleaning", "Only one class detected in CIC sample", balance=label_balance)
+
+        # Logs obligatoires
+        context.logger.info("writing", "CIC Consolidation complete",
+                            n_files_detected=n_files_detected,
+                            n_files_used=n_files_used,
+                            test_mode=cfg.test_mode,
+                            sample_ratio=cfg.sample_ratio,
+                            test_row_limit_per_file=cfg.test_row_limit_per_file,
+                            test_max_rows_total=cfg.test_max_rows_total_per_dataset,
+                            n_rows_out=df.height,
+                            n_cols_out=df.width,
+                            label_balance=label_balance,
+                            unique_source_files=df["source_file"].n_unique(),
+                            top_10_cols=df.columns[:10],
+                            num_cols=len([c for c, t in zip(df.columns, df.dtypes) if t.is_numeric()]),
+                            cat_cols=len([c for c, t in zip(df.columns, df.dtypes) if t == pl.String]),
+                            sampling_reason=reason)
+
+        context.table_io.write_parquet(df, output_path)
+        context.table_io.write_csv(df, output_path.replace(".parquet", ".csv"))
 
         artifact = TableArtifact(
             artifact_id="cic_consolidated",
@@ -85,17 +115,9 @@ class T01_ConsolidateCIC(Task):
             version="1.0.0",
             source_step=self.name,
             fingerprint=str(hash(output_path)),
-            stats={"csv_count": len(csv_files)}
+            stats={"label_balance": label_balance}
         )
         context.artifact_store.save_table(artifact)
         
-        context.logger.info("writing", f"Saved CIC consolidated: {df.height} rows, {df.width} cols", 
-                            n_rows=df.height, n_cols=df.width)
-
         monitor.snapshot(self.name)
-        return TaskResult(
-            task_name=self.name,
-            status="ok",
-            duration_s=time.time() - start_ts,
-            outputs=["cic_consolidated"]
-        )
+        return TaskResult(task_name=self.name, status="ok", duration_s=time.time() - start_ts, outputs=["cic_consolidated"])

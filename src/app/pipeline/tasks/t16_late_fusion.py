@@ -21,23 +21,28 @@ class T16_LateFusion(Task):
         output_path = os.path.join(context.config.paths.work_dir, "data", "predictions_fused.parquet")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
-        context.logger.info("predicting", "Performing Late Fusion (Weighted Average)")
+        context.logger.info("predicting", "Performing Late Fusion (Averaging model probabilities)")
         
         df_cic = context.table_io.read_parquet(pred_cic_art.path).collect()
         df_ton = context.table_io.read_parquet(pred_ton_art.path).collect()
         
-        # Strategy: Weighted Average of probabilities
-        # Since datasets are heterogeneous, we might just concatenate them for evaluation
-        # or perform fusion if they share the same samples (not the case here).
-        # User said: "Ne pas fusionner les datasets au niveau lignes" for pipeline, 
-        # but Late Fusion usually implies combining scores for the same events.
-        # Given "2 datasets hétérogènes", we'll produce a combined prediction set.
+        # Late Fusion: Average probabilities of all models for each sample
+        fused_cic = df_cic.group_by(["dataset", "sample_id"]).agg([
+            pl.col("proba").mean(),
+            pl.col("y_true").first(),
+            pl.col("source_file").first()
+        ])
         
-        w = context.config.fusion.weight_w
-        # For demo, we just concat the results as they are from different sources
-        fused_df = pl.concat([df_cic, df_ton])
+        fused_ton = df_ton.group_by(["dataset", "sample_id"]).agg([
+            pl.col("proba").mean(),
+            pl.col("y_true").first(),
+            pl.col("source_file").first()
+        ])
+        
+        fused_df = pl.concat([fused_cic, fused_ton])
         
         context.table_io.write_parquet(fused_df, output_path)
+        context.table_io.write_csv(fused_df, output_path.replace(".parquet", ".csv"))
         
         artifact = PredictionArtifact(
             artifact_id="predictions_fused",

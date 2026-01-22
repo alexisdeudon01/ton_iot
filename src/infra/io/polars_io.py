@@ -11,5 +11,8 @@ class PolarsIO(TableIO):
     def write_parquet(self, df: pl.DataFrame, path: str, compression: str = "zstd") -> None:
         df.write_parquet(path, compression=compression)
 
+    def write_csv(self, df: pl.DataFrame, path: str) -> None:
+        df.write_csv(path)
+
     def scan_csv(self, path: str, **kwargs) -> pl.LazyFrame:
         return pl.scan_csv(path, **kwargs)

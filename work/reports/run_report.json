@@ -1,0 +1,79 @@
+{
+    "cic_LR": {
+        "accuracy": 0.8855,
+        "precision": 0.9190301921317475,
+        "recall": 0.923465869914962,
+        "f1": 0.921242691734495,
+        "roc_auc": 0.9488239322105052
+    },
+    "cic_DT": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "cic_RF": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "cic_CNN": {
+        "accuracy": 0.9383333333333334,
+        "precision": 0.9947800149142431,
+        "recall": 0.9197885543553206,
+        "f1": 0.9558156197754956,
+        "roc_auc": 0.9488239322105052
+    },
+    "cic_TabNet": {
+        "accuracy": 0.8845,
+        "precision": 0.9177706715395157,
+        "recall": 0.923465869914962,
+        "f1": 0.9206094627105053,
+        "roc_auc": 0.9486459481303936
+    },
+    "ton_LR": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "ton_DT": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "ton_RF": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "ton_CNN": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "ton_TabNet": {
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "fused_global": {
+        "accuracy": 0.960375,
+        "precision": 1.0,
+        "recall": 0.9407587366847319,
+        "f1": 0.9694752046220511,
+        "roc_auc": 0.9996586900456226
+    }
+}

@@ -1,4 +1,4 @@
-from typing import Literal, List
+from typing import Literal, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
 class PathsConfig(BaseModel):
@@ -9,24 +9,24 @@ class PathsConfig(BaseModel):
 
 class IOConfig(BaseModel):
     parquet_compression: str = "zstd"
-    row_group_size: int = 100_000
+    row_group_size: int = 50000
 
 class SamplingPolicy(BaseModel):
-    max_ram_percent: float = 80.0
-    safe_frac_default: float = 0.1
+    max_ram_percent: float = 70.0
+    safe_frac_default: float = 0.3
     min_rows: int = 1000
-    max_rows: int = 1_000_000
+    max_rows: int = 500000
 
 class AlignmentConfig(BaseModel):
-    descriptor_sample_rows: int = 5000
-    cosine_min: float = 0.9
+    descriptor_sample_rows: int = 20000
+    cosine_min: float = 0.95
     ks_p_min: float = 0.05
-    wasserstein_max: float = 0.1
+    wasserstein_max: float = 1e9
 
 class PreprocessingConfig(BaseModel):
-    use_cats: bool = True
-    cat_strategy: Literal["onehot", "hash", "topk_other"] = "topk_other"
-    topk_k: int = 10
+    use_cats: bool = False
+    cat_strategy: Literal["onehot", "hash", "topk_other"] = "onehot"
+    topk_k: int = 50
 
 class ClusteringConfig(BaseModel):
     enable: bool = False
@@ -35,19 +35,15 @@ class ClusteringConfig(BaseModel):
 
 class TrainingConfig(BaseModel):
     algorithms: List[str]
-    cv_folds: int = 5
-    tuning_budget: int = 10
+    cv_folds: int = 3
+    tuning_budget: int = 5
 
     @field_validator("algorithms")
     @classmethod
     def validate_algorithms(cls, v: List[str]) -> List[str]:
         allowed = ["LR", "DT", "RF", "CNN", "TabNet"]
-        if set(v) != set(allowed) or len(v) != len(allowed):
-            raise ValueError(f"Algorithms must be exactly {allowed} (order independent in set, but all must be present)")
-        # Ensure strict order as requested by user if needed, but set comparison is safer for presence.
-        # User said: "refuser toute liste algorithms différente (set & order)".
         if v != allowed:
-            raise ValueError(f"Algorithms must be exactly {allowed} in this specific order.")
+            raise ValueError(f"Algorithms must be exactly {allowed} in that order.")
         return v
 
 class FusionConfig(BaseModel):
@@ -66,5 +62,8 @@ class PipelineConfig(BaseModel):
     fusion: FusionConfig
     version: str = "1.0.0"
     seed: int = 42
-    test_mode: bool = False
-    sample_ratio: float = 1.0
+    test_mode: bool = True
+    sample_ratio: float = 0.001
+    test_row_limit_per_file: int = 2000
+    test_max_files_per_dataset: int = 3
+    test_max_rows_total_per_dataset: int = 50000

@@ -4,7 +4,7 @@ import polars as pl
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
-from src.core.contracts.artifacts import AlignmentArtifact, TableArtifact
+from src.core.contracts.artifacts import AlignmentArtifact
 from src.app.pipeline.registry import TaskRegistry
 
 @TaskRegistry.register("T05_AlignFeatures")
@@ -18,59 +18,70 @@ class T05_AlignFeatures(Task):
         cic_art = context.artifact_store.load_table("cic_consolidated")
         ton_art = context.artifact_store.load_table("ton_clean")
         
-        # Simple intersection for F_common (excluding labels and metadata)
-        exclude = {"y", "Label", "type", "source_file", "ts", "timestamp"}
-        cic_cols = set(cic_art.columns) - exclude
-        ton_cols = set(ton_art.columns) - exclude
-        
-        f_common = sorted(list(cic_cols.intersection(ton_cols)))
-        
-        if not f_common:
-            # Fallback: if no exact match, we might need a descriptor-based mapping
-            # For this implementation, we'll assume some overlap exists or use a subset of CIC as base
-            context.logger.warning("alignment", "No exact column intersection found. Using CIC columns as base for alignment.")
-            f_common = sorted(list(cic_cols))[:20] # Take first 20 for demo if empty
+        output_path = os.path.join(context.config.paths.work_dir, "artifacts", "alignment_mapping.parquet")
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
+        context.logger.info("alignment", "Aligning features between CIC and TON")
+        
+        # In a real scenario, we would use statistical tests (Cosine, KS, Wasserstein)
+        # Here we implement the logic requested: intersection of numeric columns
+        
+        cic_cols = set(cic_art.columns)
+        ton_cols = set(ton_art.columns)
+        
+        # Simple intersection for demo, excluding labels and metadata
+        exclude = {"y", "Label", "source_file", "sample_id", "type", "ts"}
+        common = sorted(list((cic_cols & ton_cols) - exclude))
+        
+        intersection_size = len(common)
+        status = "ok"
+        reason = ""
+
+        if intersection_size == 0:
+            context.logger.warning("alignment", "No direct intersection found. Attempting fallback.")
+            # Fallback: top numeric columns from CIC that might exist in TON after renaming rules
+            # For this project, we assume some columns match or we use a predefined list if in test_mode
+            if context.config.test_mode:
+                # VERIFY: Predefined common features for test mode
+                # Option 1: Use a hardcoded list of known common features
+                # Option 2: Use top 5 numeric features from CIC as dummy common
+                common = [c for c in cic_art.columns if c not in exclude][:5]
+                status = "degraded"
+                reason = "No alignable features in test sample, using CIC top numeric as fallback"
+                context.logger.info("alignment", f"Fallback triggered: {reason}")
+            else:
+                return TaskResult(
+                    task_name=self.name,
+                    status="failed",
+                    duration_s=time.time() - start_ts,
+                    error="No alignable features in test sample"
+                )
+
+        context.logger.info("alignment", "Feature alignment complete",
+                            intersection_size=intersection_size,
+                            F_common=common,
+                            status=status,
+                            reason=reason)
+
+        # Create a dummy mapping table for the artifact
         mapping_df = pl.DataFrame({
-            "feature": f_common,
-            "cic_source": f_common,
-            "ton_source": f_common
+            "feature": common,
+            "status": [status] * len(common)
         })
-        
-        mapping_path = os.path.join(context.config.paths.work_dir, "artifacts", "feature_mapping.parquet")
-        os.makedirs(os.path.dirname(mapping_path), exist_ok=True)
-        context.table_io.write_parquet(mapping_df, mapping_path)
-        
-        mapping_art = TableArtifact(
-            artifact_id="feature_mapping_table",
-            name="Feature Mapping Table",
-            path=mapping_path,
-            format="parquet",
-            n_rows=mapping_df.height,
-            n_cols=mapping_df.width,
-            columns=mapping_df.columns,
-            dtypes={col: str(dtype) for col, dtype in zip(mapping_df.columns, mapping_df.dtypes)},
-            version="1.0.0",
-            source_step=self.name,
-            fingerprint=str(hash(mapping_path)),
-            stats={}
-        )
-        
-        alignment = AlignmentArtifact(
+        context.table_io.write_parquet(mapping_df, output_path)
+
+        artifact = AlignmentArtifact(
             artifact_id="alignment_spec",
-            mapping_table=mapping_art,
-            F_common=f_common,
-            metrics_summary={"n_common": len(f_common)}
+            mapping_table_path=output_path,
+            F_common=common,
+            metrics_summary={"intersection_size": intersection_size, "status": status, "reason": reason}
         )
-        context.artifact_store.save_alignment(alignment)
-        
-        context.logger.info("alignment", f"Aligned {len(f_common)} features.", 
-                            n_common=len(f_common), features=f_common)
+        context.artifact_store.save_alignment(artifact)
         
         monitor.snapshot(self.name)
         return TaskResult(
             task_name=self.name,
-            status="ok",
+            status=status,
             duration_s=time.time() - start_ts,
             outputs=["alignment_spec"]
         )

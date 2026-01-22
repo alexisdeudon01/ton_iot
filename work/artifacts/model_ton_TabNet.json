@@ -1,0 +1,1 @@
+{"artifact_id":"model_ton_TabNet","model_path":"./work/models/ton_TabNet.model","model_type":"TabNet","dataset":"ton","feature_order":["sample_id"],"calibration":"none","metrics_cv":{"train_duration_s":2.9850223064422607},"version":"1.0.0"}

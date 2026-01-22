@@ -16,5 +16,9 @@ class TableIO(ABC):
         pass
 
     @abstractmethod
+    def write_csv(self, df: pl.DataFrame, path: str) -> None:
+        pass
+
+    @abstractmethod
     def scan_csv(self, path: str, **kwargs) -> pl.LazyFrame:
         pass

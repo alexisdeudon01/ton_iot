@@ -1,0 +1,1 @@
+{"artifact_id":"model_cic_CNN","model_path":"./work/models/cic_CNN.model","model_type":"CNN","dataset":"cic","feature_order":["sample_id"],"calibration":"none","metrics_cv":{"train_duration_s":2.5331594944000244},"version":"1.0.0"}

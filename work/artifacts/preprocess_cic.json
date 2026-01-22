@@ -1,0 +1,1 @@
+{"artifact_id":"preprocess_cic","preprocess_path":"./work/artifacts/preprocess_cic.joblib","num_features":["sample_id"],"cat_features":[],"feature_order":["sample_id"],"steps":{"scaler":"RobustScaler"},"version":"1.0.0"}

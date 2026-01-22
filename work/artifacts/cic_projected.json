@@ -1,0 +1,1 @@
+{"artifact_id":"cic_projected","name":"CIC Projected","path":"./work/data/cic_projected.parquet","format":"parquet","n_rows":6000,"n_cols":3,"columns":["sample_id","y","source_file"],"dtypes":{"sample_id":"Int64","y":"Int32","source_file":"String"},"feature_order":["sample_id"],"version":"1.0.0","source_step":"T06_ProjectCIC","fingerprint":"-3266357505447368435","stats":{}}

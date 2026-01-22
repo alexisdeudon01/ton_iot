@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from typing import List, Any, Optional
 from src.core.ports.models import ModelPort
@@ -47,13 +48,18 @@ class TabNetModel(ModelPort):
     def save(self, path: str) -> None:
         if not TABNET_AVAILABLE:
             return
+        # TabNet save_model adds .zip automatically
         self.model.save_model(path)
 
     def load(self, path: str) -> None:
         if not TABNET_AVAILABLE:
             raise RuntimeError("TabNetClassifier is not available.")
         self.model = TabNetClassifier()
-        self.model.load_model(path)
+        # If path doesn't end in .zip but the file exists with .zip, use it
+        actual_path = path
+        if not path.endswith(".zip") and not os.path.exists(path) and os.path.exists(path + ".zip"):
+            actual_path = path + ".zip"
+        self.model.load_model(actual_path)
 
     @property
     def feature_order(self) -> List[str]:

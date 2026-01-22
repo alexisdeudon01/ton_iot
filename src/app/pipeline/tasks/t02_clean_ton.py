@@ -15,37 +15,58 @@ class T02_CleanTON(Task):
         monitor.snapshot(self.name)
         
         start_ts = time.time()
-        ton_path = context.config.paths.ton_csv_path
-        output_path = os.path.join(context.config.paths.work_dir, "data", "ton_clean.parquet")
+        cfg = context.config
+        ton_path = cfg.paths.ton_csv_path
+        output_path = os.path.join(cfg.paths.work_dir, "data", "ton_clean.parquet")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         context.logger.info("loading", f"Reading TON dataset from {ton_path}")
         
         # Use scan_csv for lazy loading
-        # In test mode, we don't limit n_rows at scan level to ensure we find normal/ddos types
         lf = pl.scan_csv(ton_path, infer_schema_length=100)
         
         # Keep only type in {"normal", "ddos"}
-        # y=1 if type=="ddos" else 0
         lf = lf.filter(pl.col("type").is_in(["normal", "ddos"]))
         lf = lf.with_columns([
             pl.when(pl.col("type") == "ddos").then(1).otherwise(0).alias("y"),
             pl.lit(ton_path).alias("source_file")
         ])
         
-        if context.config.test_mode:
-            lf = lf.head(100) # Limit rows AFTER filtering in test mode
-            
-        context.logger.info("cleaning", "Filtering TON for normal/ddos types and mapping labels")
+        # Add global sample_id
+        lf = lf.with_row_index("sample_id")
         
-        context.logger.info("cleaning", "Collecting TON LazyFrame...")
+        if cfg.test_mode:
+            # Apply global cap
+            lf = lf.head(cfg.test_max_rows_total_per_dataset)
+            reason = "test_mode"
+        else:
+            reason = "full_run"
+            
         df = lf.collect()
         
-        context.logger.info("writing", f"Writing Parquet to {output_path}", 
-                            n_rows=df.height, n_cols=df.width, 
-                            dtypes={c: str(t) for c, t in zip(df.columns, df.dtypes)})
+        # Sanity check: label balance
+        y_counts = df["y"].value_counts().to_dicts()
+        label_balance = {str(r["y"]): r["count"] for r in y_counts}
         
-        context.table_io.write_parquet(df, output_path, compression=context.config.io.parquet_compression)
+        if len(label_balance) < 2:
+            context.logger.warning("cleaning", "Only one class detected in TON sample", balance=label_balance)
+
+        # Logs obligatoires
+        context.logger.info("writing", "TON Cleaning complete",
+                            test_mode=cfg.test_mode,
+                            sample_ratio=cfg.sample_ratio,
+                            test_max_rows_total=cfg.test_max_rows_total_per_dataset,
+                            n_rows_out=df.height,
+                            n_cols_out=df.width,
+                            label_balance=label_balance,
+                            unique_source_files=1,
+                            top_10_cols=df.columns[:10],
+                            num_cols=len([c for c, t in zip(df.columns, df.dtypes) if t.is_numeric()]),
+                            cat_cols=len([c for c, t in zip(df.columns, df.dtypes) if t == pl.String]),
+                            sampling_reason=reason)
+        
+        context.table_io.write_parquet(df, output_path)
+        context.table_io.write_csv(df, output_path.replace(".parquet", ".csv"))
 
         artifact = TableArtifact(
             artifact_id="ton_clean",
@@ -59,17 +80,9 @@ class T02_CleanTON(Task):
             version="1.0.0",
             source_step=self.name,
             fingerprint=str(hash(output_path)),
-            stats={"original_path": ton_path}
+            stats={"label_balance": label_balance}
         )
         context.artifact_store.save_table(artifact)
         
-        context.logger.info("writing", f"Saved TON clean: {df.height} rows, {df.width} cols", 
-                            n_rows=df.height, n_cols=df.width)
-
         monitor.snapshot(self.name)
-        return TaskResult(
-            task_name=self.name,
-            status="ok",
-            duration_s=time.time() - start_ts,
-            outputs=["ton_clean"]
-        )
+        return TaskResult(task_name=self.name, status="ok", duration_s=time.time() - start_ts, outputs=["ton_clean"])

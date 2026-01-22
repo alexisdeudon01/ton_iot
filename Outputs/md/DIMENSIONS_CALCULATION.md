@@ -1,318 +1,91 @@
-# Documentation des Calculs des 3 Dimensions d'Évaluation
+# Critères de Calcul des Dimensions et Métriques
 
-Ce document décrit en détail comment les 3 dimensions d'évaluation sont calculées pour chaque algorithme dans le pipeline IRP.
+Ce document détaille les formules et critères utilisés pour le calcul des dimensions (caractéristiques alignées) et des métriques de performance dans le pipeline DDoS.
 
-## Vue d'ensemble
+## 1. Alignement des Caractéristiques (Feature Alignment)
 
-Les algorithmes sont évalués selon 3 dimensions :
-1. **Dimension 1 : Detection Performance** (Performance de détection)
-2. **Dimension 2 : Resource Efficiency** (Efficacité des ressources)
-3. **Dimension 3 : Explainability** (Expliquabilité)
+L'alignement entre CICDDoS2019 et TON_IoT repose sur la similarité statistique de leurs distributions.
 
----
+### A. Similarité Cosinus (Cosine Similarity)
+Utilisée pour comparer les vecteurs de descripteurs (moyenne, écart-type, min, max, quartiles) de deux colonnes.
+$$ \text{similarity} = \frac{A \cdot B}{\|A\| \|B\|} $$
+*   **Critère** : `cosine_min` (défaut 0.95). Une valeur proche de 1 indique des profils statistiques identiques.
 
-## Dimension 1 : Detection Performance
+### B. Test de Kolmogorov-Smirnov (KS Test)
+Évalue si deux échantillons proviennent de la même distribution continue.
+*   **Calcul** : Distance maximale entre les fonctions de répartition empiriques.
+*   **Critère** : `ks_p_min` (défaut 0.05). Si la p-value est supérieure au seuil, on ne rejette pas l'hypothèse que les distributions sont identiques.
 
-### Métriques utilisées
-
-#### 1. Precision (Pr)
-**Formule :**
-```
-Precision = TP / (TP + FP)
-```
-- **TP** : True Positives (vrais positifs)
-- **FP** : False Positives (faux positifs)
-
-**Interprétation :** Proportion de prédictions positives qui sont correctes.
-
-#### 2. Recall (Rc)
-**Formule :**
-```
-Recall = TP / (TP + FN)
-```
-- **TP** : True Positives
-- **FN** : False Negatives (faux négatifs)
-
-**Interprétation :** Proportion de cas positifs réellement détectés.
-
-#### 3. F1 Score
-**Formule :**
-```
-F1 = 2 * (Precision * Recall) / (Precision + Recall)
-```
-
-**Interprétation :** Moyenne harmonique de Precision et Recall. Le F1 Score est utilisé comme métrique principale pour la Dimension 1.
-
-#### 4. Accuracy
-**Formule :**
-```
-Accuracy = (TP + TN) / (TP + TN + FP + FN)
-```
-- **TN** : True Negatives (vrais négatifs)
-
-**Interprétation :** Proportion totale de prédictions correctes.
-
-### Calcul du Score Dimension 1
-
-Pour les problèmes **multi-classes** (comme CIC-DDoS2019 avec 11 types d'attaques), les métriques utilisent `average='weighted'` selon la méthodologie CIC-DDoS2019.
-
-**Score final Dimension 1 :**
-- **Métrique principale** : F1 Score (normalisé entre [0, 1])
-- Si nécessaire pour comparaison : normalisation `(f1_score - min) / (max - min)`
-
-### Représentations visuelles
-
-1. **Bar Chart** : F1, Precision, Recall par algorithme
-2. **Matrice de confusion** : Visualisation des erreurs de classification
-3. **Courbe ROC** : Pour problèmes binaires
-4. **Heatmap** : Corrélation entre métriques
-
-### Code Python (exemple)
-
-```python
-from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score
-
-# Pour multi-classes (CIC-DDoS2019)
-is_binary = len(np.unique(y_test)) == 2
-avg_method = 'binary' if is_binary else 'weighted'
-
-f1 = f1_score(y_test, y_pred, average=avg_method)
-precision = precision_score(y_test, y_pred, average=avg_method)
-recall = recall_score(y_test, y_pred, average=avg_method)
-accuracy = accuracy_score(y_test, y_pred)
-
-# Score Dimension 1 (F1 comme métrique principale)
-dimension1_score = f1
-```
+### C. Distance de Wasserstein (Earth Mover's Distance)
+Mesure l'effort minimal pour transformer une distribution en une autre.
+*   **Critère** : `wasserstein_max`. Plus la distance est faible, plus les distributions sont proches.
 
 ---
 
-## Dimension 2 : Resource Efficiency
+## 2. Profilage des Données (Data Profiling)
 
-### Métriques utilisées
+Chaque colonne est analysée selon les dimensions suivantes :
 
-#### 1. Training Time (Temps d'entraînement)
-**Mesure :** Temps en secondes mesuré avec `time.time()` ou `ResourceMonitor`
-
-#### 2. Memory Usage (Utilisation mémoire)
-**Mesure :** Mémoire utilisée en MB mesurée avec `psutil` via `ResourceMonitor`
-
-### Calcul du Score Dimension 2
-
-Les métriques de ressources suivent le principe "moins = mieux". Pour créer un score normalisé où "plus = mieux", on applique des transformations inverses.
-
-#### Normalisation Training Time
-
-**Formule :**
-```
-normalized_time = 1 / (1 + training_time / max_training_time)
-```
-
-Cette formule transforme un temps de 0 secondes → 1.0, et un temps très long → proche de 0.
-
-#### Normalisation Memory Usage
-
-**Formule :**
-```
-normalized_memory = 1 / (1 + memory_usage / max_memory_usage)
-```
-
-#### Score combiné Dimension 2
-
-**Formule :**
-```
-Dimension2_Score = 0.6 * normalized_time + 0.4 * normalized_memory
-```
-
-Ou avec normalisation Min-Max alternative :
-```
-normalized_time = 1 - (time - min_time) / (max_time - min_time)
-normalized_memory = 1 - (memory - min_memory) / (max_memory - min_memory)
-Dimension2_Score = 0.6 * normalized_time + 0.4 * normalized_memory
-```
-
-**Pondérations :** 
-- 60% pour le temps d'entraînement (plus important)
-- 40% pour la mémoire (secondaire)
-
-### Représentations visuelles
-
-1. **Bar Chart** : Training time (seconds) par algorithme
-2. **Bar Chart** : Memory usage (MB) par algorithme
-3. **Scatter Plot** : Time vs Memory (un point par algorithme)
-4. **Graphique Radar** : Visualisation multi-métriques (time, memory)
-
-### Code Python (exemple)
-
-```python
-import time
-import psutil
-
-# Mesure du temps
-start_time = time.time()
-model.fit(X_train, y_train)
-training_time = time.time() - start_time
-
-# Mesure de la mémoire (via ResourceMonitor)
-# Voir ResourceMonitor dans evaluation_3d.py
-
-# Normalisation
-max_time = max(all_training_times)
-normalized_time = 1 / (1 + training_time / max_time)
-
-max_memory = max(all_memory_usages)
-normalized_memory = 1 / (1 + memory_usage / max_memory)
-
-# Score Dimension 2
-dimension2_score = 0.6 * normalized_time + 0.4 * normalized_memory
-```
+| Dimension | Formule / Calcul |
+| :--- | :--- |
+| **Missing Rate** | $\frac{n_{null}}{n_{total}}$ |
+| **Mean** | $\frac{1}{n} \sum_{i=1}^{n} x_i$ |
+| **Standard Deviation** | $\sqrt{\frac{1}{n-1} \sum_{i=1}^{n} (x_i - \bar{x})^2}$ |
+| **Label Balance** | Ratio $\frac{y=1}{y=0}$ pour mesurer le déséquilibre des classes. |
 
 ---
 
-## Dimension 3 : Explainability
+## 3. Évaluation de la Performance (Evaluation Metrics)
 
-### Composantes utilisées
+Les métriques sont calculées sur les prédictions fusionnées (Late Fusion).
 
-#### 1. SHAP Score
-**Formule :**
-```
-SHAP_Score = mean(|SHAP_values|)
-```
+### A. F1-Score
+Moyenne harmonique de la Précision et du Rappel. Crucial pour les datasets DDoS souvent déséquilibrés.
+$$ F1 = 2 \cdot \frac{\text{Precision} \cdot \text{Recall}}{\text{Precision} + \text{Recall}} $$
 
-**Calcul :**
-- Calculer les SHAP values pour un échantillon de données
-- Prendre la valeur absolue de chaque SHAP value
-- Calculer la moyenne sur tous les features et toutes les instances
+### B. Précision (Precision)
+Capacité à ne pas marquer comme attaque un flux légitime.
+$$ \text{Precision} = \frac{TP}{TP + FP} $$
 
-**Interprétation :** Plus élevé = plus d'impact des features = meilleure explicabilité
-
-#### 2. LIME Score
-**Formule :**
-```
-LIME_Score = mean(importance_scores)
-```
-
-**Calcul :**
-- Pour chaque instance dans l'échantillon :
-  - Obtenir l'explication LIME
-  - Extraire les scores d'importance des features
-  - Prendre la valeur absolue de chaque score
-  - Moyenner les scores
-- Moyenner sur toutes les instances
-
-#### 3. Native Interpretability
-**Valeur :** Binaire
-- `1.0` : Le modèle a `feature_importances_` (tree-based models : Decision Tree, Random Forest)
-- `0.0` : Le modèle n'a pas d'interprétabilité native (Logistic Regression, CNN, TabNet)
-
-### Calcul du Score Dimension 3
-
-#### Normalisation des composantes
-
-Chaque composante est normalisée entre [0, 1] si nécessaire :
-
-```
-normalized_shap = min(SHAP_score / max_shap_value, 1.0)
-normalized_lime = min(LIME_score / max_lime_value, 1.0)
-native_interpretability = 1.0 si disponible, 0.0 sinon
-```
-
-#### Score combiné Dimension 3
-
-**Formule :**
-```
-Explainability = 0.5 * native_interpretability + 
-                 0.3 * normalized_shap + 
-                 0.2 * normalized_lime
-```
-
-**Pondérations :**
-- **50%** : Native interpretability (le plus important - disponibilité immédiate)
-- **30%** : SHAP score (explicabilité globale)
-- **20%** : LIME score (explicabilité locale)
-
-Si une composante est manquante (None), elle n'est pas incluse dans la somme, et les pondérations sont ajustées proportionnellement.
-
-### Représentations visuelles
-
-1. **Bar Chart** : SHAP score, LIME score, Native interpretability par algorithme
-2. **Heatmap** : Features importantes par algorithme (si disponible)
-3. **Graphique Radar** : Comparaison des 3 composantes d'explicabilité
-
-### Code Python (exemple)
-
-```python
-# Native interpretability
-native = 1.0 if hasattr(model, 'feature_importances_') else 0.0
-
-# SHAP score (si disponible)
-if SHAP_AVAILABLE:
-    shap_values = explainer.shap_values(X_sample)
-    shap_score = np.mean(np.abs(shap_values))
-    normalized_shap = min(shap_score / 1.0, 1.0)  # Ajuster selon valeurs typiques
-else:
-    normalized_shap = 0.0
-
-# LIME score (si disponible)
-if LIME_AVAILABLE:
-    lime_scores = [compute_lime_for_instance(x) for x in X_sample]
-    lime_score = np.mean(lime_scores)
-    normalized_lime = min(lime_score / 1.0, 1.0)  # Ajuster selon valeurs typiques
-else:
-    normalized_lime = 0.0
-
-# Score Dimension 3 combiné
-dimension3_score = (0.5 * native + 
-                    0.3 * normalized_shap + 
-                    0.2 * normalized_lime)
-```
+### C. Rappel (Recall / Sensitivity)
+Capacité à détecter toutes les attaques DDoS.
+$$ \text{Recall} = \frac{TP}{TP + FN} $$
 
 ---
 
-## Scores combinés 3D et normalisation
+## 4. Dimension Performance
 
-### Normalisation finale pour comparaison
+La performance est évaluée à deux niveaux : système et prédictif, **indépendamment pour chaque algorithme** (LR, DT, RF, CNN, TabNet).
 
-Pour comparer les algorithmes, chaque dimension est normalisée entre [0, 1] :
+### A. Performance Système (Efficacité)
+*   **Latence de Traitement** : Temps d'exécution par tâche ($T_{task}$ en secondes).
+*   **Débit (Throughput)** : Nombre de lignes traitées par seconde ($\frac{N_{rows}}{T_{task}}$).
+*   **Empreinte Mémoire** : Utilisation de la RAM (Peak RSS en MB) capturée par le `ResourceMonitor`.
+*   **Charge CPU** : Pourcentage d'utilisation CPU moyen durant le calcul.
 
-```
-dimension1_normalized = (f1_score - min_f1) / (max_f1 - min_f1)
-dimension2_normalized = (resource_score - min_resource) / (max_resource - min_resource)
-dimension3_normalized = (explainability_score - min_explainability) / (max_explainability - min_explainability)
-```
-
-### Représentations 3D combinées
-
-1. **Scatter Plot 3D** : X=Performance, Y=Efficiency, Z=Explainability (un point par algorithme)
-2. **Graphique Radar/Spider** : Les 3 dimensions normalisées par algorithme
-3. **Heatmap** : Matrice des scores 3D (lignes=algorithmes, colonnes=dimensions)
+### B. Performance Prédictive (Métriques ML)
+*   **F1-Score** : Métrique principale pour le déséquilibre de classe.
+*   **Précision / Rappel** : Équilibre entre faux positifs et détection exhaustive.
 
 ---
 
-## Interprétation des scores
+## 5. Dimension Explicabilité (Explainability)
 
-### Dimension 1 (Detection Performance)
-- **Score > 0.9** : Excellente performance de détection
-- **Score 0.7-0.9** : Bonne performance
-- **Score 0.5-0.7** : Performance acceptable
-- **Score < 0.5** : Performance insuffisante
+L'explicabilité est traitée **spécifiquement pour chaque algorithme** afin de comparer leurs logiques de décision.
 
-### Dimension 2 (Resource Efficiency)
-- **Score > 0.8** : Très efficace (rapide et peu de mémoire)
-- **Score 0.5-0.8** : Efficace
-- **Score 0.3-0.5** : Efficacité modérée
-- **Score < 0.3** : Peu efficace (lent ou gourmand en mémoire)
+### A. Importance des Caractéristiques (Feature Importance)
+*   **Modèles Intrinsèques** : Pour RF et DT, calcul basé sur la réduction de l'impureté de Gini.
+*   **Coefficients** : Pour LR, poids normalisés attribués à chaque dimension d'entrée.
+*   **Attribution Globale** : Moyenne des importances à travers les 5 algorithmes pour identifier les "Top Dimensons" critiques (ex: `Source Port`, `Flow Duration`).
 
-### Dimension 3 (Explainability)
-- **Score > 0.7** : Très explicable
-- **Score 0.4-0.7** : Modérément explicable
-- **Score < 0.4** : Peu explicable (boîte noire)
+### B. Traçabilité de la Fusion (Late Fusion Traceability)
+*   **Contribution par Modèle** : Chaque prédiction finale est décomposable en $M$ sous-prédictions.
+*   **Score de Consensus** : Écart-type entre les probabilités des modèles ($\sigma_{probas}$). Un $\sigma$ faible indique une haute confiance inter-modèles.
 
 ---
 
-## Références
+## 6. Late Fusion (Fusion Tardive)
 
-- **CIC-DDoS2019** : "Developing Realistic Distributed Denial of Service (DDoS) Attack Dataset and Taxonomy" (Sharafaldin et al., 2019)
-- **IRP Pipeline** : "AI-Powered Log Analysis for Smarter Threat Detection"
-- **SHAP** : Lundberg & Lee (2017), "A Unified Approach to Interpreting Model Predictions"
-- **LIME** : Ribeiro et al. (2016), "Why Should I Trust You?"
+Le calcul de la probabilité finale pour un échantillon $i$ est la moyenne arithmétique des sorties des modèles :
+$$ P_{final}(i) = \frac{1}{M} \sum_{m=1}^{M} P_m(i) $$
+Où $M$ est le nombre de modèles (LR, DT, RF, CNN, TabNet) et $P_m$ la probabilité prédite par le modèle $m$.

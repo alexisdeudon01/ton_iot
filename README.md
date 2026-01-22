@@ -11,6 +11,10 @@ Projet Python modulaire pour la détection de DDoS sur les datasets CICDDoS2019 
 ## Algorithmes
 - LR, DT, RF, CNN, TabNet.
 
+## Documentation des Dimensions
+Pour plus de détails sur les critères de calcul des dimensions (alignement, profilage, métriques), consultez :
+[DIMENSIONS_CALCULATION.md](Outputs/md/DIMENSIONS_CALCULATION.md)
+
 ## Utilisation
 ```bash
 python -m src.app.ui.main
