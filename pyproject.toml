@@ -1,0 +1,18 @@
+[project]
+name = "ton_iot_ddos"
+version = "1.0.0"
+dependencies = [
+    "polars",
+    "pydantic>=2.0",
+    "pyyaml",
+    "scikit-learn",
+    "joblib",
+    "torch",
+    "psutil",
+    "matplotlib",
+    "pandas",
+    "zstandard"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

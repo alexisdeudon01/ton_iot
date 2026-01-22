@@ -1,38 +1,18 @@
 import pytest
 from pydantic import ValidationError
-from src.core.contracts.config import PipelineConfig
-from src.core.contracts.artifacts import TableArtifact
+from src.core.contracts.config import PipelineConfig, TrainingConfig
+
+def test_pipeline_config_invalid_algorithms():
+    # Test that it refuses invalid algorithm list
+    with pytest.raises(ValueError, match="Algorithms must be exactly"):
+        TrainingConfig(algorithms=["LR", "DT", "RF", "CNN"]) # Missing TabNet
+
+def test_pipeline_config_invalid_order():
+    # Test that it refuses invalid order
+    with pytest.raises(ValueError, match="Algorithms must be exactly"):
+        TrainingConfig(algorithms=["DT", "LR", "RF", "CNN", "TabNet"])
 
 def test_pipeline_config_valid():
-    config = PipelineConfig(
-        cic_dir_path="data/cic",
-        ton_csv_path="data/ton.csv",
-        work_dir="out/work",
-        artifacts_dir="out/art"
-    )
-    assert config.version == "1.0.0"
-    assert "LR" in config.algorithms
-
-def test_pipeline_config_invalid_algo():
-    with pytest.raises(ValidationError):
-        PipelineConfig(
-            cic_dir_path="data/cic",
-            ton_csv_path="data/ton.csv",
-            work_dir="out/work",
-            artifacts_dir="out/art",
-            algorithms=["XGBoost"] # Forbidden
-        )
-
-def test_table_artifact_validation():
-    art = TableArtifact(
-        name="test",
-        path="test.parquet",
-        n_rows=100,
-        n_cols=5,
-        columns=["a", "b", "c", "d", "y"],
-        dtypes={"a": "Int64", "y": "Int64"},
-        version="1.0",
-        source_step="step1",
-        fingerprint="hash123"
-    )
-    assert art.n_rows == 100
+    # Test valid config
+    cfg = TrainingConfig(algorithms=["LR", "DT", "RF", "CNN", "TabNet"])
+    assert cfg.algorithms == ["LR", "DT", "RF", "CNN", "TabNet"]

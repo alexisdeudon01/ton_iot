@@ -1,18 +1,19 @@
+from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
-from src.core.events.models import PipelineEvent
+from src.core.contracts.config import PipelineConfig
+from src.core.contracts.artifacts import TableArtifact
+from src.core.contracts.profiles import TableProfile, DistributionBundle
+from src.app.ui.types import TaskStatus
 
-class AppState(BaseModel):
-    logs: List[str] = Field(default_factory=list)
-    active_task: Optional[str] = None
-    task_status: Dict[str, str] = Field(default_factory=dict) # task_name -> status
-    task_durations: Dict[str, float] = Field(default_factory=dict)
-    artifacts: List[Dict[str, Any]] = Field(default_factory=list)
-    last_profiles: Dict[str, Dict[str, Any]] = Field(default_factory=dict) # artifact_id -> profile
-    last_distributions: Dict[str, Dict[str, Any]] = Field(default_factory=dict) # artifact_id:feature -> dist
-    resources: List[Dict[str, Any]] = Field(default_factory=list)
-    peak_rss_mb: float = 0.0
+class UIState(BaseModel):
+    run_id: Optional[str] = None
+    config: Optional[PipelineConfig] = None
+    logs: List[Dict] = Field(default_factory=list) # Max 5000
+    resources: List[Dict] = Field(default_factory=list) # Max 2000
+    task_status: Dict[str, TaskStatus] = Field(default_factory=dict)
+    artifacts: List[TableArtifact] = Field(default_factory=list)
+    last_profiles: Dict[str, TableProfile] = Field(default_factory=dict) # artifact_id -> profile
+    last_distributions: Dict[str, DistributionBundle] = Field(default_factory=dict) # "artifact_id:feature" -> bundle
     pipeline_mmd: str = ""
     status_message: str = "Ready"
-    config: Optional[Dict[str, Any]] = None
-    run_id: Optional[str] = None
+    is_running: bool = False

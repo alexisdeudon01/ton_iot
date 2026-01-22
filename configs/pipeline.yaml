@@ -1,28 +1,38 @@
-cic_dir_path: "datasets/cic_ddos2019"
-ton_csv_path: "datasets/ton_iot/train_test_network.csv"
-work_dir: "output/work"
-artifacts_dir: "output/artifacts"
-parquet_compression: "zstd"
-row_group_size: 100000
-max_ram_percent: 80.0
-safe_frac_default: 0.1
-min_rows: 1000
-sample_ratio: 0.1
-descriptor_sample_rows: 5000
-cosine_min: 0.9
-ks_p_min: 0.05
-wasserstein_max: 0.1
-use_cats: true
-cat_strategy: "onehot"
-topk_k: 10
-enable_clustering: false
-reducer: "none"
-algorithms: ["LR", "DT", "RF", "CNN", "TabNet"]
-cv_folds: 5
-tuning_budget: 5
-fusion_method: "weighted_avg"
-weight_w: 0.5
-fusion_threshold: 0.5
+paths:
+  cic_dir_path: "datasets/cic_ddos2019"
+  ton_csv_path: "datasets/ton_iot/train_test_network.csv"
+  work_dir: "Outputs/output"
+  artifacts_dir: "Outputs/output/artifacts"
+io:
+  parquet_compression: "zstd"
+  row_group_size: 100000
+sampling_policy:
+  max_ram_percent: 80.0
+  safe_frac_default: 0.1
+  min_rows: 1000
+  max_rows: 1000000
+alignment:
+  descriptor_sample_rows: 5000
+  cosine_min: 0.9
+  ks_p_min: 0.05
+  wasserstein_max: 0.1
+preprocessing:
+  use_cats: true
+  cat_strategy: "topk_other"
+  topk_k: 10
+clustering:
+  enable: false
+  reducer: "none"
+  hdbscan_params: {}
+training:
+  algorithms: ["LR", "DT", "RF", "CNN", "TabNet"]
+  cv_folds: 5
+  tuning_budget: 10
+fusion:
+  method: "weighted_avg"
+  weight_w: 0.5
+  threshold: 0.5
 version: "1.0.0"
 seed: 42
 test_mode: true
+sample_ratio: 0.1
