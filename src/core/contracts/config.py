@@ -33,8 +33,13 @@ class ClusteringConfig(BaseModel):
     reducer: Literal["pca", "umap", "none"] = "none"
     hdbscan_params: dict = Field(default_factory=dict)
 
+class AlgorithmConfig(BaseModel):
+    name: str
+    key: str
+    params: dict = Field(default_factory=dict)
+
 class TrainingConfig(BaseModel):
-    algorithms: List[str]
+    algorithms: List[str] = Field(default_factory=lambda: ["LR", "DT", "RF", "CNN", "TabNet"])
     cv_folds: int = 3
     tuning_budget: int = 5
 
@@ -42,8 +47,10 @@ class TrainingConfig(BaseModel):
     @classmethod
     def validate_algorithms(cls, v: List[str]) -> List[str]:
         allowed = ["LR", "DT", "RF", "CNN", "TabNet"]
-        if v != allowed:
-            raise ValueError(f"Algorithms must be exactly {allowed} in that order.")
+        # On vérifie que les algos demandés sont dans la liste autorisée
+        for a in v:
+            if a not in allowed:
+                raise ValueError(f"Algorithm {a} is not supported. Allowed: {allowed}")
         return v
 
 class FusionConfig(BaseModel):
@@ -52,6 +59,7 @@ class FusionConfig(BaseModel):
     threshold: float = 0.5
 
 class PipelineConfig(BaseModel):
+    algorithms: List[AlgorithmConfig] = Field(default_factory=list)
     paths: PathsConfig
     io: IOConfig
     sampling_policy: SamplingPolicy

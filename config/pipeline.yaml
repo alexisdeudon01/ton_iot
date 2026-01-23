@@ -1,44 +1,133 @@
-paths:
-  cic_raw_dir: "/home/tor/ton_iot/ton_iot/datasets/cic_ddos2019"
-  ton_raw_path: "/home/tor/ton_iot/ton_iot/datasets/ton_iot/train_test_network.csv"
-  output_dir: "Outputs/output"
-  data_dir: "data"
+# Configuration du Pipeline de Décision DDoS pour PME
+# Centralise les dimensions, formules et seuils de ressources
 
-memory:
+# Liste des Algorithmes et Configurations par Défaut
+algorithms:
+  - name: "Random Forest"
+    key: "RF"
+    params:
+      n_estimators: 100
+      max_depth: 10
+      random_state: 42
+  - name: "CNN"
+    key: "CNN"
+    params:
+      epochs: 10
+      batch_size: 32
+      learning_rate: 0.001
+  - name: "TabNet"
+    key: "TabNet"
+    params:
+      n_d: 8
+      n_a: 8
+      steps: 3
+  - name: "Decision Tree"
+    key: "DT"
+    params:
+      max_depth: 15
+      criterion: "gini"
+  - name: "Logistic Regression"
+    key: "LR"
+    params:
+      max_iter: 1000
+      solver: "lbfgs"
+
+# Liste des Caractéristiques Communes (Features)
+features:
+  - name: "Durée du flux"
+    key: "duration"
+    description: "Temps total de la session réseau"
+  - name: "Nombre de paquets"
+    key: "pkt_count"
+    description: "Nombre total de paquets échangés"
+  - name: "Volume d'octets"
+    key: "byte_count"
+    description: "Nombre total d'octets transférés"
+  - name: "Flags TCP"
+    key: "flags"
+    description: "Indicateurs de contrôle de protocole"
+
+# Étapes du Preprocessing
+preprocessing_steps:
+  - step: "Nettoyage"
+    action: "Suppression des valeurs manquantes et infinies"
+  - step: "Alignement"
+    action: "Projection sur l'espace de caractéristiques commun"
+  - step: "Normalisation"
+    action: "RobustScaler (gestion des valeurs aberrantes)"
+
+# Structure Hiérarchique MCDM (Calcul Précis via Poids Directs)
+mcdm_hierarchy:
+  pillars:
+    - name: "Performance"
+      key: "performance"
+      weight: 0.70 # Profil A par défaut
+    - name: "Explicabilité"
+      key: "explainability"
+      weight: 0.15
+    - name: "Ressources"
+      key: "resources"
+      weight: 0.15
+
+  criteria:
+    performance:
+      - name: "F1-Score"
+        key: "f1"
+        type: "benefit"
+        weight: 0.40
+      - name: "Rappel"
+        key: "recall"
+        type: "benefit"
+        weight: 0.30
+      - name: "Précision"
+        key: "precision"
+        type: "benefit"
+        weight: 0.20
+      - name: "Accuracy"
+        key: "accuracy"
+        type: "benefit"
+        weight: 0.10
+
+    explainability:
+      - name: "Fidélité"
+        key: "faithfulness"
+        type: "benefit"
+        weight: 0.50
+      - name: "Stabilité"
+        key: "stability"
+        type: "benefit"
+        weight: 0.30
+      - name: "Complexité"
+        key: "complexity"
+        type: "cost"
+        weight: 0.20
+
+    resources:
+      - name: "Latence (ms)"
+        key: "latency"
+        type: "cost"
+        weight: 0.50
+      - name: "Usage CPU (%)"
+        key: "cpu_percent"
+        type: "cost"
+        weight: 0.30
+      - name: "Usage RAM (%)"
+        key: "ram_percent"
+        type: "cost"
+        weight: 0.20
+
+thresholds_pme:
+  max_cpu_percent: 80.0
   max_ram_percent: 75.0
-  safe_frac: 0.4
-  row_group_size: 100000
+  min_f1_score: 0.70
 
-preprocessing:
-  impute_strategy: "median"
-  scaling: "robust"
-  use_cats: false
-  pca_variance: 0.95
+paths:
+  work_dir: "work"
+  output_dir: "Outputs/output/mcdm_results"
+  datasets:
+    ton_iot: "datasets/ton_iot/train_test_network.csv"
+    cic_ddos: "datasets/cic_ddos2019/"
 
-alignment:
-  cosine_threshold: 0.95
-  ks_threshold: 0.05
-  wasserstein_threshold: 100.0
-
-training:
-  algorithms: ["LR", "DT", "RF", "CNN", "TabNet"]
-  test_size: 0.2
-  val_size: 0.1
-  seed: 42
-
-fusion:
-  method: "weighted_avg"
-  weights:
-    LR: 0.1
-    DT: 0.2
-    RF: 0.3
-    CNN: 0.2
-    TabNet: 0.2
-  threshold: 0.5
-
-xai:
-  enabled: true
-  n_samples: 50
-  top_k: 5
-
-test_mode: true
+sampling:
+  default_frac: 0.1
+  random_state: 42

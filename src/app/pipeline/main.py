@@ -1,6 +1,11 @@
 import uuid
 import yaml
 import os
+import sys
+
+# Ajout du répertoire racine au PYTHONPATH pour éviter l'erreur ModuleNotFoundError
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
+
 from src.core.contracts.config import PipelineConfig
 from src.core.dag.graph import DAGGraph
 from src.core.dag.runner import DAGRunner
@@ -17,6 +22,7 @@ import src.app.pipeline.tasks.t02_clean_ton
 import src.app.pipeline.tasks.t03_profile_cic
 import src.app.pipeline.tasks.t04_profile_ton
 import src.app.pipeline.tasks.t05_align_features
+import src.app.pipeline.tasks.t05_feature_distribution
 import src.app.pipeline.tasks.t06_project_cic
 import src.app.pipeline.tasks.t07_project_ton
 import src.app.pipeline.tasks.t08_build_preprocess_cic
@@ -27,10 +33,39 @@ import src.app.pipeline.tasks.t14_predict_cic
 import src.app.pipeline.tasks.t15_predict_ton
 import src.app.pipeline.tasks.t16_late_fusion
 import src.app.pipeline.tasks.t17_evaluate
+import src.app.pipeline.tasks.t18_mcdm_decision
 
 from src.app.pipeline.registry import TaskRegistry
 
 def build_pipeline_graph() -> DAGGraph:
+    print("\n" + "="*80)
+    print("CONSTRUCTION DU GRAPH D'EXÉCUTION DU PIPELINE")
+    print("="*80)
+    
+    tasks_info = [
+        ("T00_InitRun", "Initialisation de l'environnement et des dossiers de travail"),
+        ("T01_ConsolidateCIC", "Lecture et consolidation du dataset CIC-DDoS2019 (CSV -> Parquet)"),
+        ("T02_CleanTON", "Nettoyage et formatage du dataset ToN-IoT"),
+        ("T03_ProfileCIC", "Analyse statistique et profilage des données CIC"),
+        ("T04_ProfileTON", "Analyse statistique et profilage des données ToN-IoT"),
+        ("T05_AlignFeatures", "SÉLECTION DES FEATURES : Calcul de l'intersection des colonnes communes"),
+        ("T05_FeatureDistribution", "VISUALISATION : Génération des graphiques de distribution comparative"),
+        ("T06_ProjectCIC", "Projection du dataset CIC sur l'espace de caractéristiques commun"),
+        ("T07_ProjectTON", "Projection du dataset ToN-IoT sur l'espace de caractéristiques commun"),
+        ("T08_BuildPreprocessCIC", "PREPROCESSING : Construction du RobustScaler pour CIC (.joblib)"),
+        ("T09_BuildPreprocessTON", "PREPROCESSING : Construction du RobustScaler pour ToN-IoT (.joblib)"),
+        ("T12_TrainCIC", "ENTRAÎNEMENT : Apprentissage des 5 modèles sur les données CIC"),
+        ("T13_TrainTON", "ENTRAÎNEMENT : Apprentissage des 5 modèles sur les données ToN-IoT"),
+        ("T14_PredictCIC", "INFÉRENCE : Génération des prédictions sur le jeu de test CIC"),
+        ("T15_PredictTON", "INFÉRENCE : Génération des prédictions sur le jeu de test ToN-IoT"),
+        ("T16_LateFusion", "FUSION : Combinaison des résultats via Late Fusion (Moyenne pondérée)"),
+        ("T17_Evaluate", "ÉVALUATION : Calcul des métriques de performance (F1, Précision, Rappel)"),
+        ("T18_MCDM_Decision", "DÉCISION : Classement final via MOO-MCDM-MCDA (TOPSIS/Pareto)")
+    ]
+
+    for code, desc in tasks_info:
+        print(f"  [+] {code.ljust(25)} : {desc}")
+
     graph = DAGGraph()
     
     t00 = TaskRegistry.get_task_cls("T00_InitRun")("T00_InitRun")
@@ -39,6 +74,7 @@ def build_pipeline_graph() -> DAGGraph:
     t03 = TaskRegistry.get_task_cls("T03_ProfileCIC")("T03_ProfileCIC", inputs=["cic_consolidated"])
     t04 = TaskRegistry.get_task_cls("T04_ProfileTON")("T04_ProfileTON", inputs=["ton_clean"])
     t05 = TaskRegistry.get_task_cls("T05_AlignFeatures")("T05_AlignFeatures", inputs=["cic_consolidated", "ton_clean"])
+    t05_dist = TaskRegistry.get_task_cls("T05_FeatureDistribution")("T05_FeatureDistribution", inputs=["cic_consolidated", "ton_clean"])
     t06 = TaskRegistry.get_task_cls("T06_ProjectCIC")("T06_ProjectCIC", inputs=["cic_consolidated", "alignment_spec"])
     t07 = TaskRegistry.get_task_cls("T07_ProjectTON")("T07_ProjectTON", inputs=["ton_clean", "alignment_spec"])
     t08 = TaskRegistry.get_task_cls("T08_BuildPreprocessCIC")("T08_BuildPreprocessCIC", inputs=["cic_projected"])
@@ -49,6 +85,7 @@ def build_pipeline_graph() -> DAGGraph:
     t15 = TaskRegistry.get_task_cls("T15_PredictTON")("T15_PredictTON", inputs=["ton_projected", "model_ton_RF", "preprocess_ton"])
     t16 = TaskRegistry.get_task_cls("T16_LateFusion")("T16_LateFusion", inputs=["predictions_cic", "predictions_ton"])
     t17 = TaskRegistry.get_task_cls("T17_Evaluate")("T17_Evaluate", inputs=["predictions_fused"])
+    t18 = TaskRegistry.get_task_cls("T18_MCDM_Decision")("T18_MCDM_Decision", inputs=["run_report"])
 
     graph.add_task(t00)
     graph.add_task(t01, depends_on=["T00_InitRun"])
@@ -56,6 +93,7 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t03, depends_on=["T01_ConsolidateCIC"])
     graph.add_task(t04, depends_on=["T02_CleanTON"])
     graph.add_task(t05, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
+    graph.add_task(t05_dist, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
     graph.add_task(t06, depends_on=["T05_AlignFeatures"])
     graph.add_task(t07, depends_on=["T05_AlignFeatures"])
     graph.add_task(t08, depends_on=["T06_ProjectCIC"])
@@ -66,6 +104,7 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t15, depends_on=["T13_TrainTON"])
     graph.add_task(t16, depends_on=["T14_PredictCIC", "T15_PredictTON"])
     graph.add_task(t17, depends_on=["T16_LateFusion"])
+    graph.add_task(t18, depends_on=["T17_Evaluate"])
     
     return graph
 

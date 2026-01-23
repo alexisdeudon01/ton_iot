@@ -28,10 +28,11 @@ Le pipeline est spécifiquement conçu pour répondre à la problématique : *"C
 4.  **Phase 4 (Pondération AHP) :** La classe `AHP` permet de quantifier mathématiquement l'importance relative de ces trois objectifs. En ajustant les poids, on peut privilégier la performance pure ou, au contraire, favoriser un modèle léger et explicable pour un déploiement sur sonde IoT.
 5.  **Phase 5 (Classement TOPSIS) :** L'algorithme `TOPSIS` synthétise ces mesures contradictoires. En calculant la distance par rapport à une "solution idéale" (qui aurait 100% de performance, 100% d'explicabilité et 0 ressource consommée), il désigne mathématiquement le modèle qui s'en rapproche le plus.
 
-### 1.3 Optimisation Multi-Objectifs : Le Front de Pareto
-L'intégration de la classe `ParetoFront` (`pareto/front.py`) constitue une étape de filtrage scientifique cruciale avant le classement final :
-- **Identification des Solutions Non-Dominées :** Le système utilise le concept de dominance de Pareto pour éliminer les algorithmes qui sont strictement moins performants qu'un autre sur toutes les dimensions à la fois (ex: un modèle qui serait à la fois moins précis, plus lent et moins explicable qu'un autre).
-- **Réduction de l'Espace de Décision :** En ne conservant que le "Front de Pareto", le pipeline garantit que l'utilisateur ne choisit que parmi les meilleurs compromis possibles. Cela assure que toute amélioration sur une dimension (ex: plus de performance) nécessite nécessairement un sacrifice sur une autre (ex: plus de ressources), validant ainsi la pertinence du choix final.
+### 1.3 Optimisation Multi-Objectifs : Le Front de Pareto dans le Code
+L'optimisation est gérée par le module dédié `pareto/`, qui agit comme le moteur de décision du système :
+- **Localisation :** La logique réside dans `pareto/front.py`. Elle est invoquée après la Phase 3 (Évaluation 3D) pour filtrer les résultats bruts.
+- **Identification des Solutions Non-Dominées :** La méthode `ParetoFront.get_pareto_front()` analyse la matrice des métriques. Elle élimine mathématiquement les algorithmes "dominés" (ceux qui sont moins performants, plus coûteux et moins explicables qu'un autre modèle existant).
+- **Réduction de l'Espace de Décision :** En ne conservant que le **Front de Pareto**, le pipeline garantit que l'étape finale de classement (TOPSIS) ne porte que sur les meilleurs compromis techniquement possibles. Cela assure une réponse rigoureuse à la problématique : toute augmentation de la performance ou de l'explicabilité est validée par rapport au coût en ressources qu'elle engendre.
 
 ---
 
