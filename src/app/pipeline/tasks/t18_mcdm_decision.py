@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import json
+import time
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
@@ -13,6 +14,7 @@ class T18_MCDM_Decision(Task):
     Tâche finale du pipeline : Exécute l'analyse MCDM/MOO pour désigner le meilleur algorithme.
     """
     def run(self, context: DAGContext) -> TaskResult:
+        start_ts = time.time()
         cfg = context.config
         output_dir = os.path.join(cfg.paths.work_dir, "mcdm_results")
         os.makedirs(output_dir, exist_ok=True)
@@ -75,6 +77,7 @@ class T18_MCDM_Decision(Task):
         return TaskResult(
             task_name=self.name, 
             status="ok", 
+            duration_s=time.time() - start_ts,
             outputs=[report_md_path, plots_dir],
             meta={"winner": ranked_df.iloc[0]['model']}
         )
