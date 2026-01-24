@@ -1,5 +1,6 @@
 import os
 import time
+import joblib
 import polars as pl
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -8,6 +9,7 @@ from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
 from src.app.pipeline.registry import TaskRegistry
+from src.app.pipeline.universal_feature_mapping import OUTLIER_FEATURES, RATIO_FEATURES
 
 from scipy.stats import ks_2samp
 import pandas as pd
@@ -20,23 +22,44 @@ class T05_FeatureDistribution(Task):
     """
     def run(self, context: DAGContext) -> TaskResult:
         start_ts = time.time()
-        base_dir = "./work/reports"
-        ton_dir = os.path.join(base_dir, "feature_distributions_ton")
-        cic_dir = os.path.join(base_dir, "feature_distributions_cic")
-        comp_dir = os.path.join(base_dir, "feature_distributions_comparison")
+        base_dir = "./graph/feature_distributions"
+        ton_dir = os.path.join(base_dir, "ton")
+        cic_dir = os.path.join(base_dir, "cic")
+        comp_dir = os.path.join(base_dir, "comparison")
+        trans_dir = os.path.join(base_dir, "transformed_outliers")
         
-        for d in [ton_dir, cic_dir, comp_dir]: os.makedirs(d, exist_ok=True)
+        for d in [ton_dir, cic_dir, comp_dir, trans_dir]:
+            os.makedirs(d, exist_ok=True)
 
-        # 1. Charger les données
-        cic_art = context.artifact_store.load_table("cic_consolidated")
-        ton_art = context.artifact_store.load_table("ton_clean")
-        
+        # 1. Charger les données post-projection (features universelles)
+        cic_art = context.artifact_store.load_table("cic_projected")
+        ton_art = context.artifact_store.load_table("ton_projected")
+        align_art = context.artifact_store.load_alignment("alignment_spec")
+
         df_cic = context.table_io.read_parquet(cic_art.path).collect()
         df_ton = context.table_io.read_parquet(ton_art.path).collect()
 
-        exclude = {"y", "Label", "source_file", "sample_id", "type", "ts"}
-        all_features = sorted(list((set(df_cic.columns) | set(df_ton.columns)) - exclude))
-        common_features = sorted(list((set(df_cic.columns) & set(df_ton.columns)) - exclude))
+        exclude = {"y", "source_file", "sample_id"}
+        common_features = [f for f in align_art.F_common if f in df_cic.columns and f in df_ton.columns]
+        all_features = common_features
+
+        # Préparation des versions transformées (post-preprocessing)
+        prep_cic = context.artifact_store.load_preprocess("preprocess_cic")
+        prep_ton = context.artifact_store.load_preprocess("preprocess_ton")
+        ct_cic = joblib.load(prep_cic.preprocess_path)
+        ct_ton = joblib.load(prep_ton.preprocess_path)
+
+        f_outlier = [f for f in OUTLIER_FEATURES if f in all_features]
+        f_ratio = [f for f in RATIO_FEATURES if f in all_features]
+        extra = [f for f in all_features if f not in f_outlier and f not in f_ratio]
+        f_outlier.extend(extra)
+        transformed_order = f_outlier + f_ratio
+        index_map = {feat: idx for idx, feat in enumerate(transformed_order)}
+
+        X_cic = df_cic.select(transformed_order).to_pandas()
+        X_ton = df_ton.select(transformed_order).to_pandas()
+        X_cic_t = ct_cic.transform(X_cic)
+        X_ton_t = ct_ton.transform(X_ton)
 
         zero_variance = []
         different_dist = []
@@ -85,6 +108,29 @@ class T05_FeatureDistribution(Task):
                 # Test de Kolmogorov-Smirnov pour détecter les distributions différentes
                 stat, p = ks_2samp(data_cic, data_ton)
                 if p < 0.01: different_dist.append(feat)
+
+            # --- Graphique Avant/Apres (Outliers) ---
+            if feat in f_outlier and feat in index_map:
+                idx = index_map[feat]
+                trans_cic = pd.Series(X_cic_t[:, idx])
+                trans_ton = pd.Series(X_ton_t[:, idx])
+                if not trans_cic.empty and not trans_ton.empty:
+                    plt.figure(figsize=(12, 8))
+                    plt.subplot(2, 1, 1)
+                    sns.histplot(data_cic, kde=True, color="blue", stat="density", alpha=0.5, label="CIC raw")
+                    sns.histplot(data_ton, kde=True, color="orange", stat="density", alpha=0.5, label="TON raw")
+                    plt.title(f"{feat} - Avant (raw)")
+                    plt.legend()
+
+                    plt.subplot(2, 1, 2)
+                    sns.histplot(trans_cic, kde=True, color="blue", stat="density", alpha=0.5, label="CIC transformed")
+                    sns.histplot(trans_ton, kde=True, color="orange", stat="density", alpha=0.5, label="TON transformed")
+                    plt.title(f"{feat} - Apres (LogWinsorizer + RobustScaler)")
+                    plt.legend()
+
+                    plt.tight_layout()
+                    plt.savefig(os.path.join(trans_dir, f"before_after_{safe_feat}.png"))
+                    plt.close()
 
         # 3. Générer le rapport
         report_path = os.path.join(base_dir, "feature_analysis_report.md")

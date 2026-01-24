@@ -6,6 +6,11 @@ from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
 from src.core.contracts.artifacts import TableArtifact
 from src.app.pipeline.registry import TaskRegistry
+from src.app.pipeline.universal_feature_mapping import (
+    UNIVERSAL_FEATURES,
+    CIC_REQUIRED_COLUMNS,
+    cic_expressions,
+)
 
 @TaskRegistry.register("T06_ProjectCIC")
 class T06_ProjectCIC(Task):
@@ -19,28 +24,46 @@ class T06_ProjectCIC(Task):
         align_art = context.artifact_store.load_alignment("alignment_spec")
         
         f_common = align_art.F_common
+        if f_common != UNIVERSAL_FEATURES:
+            context.logger.warning(
+                "alignment",
+                "Alignment feature list does not match universal mapping",
+                expected=UNIVERSAL_FEATURES,
+                actual=f_common,
+            )
         output_path = os.path.join(context.config.paths.work_dir, "data", "cic_projected.parquet")
         
         context.logger.info("loading", f"Projecting CIC to {len(f_common)} features")
         
         lf = context.table_io.read_parquet(cic_art.path)
         existing_cols = set(lf.collect_schema().names())
-        
-        expressions = []
-        for col in f_common:
-            if col == "sample_id": continue
-            if col in existing_cols:
-                expressions.append(pl.col(col))
-            else:
-                expressions.append(pl.lit(0.0).alias(col))
-        
+        missing = [c for c in CIC_REQUIRED_COLUMNS if c not in existing_cols]
+        if missing:
+            return TaskResult(
+                task_name=self.name,
+                status="failed",
+                duration_s=time.time() - start_ts,
+                error=f"Missing CIC columns for universal mapping: {missing}",
+            )
+
+        expressions = cic_expressions()
         for col in ["sample_id", "y", "source_file"]:
             if col in existing_cols:
                 expressions.append(pl.col(col))
             else:
                 expressions.append(pl.lit(None).alias(col))
-        
+
         df = lf.select(expressions).collect()
+
+        clean_exprs = []
+        for col in UNIVERSAL_FEATURES:
+            if col in df.columns:
+                expr = pl.col(col).cast(pl.Float64)
+                expr = pl.when(expr.is_infinite()).then(None).otherwise(expr)
+                expr = expr.fill_nan(None).fill_null(0.0).alias(col)
+                clean_exprs.append(expr)
+        if clean_exprs:
+            df = df.with_columns(clean_exprs)
 
         # Sanity Checks
         n_rows = df.height

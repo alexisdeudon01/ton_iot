@@ -18,11 +18,11 @@ class T18_MCDM_Decision(Task):
     def run(self, context: DAGContext) -> TaskResult:
         start_ts = time.time()
         cfg = context.config
-        output_dir = os.path.join(cfg.paths.work_dir, "mcdm_results")
+        output_dir = "reports"
         os.makedirs(output_dir, exist_ok=True)
         
         # 1. Charger les résultats de l'évaluation (T17)
-        report_path = os.path.join(cfg.paths.work_dir, "reports", "run_report.json")
+        report_path = os.path.join("reports", "run_report.json")
         if not os.path.exists(report_path):
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time()-start_ts, error="Rapport d'évaluation introuvable.")
             
@@ -65,7 +65,8 @@ class T18_MCDM_Decision(Task):
         with open(report_md_path, "w") as f:
             f.write(report)
             
-        plots_dir = os.path.join(output_dir, "plots")
+        plots_dir = os.path.join("graph", "decision")
+        os.makedirs(plots_dir, exist_ok=True)
         agent.visualize_sad(ranked_df, plots_dir)
 
         # 6. Mise à jour du rapport JSON avec les sorties MCDM et liens vers les graphiques complets

@@ -72,6 +72,7 @@ class PipelineConfig(BaseModel):
     seed: int = 42
     test_mode: bool = True
     sample_ratio: float = 0.5
+    validation_sample_size: int = 10000
     test_row_limit_per_file: int = 2000
     test_max_files_per_dataset: int = 3
     test_max_rows_total_per_dataset: int = 50000

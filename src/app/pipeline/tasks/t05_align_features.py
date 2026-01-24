@@ -6,25 +6,36 @@ from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
 from src.core.contracts.artifacts import AlignmentArtifact, TableArtifact
 from src.app.pipeline.registry import TaskRegistry
+from src.app.pipeline.universal_feature_mapping import (
+    UNIVERSAL_FEATURES,
+    CIC_REQUIRED_COLUMNS,
+    TON_REQUIRED_COLUMNS,
+    mapping_rows,
+)
+
 
 @TaskRegistry.register("T05_AlignFeatures")
 class T05_AlignFeatures(Task):
     """Align CIC and TON feature names into a common schema."""
+
     def run(self, context: DAGContext) -> TaskResult:
         """Compute shared feature names and emit an alignment artifact."""
         from src.infra.resources.monitor import ResourceMonitor
+
         monitor = ResourceMonitor(context.event_bus, context.run_id)
         monitor.snapshot(self.name)
-        
+
         start_ts = time.time()
         cic_art = context.artifact_store.load_table("cic_consolidated")
         ton_art = context.artifact_store.load_table("ton_clean")
-        
-        output_path = os.path.join(context.config.paths.work_dir, "artifacts", "alignment_mapping.parquet")
+
+        output_path = os.path.join(
+            context.config.paths.work_dir, "artifacts", "alignment_mapping.parquet"
+        )
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         context.logger.info("alignment", "Aligning features between CIC and TON")
-        
+
         cic_cols = set(cic_art.columns)
         ton_cols = set(ton_art.columns)
         exclude = {"y", "Label", "source_file", "sample_id", "type", "ts"}
@@ -45,26 +56,33 @@ class T05_AlignFeatures(Task):
             raw_intersection_count=intersection_size,
         )
 
-        if intersection_size == 0:
-            if context.config.test_mode:
-                # Fallback mode test: use top numeric columns from CIC
-                numeric_types = ["Int64", "Float64", "Int32", "Float32"]
-                common = [c for c, t in cic_art.dtypes.items() if t in numeric_types and c not in exclude][:5]
-                status = "degraded"
-                reason = "No alignable features in test sample, using CIC top numeric as fallback"
-                source = "fallback"
-                context.logger.warning("alignment", reason)
-            else:
-                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="No alignable features")
+        missing_cic = sorted([c for c in CIC_REQUIRED_COLUMNS if c not in cic_cols])
+        missing_ton = sorted([c for c in TON_REQUIRED_COLUMNS if c not in ton_cols])
+        if missing_cic or missing_ton:
+            reason = "Missing required columns for universal feature mapping"
+            context.logger.warning(
+                "alignment",
+                reason,
+                missing_cic=missing_cic,
+                missing_ton=missing_ton,
+            )
+            return TaskResult(
+                task_name=self.name,
+                status="failed",
+                duration_s=time.time() - start_ts,
+                error=f"{reason}: CIC={missing_cic} TON={missing_ton}",
+            )
 
-        mapping_df = pl.DataFrame(
-            {
-                "feature": common,
-                "status": [status] * len(common),
-                "source": [source] * len(common),
-                "reason": [reason] * len(common),
-            }
-        )
+        common = list(UNIVERSAL_FEATURES)
+        status = "ok"
+        reason = "Manual universal feature mapping"
+        source = "manual"
+
+        rows = []
+        for row in mapping_rows():
+            rows.append({**row, "status": status, "source": source, "reason": reason})
+
+        mapping_df = pl.DataFrame(rows)
         context.table_io.write_parquet(mapping_df, output_path)
 
         mapping_art = TableArtifact(
@@ -79,7 +97,7 @@ class T05_AlignFeatures(Task):
             version="1.0.0",
             source_step=self.name,
             fingerprint=str(hash(output_path)),
-            stats={}
+            stats={},
         )
 
         artifact = AlignmentArtifact(
@@ -91,14 +109,22 @@ class T05_AlignFeatures(Task):
                 "selected_feature_count": len(common),
                 "status": status,
                 "reason": reason,
-            }
+            },
         )
         context.artifact_store.save_alignment(artifact)
-        
-        context.logger.info("alignment", "Feature alignment complete",
-                            intersection_size=intersection_size,
-                            F_common_count=len(common),
-                            status=status)
-                            
+
+        context.logger.info(
+            "alignment",
+            "Feature alignment complete",
+            intersection_size=intersection_size,
+            F_common_count=len(common),
+            status=status,
+        )
+
         monitor.snapshot(self.name)
-        return TaskResult(task_name=self.name, status=status, duration_s=time.time() - start_ts, outputs=["alignment_spec"])
+        return TaskResult(
+            task_name=self.name,
+            status=status,
+            duration_s=time.time() - start_ts,
+            outputs=["alignment_spec"],
+        )

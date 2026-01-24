@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import polars as pl
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
@@ -9,6 +10,23 @@ from src.app.pipeline.registry import TaskRegistry
 
 @TaskRegistry.register("T01_ConsolidateCIC")
 class T01_ConsolidateCIC(Task):
+    @staticmethod
+    def _stratified_sample(df: pl.DataFrame, label_col: str, target_rows: int, seed: int) -> pl.DataFrame:
+        if label_col not in df.columns or df.height == 0:
+            return df
+        target_rows = max(1, min(target_rows, df.height))
+        fraction = min(1.0, target_rows / df.height)
+
+        def _sample_group(group: pl.DataFrame) -> pl.DataFrame:
+            if fraction >= 1.0:
+                return group
+            n = max(1, int(math.ceil(group.height * fraction)))
+            if n >= group.height:
+                return group
+            return group.sample(n=n, seed=seed)
+
+        return df.group_by(label_col).map_groups(_sample_group)
+
     def run(self, context: DAGContext) -> TaskResult:
         from src.infra.resources.monitor import ResourceMonitor
         monitor = ResourceMonitor(context.event_bus, context.run_id)
@@ -81,35 +99,29 @@ class T01_ConsolidateCIC(Task):
         # Concaténation EAGER diagonale
         df_full = pl.concat(dfs, how="diagonal")
 
-        # --- SAMPLING STRATIFIÉ (50%) ---
-        sampling_ratio = cfg.sample_ratio
-        context.logger.info("sampling", f"Performing stratified sampling at {sampling_ratio*100}%")
-        
-        # On groupe par Label pour la stratification
-        df = df_full.filter(pl.col("Label").is_not_null()).group_by("Label").map_groups(
-            lambda group: group.sample(fraction=sampling_ratio, seed=cfg.seed)
-        )
-        
-        context.logger.info("sampling", f"Sampling complete: {df_full.height} -> {df.height} rows")
+        df_full = df_full.filter(pl.col("Label").is_not_null())
 
         # --- VALIDATION INTERACTIVE ---
+        validation_size = getattr(cfg, "validation_sample_size", 10000)
+        df_val = self._stratified_sample(df_full, "Label", validation_size, cfg.seed)
+
         print(f"\n--- VALIDATION DES DONNÉES CIC-DDoS2019 ---")
         print(f"Fichiers trouvés : {len(csv_files)}")
-        print(f"Nombre de colonnes (features) : {df.width}")
-        print(f"Nombre de lignes (rows) : {df.height}")
+        print(f"Nombre de colonnes (features) : {df_full.width}")
+        print(f"Nombre de lignes (échantillon/total) : {df_val.height} / {df_full.height}")
         
         # Proposition DDoS / Pas DDoS
-        if "Label" in df.columns:
-            counts = df["Label"].value_counts().to_dicts()
+        if "Label" in df_val.columns:
+            counts = df_val["Label"].value_counts().to_dicts()
             print("Répartition proposée (Labels) :")
             for r in counts:
                 label = r.get("Label") or r.get("y")
                 print(f"  - {label} : {r['count']} lignes")
         
-        print(f"\nListe des features : {df.columns[:20]} ... (+{max(0, len(df.columns)-20)})")
+        print(f"\nListe des features : {df_full.columns[:20]} ... (+{max(0, len(df_full.columns)-20)})")
         
         print("\nExemple de donnée au hasard :")
-        print(df.sample(1).to_pandas().iloc[0].to_dict())
+        print(df_val.sample(1).to_pandas().iloc[0].to_dict())
         
         try:
             confirm = input("\n?> Confirmez-vous l'utilisation de ces données CIC ? (o/n) : ").lower()
@@ -117,6 +129,15 @@ class T01_ConsolidateCIC(Task):
                 return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="Validation utilisateur refusée pour CIC")
         except EOFError:
             pass # Mode non-interactif
+
+        # --- SAMPLING STRATIFIÉ (50%) ---
+        sampling_ratio = cfg.sample_ratio
+        context.logger.info("sampling", f"Performing stratified sampling at {sampling_ratio*100}%")
+
+        target_rows = max(1, int(math.ceil(df_full.height * sampling_ratio)))
+        df = self._stratified_sample(df_full, "Label", target_rows, cfg.seed)
+
+        context.logger.info("sampling", f"Sampling complete: {df_full.height} -> {df.height} rows")
         
         # Add global sample_id
         df = df.with_row_index("sample_id")

@@ -129,6 +129,6 @@ paths:
     cic_ddos: "datasets/cic_ddos2019/"
 
 sampling:
-  default_frac: 0.5
+  default_frac: 0.05
   random_state: 42
   validation_sample_size: 10000

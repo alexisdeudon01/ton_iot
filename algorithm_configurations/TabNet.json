@@ -1,0 +1,142 @@
+{
+    "algorithm": "TabNet",
+    "type": "deep_tabular",
+    "hyperparameters": {},
+    "training_config": {
+        "cv_folds": null,
+        "stratified": true,
+        "train_ratio": 0.7
+    },
+    "results": {
+        "cic": {
+            "methodology_context": {
+                "fusion_strategy": "Late Fusion (Averaging probabilities)",
+                "sample_description": "Stratified sampling (ratio=0.05)",
+                "k_folds": {
+                    "enabled": false,
+                    "description": "Fixed stratified split used instead of cross-validation for performance"
+                },
+                "data_splitting": {
+                    "training": "70%",
+                    "validation": "15%",
+                    "testing": "15%",
+                    "method": "Stratified Shuffle Split"
+                }
+            },
+            "n_eval_rows": 46,
+            "y_true_balance": {
+                "1": 33,
+                "0": 13
+            },
+            "y_pred_balance": {
+                "1": 45,
+                "0": 1
+            },
+            "confusion_matrix": [
+                [
+                    1,
+                    12
+                ],
+                [
+                    0,
+                    33
+                ]
+            ],
+            "accuracy": 0.7391304347826086,
+            "precision": 0.7333333333333333,
+            "recall": 1.0,
+            "f1": 0.8461538461538461,
+            "roc_auc": 0.6993006993006993
+        },
+        "ton": {
+            "methodology_context": {
+                "fusion_strategy": "Late Fusion (Averaging probabilities)",
+                "sample_description": "Stratified sampling (ratio=0.05)",
+                "k_folds": {
+                    "enabled": false,
+                    "description": "Fixed stratified split used instead of cross-validation for performance"
+                },
+                "data_splitting": {
+                    "training": "70%",
+                    "validation": "15%",
+                    "testing": "15%",
+                    "method": "Stratified Shuffle Split"
+                }
+            },
+            "n_eval_rows": 525,
+            "y_true_balance": {
+                "1": 150,
+                "0": 375
+            },
+            "y_pred_balance": {
+                "1": 232,
+                "0": 293
+            },
+            "confusion_matrix": [
+                [
+                    274,
+                    101
+                ],
+                [
+                    19,
+                    131
+                ]
+            ],
+            "accuracy": 0.7714285714285715,
+            "precision": 0.5646551724137931,
+            "recall": 0.8733333333333333,
+            "f1": 0.6858638743455497,
+            "roc_auc": 0.7461866666666667
+        },
+        "fused": {
+            "methodology_context": {
+                "fusion_strategy": "Late Fusion (Averaging probabilities)",
+                "sample_description": "Stratified sampling (ratio=0.05)",
+                "k_folds": {
+                    "enabled": false,
+                    "description": "Fixed stratified split used instead of cross-validation for performance"
+                },
+                "data_splitting": {
+                    "training": "70%",
+                    "validation": "15%",
+                    "testing": "15%",
+                    "method": "Stratified Shuffle Split"
+                }
+            },
+            "n_eval_rows": 571,
+            "y_true_balance": {
+                "0": 388,
+                "1": 183
+            },
+            "y_pred_balance": {
+                "1": 264,
+                "0": 307
+            },
+            "confusion_matrix": [
+                [
+                    267,
+                    121
+                ],
+                [
+                    40,
+                    143
+                ]
+            ],
+            "accuracy": 0.7180385288966725,
+            "precision": 0.5416666666666666,
+            "recall": 0.7814207650273224,
+            "f1": 0.639821029082774,
+            "roc_auc": 0.7016365275195764
+        }
+    },
+    "explainability": {
+        "shap_available": false,
+        "lime_available": false,
+        "feature_importance": {}
+    },
+    "resources": {
+        "training_time_sec": null,
+        "inference_time_ms": null,
+        "memory_mb": null
+    }
+}

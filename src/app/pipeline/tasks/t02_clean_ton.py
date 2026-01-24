@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import polars as pl
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
@@ -9,6 +10,23 @@ from src.app.pipeline.registry import TaskRegistry
 
 @TaskRegistry.register("T02_CleanTON")
 class T02_CleanTON(Task):
+    @staticmethod
+    def _stratified_sample(df: pl.DataFrame, label_col: str, target_rows: int, seed: int) -> pl.DataFrame:
+        if label_col not in df.columns or df.height == 0:
+            return df
+        target_rows = max(1, min(target_rows, df.height))
+        fraction = min(1.0, target_rows / df.height)
+
+        def _sample_group(group: pl.DataFrame) -> pl.DataFrame:
+            if fraction >= 1.0:
+                return group
+            n = max(1, int(math.ceil(group.height * fraction)))
+            if n >= group.height:
+                return group
+            return group.sample(n=n, seed=seed)
+
+        return df.group_by(label_col).map_groups(_sample_group)
+
     def run(self, context: DAGContext) -> TaskResult:
         from src.infra.resources.monitor import ResourceMonitor
         monitor = ResourceMonitor(context.event_bus, context.run_id)
@@ -26,35 +44,6 @@ class T02_CleanTON(Task):
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error=f"File not found: {ton_path}")
 
         lf = pl.scan_csv(ton_path, infer_schema_length=100)
-        
-        # --- VALIDATION INTERACTIVE ---
-        # On collect un petit échantillon pour la validation
-        df_val = lf.head(10000).collect()
-        
-        print(f"\n--- VALIDATION DES DONNÉES ToN-IoT ---")
-        print(f"Fichier source : {ton_path}")
-        print(f"Nombre de colonnes (features) : {df_val.width}")
-        
-        # Estimation du nombre de lignes (scan rapide)
-        print(f"Nombre de lignes (échantillon/total) : {df_val.height} / (Scan en cours...)")
-        
-        if "type" in df_val.columns:
-            counts = df_val["type"].value_counts().to_dicts()
-            print("Répartition proposée dans l'échantillon (type) :")
-            for r in counts:
-                print(f"  - {r['type']} : {r['count']} lignes")
-        
-        print(f"\nListe des features : {df_val.columns[:20]} ... (+{max(0, len(df_val.columns)-20)})")
-        
-        print("\nExemple de donnée au hasard :")
-        print(df_val.sample(1).to_pandas().iloc[0].to_dict())
-        
-        try:
-            confirm = input("\n?> Confirmez-vous l'utilisation de ces données ToN-IoT ? (o/n) : ").lower()
-            if confirm != 'o':
-                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="Validation utilisateur refusée pour ToN-IoT")
-        except EOFError:
-            pass # Mode non-interactif
 
         # Keep only type in {"normal", "ddos"}
         lf = lf.filter(pl.col("type").is_in(["normal", "ddos"]))
@@ -68,14 +57,40 @@ class T02_CleanTON(Task):
         
         df_full = lf.collect()
 
+        # --- VALIDATION INTERACTIVE ---
+        validation_size = getattr(cfg, "validation_sample_size", 10000)
+        df_val = self._stratified_sample(df_full, "type", validation_size, cfg.seed)
+
+        print(f"\n--- VALIDATION DES DONNÉES ToN-IoT ---")
+        print(f"Fichier source : {ton_path}")
+        print(f"Nombre de colonnes (features) : {df_full.width}")
+        print(f"Nombre de lignes (échantillon/total) : {df_val.height} / {df_full.height}")
+
+        if "type" in df_val.columns:
+            counts = df_val["type"].value_counts().to_dicts()
+            print("Répartition proposée dans l'échantillon (type) :")
+            for r in counts:
+                print(f"  - {r['type']} : {r['count']} lignes")
+
+        print(f"\nListe des features : {df_full.columns[:20]} ... (+{max(0, len(df_full.columns)-20)})")
+
+        print("\nExemple de donnée au hasard :")
+        print(df_val.sample(1).to_pandas().iloc[0].to_dict())
+
+        try:
+            confirm = input("\n?> Confirmez-vous l'utilisation de ces données ToN-IoT ? (o/n) : ").lower()
+            if confirm != 'o':
+                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="Validation utilisateur refusée pour ToN-IoT")
+        except EOFError:
+            pass # Mode non-interactif
+
         # --- SAMPLING STRATIFIÉ (50%) ---
         sampling_ratio = cfg.sample_ratio
         context.logger.info("sampling", f"Performing stratified sampling at {sampling_ratio*100}%")
         
         # Stratification sur la colonne 'type'
-        df = df_full.group_by("type").map_groups(
-            lambda group: group.sample(fraction=sampling_ratio, seed=cfg.seed)
-        )
+        target_rows = max(1, int(math.ceil(df_full.height * sampling_ratio)))
+        df = self._stratified_sample(df_full, "type", target_rows, cfg.seed)
         
         reason = f"stratified_sampling_{int(sampling_ratio*100)}"
         context.logger.info("sampling", f"Sampling complete: {df_full.height} -> {df.height} rows")

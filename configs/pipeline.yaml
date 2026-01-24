@@ -45,7 +45,8 @@ fusion:
 version: "test-1.0.0"
 seed: 42
 test_mode: true
-sample_ratio: 0.001
+sample_ratio: 0.05
+validation_sample_size: 10000
 test_row_limit_per_file: 2000
 test_max_files_per_dataset: 3
 test_max_rows_total_per_dataset: 50000

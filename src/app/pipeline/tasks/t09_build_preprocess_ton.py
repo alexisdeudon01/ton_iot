@@ -3,12 +3,16 @@ import time
 import joblib
 import polars as pl
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, RobustScaler
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import RobustScaler
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
 from src.core.contracts.artifacts import PreprocessArtifact
 from src.app.pipeline.registry import TaskRegistry
+from src.app.pipeline.universal_feature_mapping import OUTLIER_FEATURES, RATIO_FEATURES
+from src.infra.preprocessing.log_winsorizer import LogWinsorizer
 
 @TaskRegistry.register("T09_BuildPreprocessTON")
 class T09_BuildPreprocessTON(Task):
@@ -20,14 +24,28 @@ class T09_BuildPreprocessTON(Task):
         start_ts = time.time()
         ton_art = context.artifact_store.load_table("ton_projected")
         f_common = ton_art.feature_order
+        f_outlier = [f for f in OUTLIER_FEATURES if f in f_common]
+        f_ratio = [f for f in RATIO_FEATURES if f in f_common]
+        extra = [f for f in f_common if f not in f_outlier and f not in f_ratio]
+        f_outlier.extend(extra)
         
         output_path = os.path.join(context.config.paths.work_dir, "artifacts", "preprocess_ton.joblib")
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         context.logger.info("cleaning", f"Building ColumnTransformer for TON ({len(f_common)} features)")
         
+        outlier_pipeline = Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("logwinsor", LogWinsorizer()),
+            ("scaler", RobustScaler()),
+        ])
+        ratio_pipeline = Pipeline([
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", RobustScaler()),
+        ])
         ct = ColumnTransformer([
-            ("scaler", RobustScaler(), f_common)
+            ("outlier", outlier_pipeline, f_outlier),
+            ("ratio", ratio_pipeline, f_ratio),
         ])
         
         df_sample = context.table_io.read_parquet(ton_art.path).head(10000).collect()
@@ -41,7 +59,10 @@ class T09_BuildPreprocessTON(Task):
             num_features=f_common,
             cat_features=[],
             feature_order=f_common,
-            steps={"scaler": "RobustScaler"},
+            steps={
+                "outlier": "SimpleImputer+LogWinsorizer+RobustScaler",
+                "ratio": "SimpleImputer+RobustScaler",
+            },
             version="1.0.0"
         )
         context.artifact_store.save_preprocess(artifact)

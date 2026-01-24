@@ -1,0 +1,774 @@
+{
+    "_metadata": {
+        "methodology": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "outputs": {
+            "directories": {
+                "data_plots": "./graph/feature_distributions/",
+                "decision_plots": "./graph/decision/",
+                "processed_data": "./work/data/"
+            },
+            "generated_files": [
+                {
+                    "name": "compare_bytes_per_packet.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_bytes_per_packet.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_fwd_byte_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_fwd_byte_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_header_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_header_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_total_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_total_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_total_bwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_total_bwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_total_bwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_total_bwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_total_fwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_total_fwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_avg_packet_size.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_avg_packet_size.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_packets_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_packets_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_flow_duration.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_flow_duration.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_total_fwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_total_fwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_total_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_total_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_flow_asymmetry.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_flow_asymmetry.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_fwd_packet_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_fwd_packet_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "compare_bytes_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/comparison/compare_bytes_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_packets_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_packets_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_total_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_total_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_total_bwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_total_bwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_avg_packet_size.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_avg_packet_size.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_bytes_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_bytes_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_bytes_per_packet.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_bytes_per_packet.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_total_bwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_total_bwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_flow_duration.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_flow_duration.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_total_fwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_total_fwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_total_fwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_total_fwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "before_after_total_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/transformed_outliers/before_after_total_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_fwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_total_fwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_fwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_total_fwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_flow_duration.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_flow_duration.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_bytes_per_packet.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_bytes_per_packet.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_bwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_total_bwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_flow_asymmetry.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_flow_asymmetry.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_bwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_total_bwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_bytes_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_bytes_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_avg_packet_size.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_avg_packet_size.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_fwd_packet_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_fwd_packet_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_header_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_header_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_total_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_packets_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_packets_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_total_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_fwd_byte_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/cic/dist_fwd_byte_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_fwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_total_fwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_fwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_total_fwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_flow_duration.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_flow_duration.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_bytes_per_packet.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_bytes_per_packet.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_bwd_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_total_bwd_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_flow_asymmetry.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_flow_asymmetry.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_bwd_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_total_bwd_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_bytes_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_bytes_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_avg_packet_size.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_avg_packet_size.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_fwd_packet_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_fwd_packet_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_header_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_header_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_bytes.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_total_bytes.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_packets_per_second.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_packets_per_second.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_total_packets.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_total_packets.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "dist_fwd_byte_ratio.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_fwd_byte_ratio.png",
+                    "type": "distribution_plot"
+                },
+                {
+                    "name": "3d_solution_space.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/3d_solution_space.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/3d_solution_space.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "radar_comparison.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/radar_comparison.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/radar_comparison.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "decision_matrix_heatmap.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/decision_matrix_heatmap.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/decision_matrix_heatmap.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "unified_dimensions_comparison.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/unified_dimensions_comparison.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/unified_dimensions_comparison.png",
+                    "type": "decision_plot"
+                }
+            ],
+            "final_report_markdown": {
+                "path": "/home/tor/ton_iot/ton_iot/reports/final_justification_report.md",
+                "url": "file:///home/tor/ton_iot/ton_iot/reports/final_justification_report.md"
+            }
+        }
+    },
+    "cic_LR": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 46,
+        "y_true_balance": {
+            "1": 33,
+            "0": 13
+        },
+        "y_pred_balance": {
+            "0": 12,
+            "1": 34
+        },
+        "confusion_matrix": [
+            [
+                11,
+                2
+            ],
+            [
+                1,
+                32
+            ]
+        ],
+        "accuracy": 0.9347826086956522,
+        "precision": 0.9411764705882353,
+        "recall": 0.9696969696969697,
+        "f1": 0.9552238805970149,
+        "roc_auc": 0.9580419580419581
+    },
+    "cic_DT": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 46,
+        "y_true_balance": {
+            "0": 13,
+            "1": 33
+        },
+        "y_pred_balance": {
+            "0": 13,
+            "1": 33
+        },
+        "confusion_matrix": [
+            [
+                13,
+                0
+            ],
+            [
+                0,
+                33
+            ]
+        ],
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "roc_auc": 1.0
+    },
+    "cic_RF": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 46,
+        "y_true_balance": {
+            "0": 13,
+            "1": 33
+        },
+        "y_pred_balance": {
+            "0": 12,
+            "1": 34
+        },
+        "confusion_matrix": [
+            [
+                12,
+                1
+            ],
+            [
+                0,
+                33
+            ]
+        ],
+        "accuracy": 0.9782608695652174,
+        "precision": 0.9705882352941176,
+        "recall": 1.0,
+        "f1": 0.9850746268656716,
+        "roc_auc": 0.9953379953379954
+    },
+    "cic_CNN": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 46,
+        "y_true_balance": {
+            "0": 13,
+            "1": 33
+        },
+        "y_pred_balance": {
+            "0": 6,
+            "1": 40
+        },
+        "confusion_matrix": [
+            [
+                5,
+                8
+            ],
+            [
+                1,
+                32
+            ]
+        ],
+        "accuracy": 0.8043478260869565,
+        "precision": 0.8,
+        "recall": 0.9696969696969697,
+        "f1": 0.8767123287671232,
+        "roc_auc": 0.42890442890442887
+    },
+    "cic_TabNet": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 46,
+        "y_true_balance": {
+            "1": 33,
+            "0": 13
+        },
+        "y_pred_balance": {
+            "1": 45,
+            "0": 1
+        },
+        "confusion_matrix": [
+            [
+                1,
+                12
+            ],
+            [
+                0,
+                33
+            ]
+        ],
+        "accuracy": 0.7391304347826086,
+        "precision": 0.7333333333333333,
+        "recall": 1.0,
+        "f1": 0.8461538461538461,
+        "roc_auc": 0.6993006993006993
+    },
+    "ton_LR": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 525,
+        "y_true_balance": {
+            "1": 150,
+            "0": 375
+        },
+        "y_pred_balance": {
+            "1": 144,
+            "0": 381
+        },
+        "confusion_matrix": [
+            [
+                370,
+                5
+            ],
+            [
+                11,
+                139
+            ]
+        ],
+        "accuracy": 0.9695238095238096,
+        "precision": 0.9652777777777778,
+        "recall": 0.9266666666666666,
+        "f1": 0.9455782312925171,
+        "roc_auc": 0.9775822222222221
+    },
+    "ton_DT": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 525,
+        "y_true_balance": {
+            "0": 375,
+            "1": 150
+        },
+        "y_pred_balance": {
+            "1": 146,
+            "0": 379
+        },
+        "confusion_matrix": [
+            [
+                373,
+                2
+            ],
+            [
+                6,
+                144
+            ]
+        ],
+        "accuracy": 0.9847619047619047,
+        "precision": 0.9863013698630136,
+        "recall": 0.96,
+        "f1": 0.972972972972973,
+        "roc_auc": 0.9881955555555557
+    },
+    "ton_RF": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 525,
+        "y_true_balance": {
+            "0": 375,
+            "1": 150
+        },
+        "y_pred_balance": {
+            "1": 146,
+            "0": 379
+        },
+        "confusion_matrix": [
+            [
+                374,
+                1
+            ],
+            [
+                5,
+                145
+            ]
+        ],
+        "accuracy": 0.9885714285714285,
+        "precision": 0.9931506849315068,
+        "recall": 0.9666666666666667,
+        "f1": 0.9797297297297297,
+        "roc_auc": 0.9974755555555556
+    },
+    "ton_CNN": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 525,
+        "y_true_balance": {
+            "1": 150,
+            "0": 375
+        },
+        "y_pred_balance": {
+            "0": 525
+        },
+        "confusion_matrix": [
+            [
+                375,
+                0
+            ],
+            [
+                150,
+                0
+            ]
+        ],
+        "accuracy": 0.7142857142857143,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "roc_auc": 0.9232533333333334
+    },
+    "ton_TabNet": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 525,
+        "y_true_balance": {
+            "1": 150,
+            "0": 375
+        },
+        "y_pred_balance": {
+            "1": 232,
+            "0": 293
+        },
+        "confusion_matrix": [
+            [
+                274,
+                101
+            ],
+            [
+                19,
+                131
+            ]
+        ],
+        "accuracy": 0.7714285714285715,
+        "precision": 0.5646551724137931,
+        "recall": 0.8733333333333333,
+        "f1": 0.6858638743455497,
+        "roc_auc": 0.7461866666666667
+    },
+    "fused_global": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 571,
+        "y_true_balance": {
+            "1": 183,
+            "0": 388
+        },
+        "y_pred_balance": {
+            "1": 124,
+            "0": 447
+        },
+        "confusion_matrix": [
+            [
+                382,
+                6
+            ],
+            [
+                65,
+                118
+            ]
+        ],
+        "accuracy": 0.8756567425569177,
+        "precision": 0.9516129032258065,
+        "recall": 0.644808743169399,
+        "f1": 0.7687296416938111,
+        "roc_auc": 0.9299616922990255
+    }
+}

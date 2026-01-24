@@ -23,8 +23,9 @@ class T17_Evaluate(Task):
         pred_cic_path = os.path.join(cfg.paths.work_dir, "data", "predictions_cic.parquet")
         pred_ton_path = os.path.join(cfg.paths.work_dir, "data", "predictions_ton.parquet")
         pred_fused_art = context.artifact_store.load_prediction("predictions_fused")
+        pred_fused_by_algo_path = os.path.join(cfg.paths.work_dir, "data", "predictions_fused_by_algo.parquet")
         
-        output_dir = os.path.join(cfg.paths.work_dir, "reports")
+        output_dir = "reports"
         os.makedirs(output_dir, exist_ok=True)
         
         context.logger.info("validating", "Evaluating only on split='test'")
@@ -47,8 +48,8 @@ class T17_Evaluate(Task):
             },
             "outputs": {
                 "directories": {
-                    "data_plots": "./work/reports/feature_distributions/",
-                    "decision_plots": "./work/mcdm_results/plots/",
+                    "data_plots": "./graph/feature_distributions/",
+                    "decision_plots": "./graph/decision/",
                     "processed_data": "./work/data/"
                 },
                 "generated_files": []
@@ -110,24 +111,86 @@ class T17_Evaluate(Task):
                         m = compute_metrics(df_algo, f"{ds_name}_{algo}")
                         if m: all_metrics[f"{ds_name}_{algo}"] = m
 
-        # 3. Evaluate Fused
+        # 3. Evaluate Fused (global)
         df_fused = context.table_io.read_parquet(pred_fused_art.path).collect()
         m_fused = compute_metrics(df_fused, "fused_global")
         if m_fused: all_metrics["fused_global"] = m_fused
+
+        # 3b. Evaluate Fused per algorithm (if available)
+        fused_by_algo_metrics = {}
+        if os.path.exists(pred_fused_by_algo_path):
+            df_fused_by_algo = context.table_io.read_parquet(pred_fused_by_algo_path).collect()
+            for algo in cfg.training.algorithms:
+                df_algo = df_fused_by_algo.filter(pl.col("model") == algo)
+                if df_algo.height > 0:
+                    m = compute_metrics(df_algo, f"fused_{algo}")
+                    if m:
+                        fused_by_algo_metrics[algo] = m
         
         # 4. Liste des graphiques de distribution générés
-        dist_dir = os.path.join(cfg.paths.work_dir, "reports", "feature_distributions")
+        dist_dir = os.path.join("graph", "feature_distributions")
         if os.path.exists(dist_dir):
-            report_metadata["outputs"]["generated_files"].extend([
-                {"name": f, "path": os.path.abspath(os.path.join(dist_dir, f)), "type": "distribution_plot"} 
-                for f in os.listdir(dist_dir) if f.endswith(".png")
-            ])
+            dist_files = []
+            for root, _, files in os.walk(dist_dir):
+                for fname in files:
+                    if fname.endswith(".png"):
+                        abs_path = os.path.abspath(os.path.join(root, fname))
+                        dist_files.append({"name": fname, "path": abs_path, "type": "distribution_plot"})
+            report_metadata["outputs"]["generated_files"].extend(dist_files)
 
         report_path = os.path.join(output_dir, "run_report.json")
         with open(report_path, "w") as f:
             json.dump(all_metrics, f, indent=4)
         
         context.logger.info("writing", f"Evaluation report saved to {report_path}")
+
+        # 5. Export per-algorithm JSON configs
+        algo_map = {a.key: a for a in cfg.algorithms}
+        type_map = {
+            "LR": "linear",
+            "DT": "tree",
+            "RF": "ensemble_tree",
+            "CNN": "deep",
+            "TabNet": "deep_tabular",
+        }
+        model_cfg_dir = "algorithm_configurations"
+        os.makedirs(model_cfg_dir, exist_ok=True)
+
+        for algo_key in cfg.training.algorithms:
+            algo_cfg = algo_map.get(algo_key)
+            results_cic = all_metrics.get(f"cic_{algo_key}")
+            results_ton = all_metrics.get(f"ton_{algo_key}")
+            results_fused = fused_by_algo_metrics.get(algo_key) if fused_by_algo_metrics else all_metrics.get("fused_global")
+
+            payload = {
+                "algorithm": algo_cfg.name if algo_cfg else algo_key,
+                "type": type_map.get(algo_key, "unknown"),
+                "hyperparameters": (algo_cfg.params if algo_cfg else {}),
+                "training_config": {
+                    "cv_folds": None,
+                    "stratified": True,
+                    "train_ratio": 0.7,
+                },
+                "results": {
+                    "cic": results_cic or {},
+                    "ton": results_ton or {},
+                    "fused": results_fused or {},
+                },
+                "explainability": {
+                    "shap_available": False,
+                    "lime_available": False,
+                    "feature_importance": {},
+                },
+                "resources": {
+                    "training_time_sec": None,
+                    "inference_time_ms": None,
+                    "memory_mb": None,
+                },
+            }
+
+            out_path = os.path.join(model_cfg_dir, f"{algo_key}.json")
+            with open(out_path, "w") as f:
+                json.dump(payload, f, indent=4)
             
         context.event_bus.publish(Event(
             type="RUN_FINISHED",

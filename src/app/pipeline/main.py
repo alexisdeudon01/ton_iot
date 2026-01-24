@@ -51,7 +51,7 @@ def build_pipeline_graph() -> DAGGraph:
         ("T03_ProfileCIC", "Analyse statistique et profilage des données CIC"),
         ("T04_ProfileTON", "Analyse statistique et profilage des données ToN-IoT"),
         ("T05_AlignFeatures", "SÉLECTION DES FEATURES : Calcul de l'intersection des colonnes communes"),
-        ("T05_FeatureDistribution", "VISUALISATION : Génération des graphiques de distribution comparative"),
+        ("T05_FeatureDistribution", "VISUALISATION : Distributions post-preprocessing (15 features universelles)"),
         ("T06_ProjectCIC", "Projection du dataset CIC sur l'espace de caractéristiques commun"),
         ("T07_ProjectTON", "Projection du dataset ToN-IoT sur l'espace de caractéristiques commun"),
         ("T08_BuildPreprocessCIC", "PREPROCESSING : Construction du RobustScaler pour CIC (.joblib)"),
@@ -76,7 +76,10 @@ def build_pipeline_graph() -> DAGGraph:
     t03 = TaskRegistry.get_task_cls("T03_ProfileCIC")("T03_ProfileCIC", inputs=["cic_consolidated"])
     t04 = TaskRegistry.get_task_cls("T04_ProfileTON")("T04_ProfileTON", inputs=["ton_clean"])
     t05 = TaskRegistry.get_task_cls("T05_AlignFeatures")("T05_AlignFeatures", inputs=["cic_consolidated", "ton_clean"])
-    t05_dist = TaskRegistry.get_task_cls("T05_FeatureDistribution")("T05_FeatureDistribution", inputs=["cic_consolidated", "ton_clean"])
+    t05_dist = TaskRegistry.get_task_cls("T05_FeatureDistribution")(
+        "T05_FeatureDistribution",
+        inputs=["cic_projected", "ton_projected", "preprocess_cic", "preprocess_ton", "alignment_spec"],
+    )
     t06 = TaskRegistry.get_task_cls("T06_ProjectCIC")("T06_ProjectCIC", inputs=["cic_consolidated", "alignment_spec"])
     t07 = TaskRegistry.get_task_cls("T07_ProjectTON")("T07_ProjectTON", inputs=["ton_clean", "alignment_spec"])
     t08 = TaskRegistry.get_task_cls("T08_BuildPreprocessCIC")("T08_BuildPreprocessCIC", inputs=["cic_projected"])
@@ -95,7 +98,7 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t03, depends_on=["T01_ConsolidateCIC"])
     graph.add_task(t04, depends_on=["T02_CleanTON"])
     graph.add_task(t05, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
-    graph.add_task(t05_dist, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
+    graph.add_task(t05_dist, depends_on=["T08_BuildPreprocessCIC", "T09_BuildPreprocessTON"])
     graph.add_task(t06, depends_on=["T05_AlignFeatures"])
     graph.add_task(t07, depends_on=["T05_AlignFeatures"])
     graph.add_task(t08, depends_on=["T06_ProjectCIC"])
@@ -112,11 +115,12 @@ def build_pipeline_graph() -> DAGGraph:
 
 def setup_output_directories():
     """
-    Crée la structure de dossiers output/output et output/log avec gestion des archives _old.
+    Crée les répertoires racine pour graphs, reports et configurations d'algorithmes.
     Demande à l'utilisateur s'il souhaite archiver les anciens résultats.
     """
     base_dir = "output"
     sub_dirs = ["output", "log"]
+    root_dirs = ["graph", "algorithm_configurations", "reports", "other"]
     
     print("\n" + "="*80)
     print("GESTION DES RÉPERTOIRES DE SORTIE")
@@ -126,6 +130,9 @@ def setup_output_directories():
         path = os.path.join(base_dir, sd)
         old_path = os.path.join(path, "_old")
         os.makedirs(old_path, exist_ok=True)
+
+    for rd in root_dirs:
+        os.makedirs(rd, exist_ok=True)
 
     # Interaction utilisateur
     try:
@@ -154,13 +161,22 @@ def setup_output_directories():
         ans_clean = 'n'
 
     if ans_clean == 'o':
-        # On cible les dossiers de graphiques connus
-        graph_dirs = ["work/reports/feature_distributions", "work/mcdm_results/plots"]
+        # On cible les dossiers de graphiques connus (nouvelle arborescence)
+        graph_dirs = ["graph"]
         for gd in graph_dirs:
             if os.path.exists(gd):
                 shutil.rmtree(gd)
-                os.makedirs(gd)
-                print(f"  [OK] Graphiques dans {gd} effacés.")
+            os.makedirs(gd, exist_ok=True)
+            print(f"  [OK] Graphiques dans {gd} effacés.")
+
+    # Mettre a jour un index des repertoires dans reports/
+    report_index = os.path.join("reports", "directories.md")
+    with open(report_index, "w") as f:
+        f.write("# Repertoires de sortie\n\n")
+        f.write("- graph/ : graphiques (distributions + MCDM)\n")
+        f.write("- algorithm_configurations/ : JSON des algorithmes\n")
+        f.write("- reports/ : rapports (run_report, final_report)\n")
+        f.write("- other/ : reserve pour elements oublies\n")
 
 def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_override: bool = None):
     # Initialisation des dossiers
