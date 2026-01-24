@@ -7,11 +7,11 @@
 ## Solutions admissibles
 
 ## Solutions rejetees
-- fused_LR
-- fused_DT
-- fused_RF
-- fused_TabNet
-- fused_CNN
+- LR
+- DT
+- RF
+- TabNet
+- CNN
 
 ## Interpretation
 Seuil tres strict: aucune solution admissible. Relacher la contrainte ou ajuster les poids.

@@ -5,13 +5,13 @@
 - Solutions admissibles: 2/5
 
 ## Solutions admissibles
-- fused_LR
-- fused_DT
+- LR
+- DT
 
 ## Solutions rejetees
-- fused_RF
-- fused_TabNet
-- fused_CNN
+- RF
+- TabNet
+- CNN
 
 ## Interpretation
 Seuil intermediaire: la contrainte filtre une partie des solutions. Cela illustre le compromis entre performances, explicabilite et ressources.
