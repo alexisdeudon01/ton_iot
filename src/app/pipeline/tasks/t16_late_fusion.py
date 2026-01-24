@@ -54,7 +54,8 @@ class T16_LateFusion(Task):
         )
         context.artifact_store.save_prediction(artifact)
         
-        context.logger.info("predicting", f"Fused predictions saved to {output_path}")
+        context.logger.info("predicting", f"Fused predictions saved to {output_path}", 
+                            artifact=artifact.model_dump())
         
         monitor.snapshot(self.name)
         return TaskResult(

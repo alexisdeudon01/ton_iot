@@ -82,6 +82,8 @@ class T07_ProjectTON(Task):
             stats={"all_null_count": len(all_null_cols), "constant_count": len(constant_cols)}
         )
         context.artifact_store.save_table(artifact)
+        context.logger.info("writing", "TON Projection complete", 
+                            artifact=artifact.model_dump())
         
         monitor.snapshot(self.name)
         return TaskResult(task_name=self.name, status="ok", duration_s=time.time() - start_ts, outputs=["ton_projected"])

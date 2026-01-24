@@ -83,7 +83,8 @@ class T15_PredictTON(Task):
         )
         context.artifact_store.save_prediction(artifact)
         
-        context.logger.info("predicting", f"Predictions TON saved to {output_path}")
+        context.logger.info("predicting", f"Predictions TON saved to {output_path}", 
+                            artifact=artifact.model_dump())
         
         monitor.snapshot(self.name)
         return TaskResult(

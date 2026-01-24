@@ -2,6 +2,8 @@ import uuid
 import yaml
 import os
 import sys
+import shutil
+from datetime import datetime
 
 # Ajout du répertoire racine au PYTHONPATH pour éviter l'erreur ModuleNotFoundError
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
@@ -108,7 +110,62 @@ def build_pipeline_graph() -> DAGGraph:
     
     return graph
 
+def setup_output_directories():
+    """
+    Crée la structure de dossiers output/output et output/log avec gestion des archives _old.
+    Demande à l'utilisateur s'il souhaite archiver les anciens résultats.
+    """
+    base_dir = "output"
+    sub_dirs = ["output", "log"]
+    
+    print("\n" + "="*80)
+    print("GESTION DES RÉPERTOIRES DE SORTIE")
+    print("="*80)
+
+    for sd in sub_dirs:
+        path = os.path.join(base_dir, sd)
+        old_path = os.path.join(path, "_old")
+        os.makedirs(old_path, exist_ok=True)
+
+    # Interaction utilisateur
+    try:
+        ans_archive = input("?> Souhaitez-vous archiver les anciens résultats et logs dans _old ? (o/n) : ").lower()
+    except EOFError:
+        ans_archive = 'n'
+
+    if ans_archive == 'o':
+        for sd in sub_dirs:
+            path = os.path.join(base_dir, sd)
+            old_path = os.path.join(path, "_old")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            archive_sub = os.path.join(old_path, timestamp)
+            
+            if os.path.exists(path):
+                files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+                if files:
+                    os.makedirs(archive_sub, exist_ok=True)
+                    for f in files:
+                        shutil.move(os.path.join(path, f), os.path.join(archive_sub, f))
+                    print(f"  [OK] Fichiers de {path} déplacés vers {archive_sub}")
+
+    try:
+        ans_clean = input("?> Souhaitez-vous effacer les graphiques existants ? (o/n) : ").lower()
+    except EOFError:
+        ans_clean = 'n'
+
+    if ans_clean == 'o':
+        # On cible les dossiers de graphiques connus
+        graph_dirs = ["work/reports/feature_distributions", "work/mcdm_results/plots"]
+        for gd in graph_dirs:
+            if os.path.exists(gd):
+                shutil.rmtree(gd)
+                os.makedirs(gd)
+                print(f"  [OK] Graphiques dans {gd} effacés.")
+
 def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_override: bool = None):
+    # Initialisation des dossiers
+    setup_output_directories()
+
     with open(config_path, "r") as f:
         config_dict = yaml.safe_load(f)
     

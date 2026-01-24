@@ -29,7 +29,33 @@ class T17_Evaluate(Task):
         
         context.logger.info("validating", "Evaluating only on split='test'")
         
-        all_metrics = {}
+        # 1. Préparation des métadonnées globales de la méthodologie
+        report_metadata = {
+            "methodology": {
+                "fusion_strategy": "Late Fusion (Averaging probabilities)",
+                "sample_description": f"Stratified sampling (ratio={cfg.sample_ratio})",
+                "k_folds": {
+                    "enabled": False,
+                    "description": "Fixed stratified split used instead of cross-validation for performance"
+                },
+                "data_splitting": {
+                    "training": "70%",
+                    "validation": "15%",
+                    "testing": "15%",
+                    "method": "Stratified Shuffle Split"
+                }
+            },
+            "outputs": {
+                "directories": {
+                    "data_plots": "./work/reports/feature_distributions/",
+                    "decision_plots": "./work/mcdm_results/plots/",
+                    "processed_data": "./work/data/"
+                },
+                "generated_files": []
+            }
+        }
+
+        all_metrics = {"_metadata": report_metadata}
 
         def compute_metrics(df: pl.DataFrame, name: str):
             # Filter for test split
@@ -39,9 +65,6 @@ class T17_Evaluate(Task):
             if n_eval_rows == 0:
                 context.logger.warning("validating", f"No test split rows for {name}")
                 return None
-
-            if cfg.test_mode and n_eval_rows < 200:
-                context.logger.warning("validating", f"metrics unstable in test_mode for {name} (n={n_eval_rows})")
 
             y_true = test_df["y_true"].to_numpy()
             y_proba = test_df["proba"].to_numpy()
@@ -62,6 +85,7 @@ class T17_Evaluate(Task):
                 return {str(r[col_name]): int(r["count"]) for r in counts}
 
             res = {
+                "methodology_context": report_metadata["methodology"], # Inclusion du contexte par algo
                 "n_eval_rows": n_eval_rows,
                 "y_true_balance": get_balance_dict(test_df, "y_true"),
                 "y_pred_balance": get_balance_dict(test_df.with_columns(pl.lit(y_pred).alias("p")), "p"),
@@ -76,7 +100,7 @@ class T17_Evaluate(Task):
             context.logger.info("validating", f"Metrics for {name}", f1=res["f1"], accuracy=res["accuracy"])
             return res
 
-        # 1. Evaluate Per-Algorithm
+        # 2. Evaluate Per-Algorithm
         for path, ds_name in [(pred_cic_path, "cic"), (pred_ton_path, "ton")]:
             if os.path.exists(path):
                 df_ds = context.table_io.read_parquet(path).collect()
@@ -86,14 +110,24 @@ class T17_Evaluate(Task):
                         m = compute_metrics(df_algo, f"{ds_name}_{algo}")
                         if m: all_metrics[f"{ds_name}_{algo}"] = m
 
-        # 2. Evaluate Fused
+        # 3. Evaluate Fused
         df_fused = context.table_io.read_parquet(pred_fused_art.path).collect()
         m_fused = compute_metrics(df_fused, "fused_global")
         if m_fused: all_metrics["fused_global"] = m_fused
         
+        # 4. Liste des graphiques de distribution générés
+        dist_dir = os.path.join(cfg.paths.work_dir, "reports", "feature_distributions")
+        if os.path.exists(dist_dir):
+            report_metadata["outputs"]["generated_files"].extend([
+                {"name": f, "path": os.path.abspath(os.path.join(dist_dir, f)), "type": "distribution_plot"} 
+                for f in os.listdir(dist_dir) if f.endswith(".png")
+            ])
+
         report_path = os.path.join(output_dir, "run_report.json")
         with open(report_path, "w") as f:
             json.dump(all_metrics, f, indent=4)
+        
+        context.logger.info("writing", f"Evaluation report saved to {report_path}")
             
         context.event_bus.publish(Event(
             type="RUN_FINISHED",

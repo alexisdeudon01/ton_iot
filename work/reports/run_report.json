@@ -1,13 +1,80 @@
 {
+    "_metadata": {
+        "methodology": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "outputs": {
+            "directories": {
+                "data_plots": "./work/reports/feature_distributions/",
+                "decision_plots": "./work/mcdm_results/plots/",
+                "processed_data": "./work/data/"
+            },
+            "generated_files": [
+                {
+                    "name": "3d_solution_space.png",
+                    "path": "/home/tor/ton_iot/ton_iot/work/mcdm_results/plots/3d_solution_space.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/work/mcdm_results/plots/3d_solution_space.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "radar_comparison.png",
+                    "path": "/home/tor/ton_iot/ton_iot/work/mcdm_results/plots/radar_comparison.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/work/mcdm_results/plots/radar_comparison.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "decision_matrix_heatmap.png",
+                    "path": "/home/tor/ton_iot/ton_iot/work/mcdm_results/plots/decision_matrix_heatmap.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/work/mcdm_results/plots/decision_matrix_heatmap.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "unified_dimensions_comparison.png",
+                    "path": "/home/tor/ton_iot/ton_iot/work/mcdm_results/plots/unified_dimensions_comparison.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/work/mcdm_results/plots/unified_dimensions_comparison.png",
+                    "type": "decision_plot"
+                }
+            ],
+            "final_report_markdown": {
+                "path": "/home/tor/ton_iot/ton_iot/work/mcdm_results/final_justification_report.md",
+                "url": "file:///home/tor/ton_iot/ton_iot/work/mcdm_results/final_justification_report.md"
+            }
+        }
+    },
     "cic_LR": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 900,
         "y_true_balance": {
             "1": 653,
             "0": 247
         },
         "y_pred_balance": {
-            "0": 223,
-            "1": 677
+            "1": 657,
+            "0": 243
         },
         "confusion_matrix": [
             [
@@ -15,21 +82,35 @@
                 45
             ],
             [
-                21,
-                632
+                41,
+                612
             ]
         ],
-        "accuracy": 0.9266666666666666,
-        "precision": 0.9335302806499262,
-        "recall": 0.9678407350689127,
-        "f1": 0.9503759398496241,
-        "roc_auc": 0.8248755355227508
+        "accuracy": 0.9044444444444445,
+        "precision": 0.9315068493150684,
+        "recall": 0.9372128637059725,
+        "f1": 0.934351145038168,
+        "roc_auc": 0.9426378409210681
     },
     "cic_DT": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 900,
         "y_true_balance": {
-            "1": 653,
-            "0": 247
+            "0": 247,
+            "1": 653
         },
         "y_pred_balance": {
             "0": 249,
@@ -52,84 +133,140 @@
         "roc_auc": 0.9956786181498036
     },
     "cic_RF": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 900,
         "y_true_balance": {
-            "1": 653,
-            "0": 247
+            "0": 247,
+            "1": 653
         },
         "y_pred_balance": {
-            "0": 257,
-            "1": 643
+            "1": 645,
+            "0": 255
         },
         "confusion_matrix": [
             [
-                247,
-                0
+                246,
+                1
             ],
             [
-                10,
-                643
+                9,
+                644
             ]
         ],
         "accuracy": 0.9888888888888889,
-        "precision": 1.0,
-        "recall": 0.9846860643185299,
-        "f1": 0.9922839506172839,
-        "roc_auc": 0.999662101419174
+        "precision": 0.9984496124031008,
+        "recall": 0.9862174578866769,
+        "f1": 0.9922958397534669,
+        "roc_auc": 0.9991227036846445
     },
     "cic_CNN": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 900,
         "y_true_balance": {
-            "1": 653,
-            "0": 247
+            "0": 247,
+            "1": 653
         },
         "y_pred_balance": {
-            "0": 269,
-            "1": 631
+            "1": 728,
+            "0": 172
         },
         "confusion_matrix": [
             [
-                195,
-                52
+                100,
+                147
             ],
             [
-                74,
-                579
+                72,
+                581
             ]
         ],
-        "accuracy": 0.86,
-        "precision": 0.9175911251980983,
-        "recall": 0.886676875957121,
-        "f1": 0.9018691588785047,
-        "roc_auc": 0.8538108139945813
+        "accuracy": 0.7566666666666667,
+        "precision": 0.7980769230769231,
+        "recall": 0.889739663093415,
+        "f1": 0.8414192614047792,
+        "roc_auc": 0.8756657222039667
     },
     "cic_TabNet": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 900,
         "y_true_balance": {
-            "1": 653,
-            "0": 247
+            "0": 247,
+            "1": 653
         },
         "y_pred_balance": {
-            "0": 21,
-            "1": 879
+            "1": 825,
+            "0": 75
         },
         "confusion_matrix": [
             [
-                21,
-                226
+                70,
+                177
             ],
             [
-                0,
-                653
+                5,
+                648
             ]
         ],
-        "accuracy": 0.7488888888888889,
-        "precision": 0.7428896473265074,
-        "recall": 1.0,
-        "f1": 0.8524804177545692,
-        "roc_auc": 0.9730673131172849
+        "accuracy": 0.7977777777777778,
+        "precision": 0.7854545454545454,
+        "recall": 0.9923430321592649,
+        "f1": 0.8768606224627875,
+        "roc_auc": 0.9331580807360609
     },
     "ton_LR": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 7500,
         "y_true_balance": {
             "1": 3000,
@@ -155,6 +292,20 @@
         "roc_auc": 0.5
     },
     "ton_DT": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 7500,
         "y_true_balance": {
             "0": 4500,
@@ -180,10 +331,24 @@
         "roc_auc": 0.5
     },
     "ton_RF": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 7500,
         "y_true_balance": {
-            "0": 4500,
-            "1": 3000
+            "1": 3000,
+            "0": 4500
         },
         "y_pred_balance": {
             "0": 7500
@@ -205,6 +370,20 @@
         "roc_auc": 0.5
     },
     "ton_CNN": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 7500,
         "y_true_balance": {
             "0": 4500,
@@ -230,10 +409,24 @@
         "roc_auc": 0.5
     },
     "ton_TabNet": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 7500,
         "y_true_balance": {
-            "0": 4500,
-            "1": 3000
+            "1": 3000,
+            "0": 4500
         },
         "y_pred_balance": {
             "1": 7500
@@ -255,29 +448,43 @@
         "roc_auc": 0.5
     },
     "fused_global": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.001)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
         "n_eval_rows": 8400,
         "y_true_balance": {
-            "1": 3653,
-            "0": 4747
+            "0": 4747,
+            "1": 3653
         },
         "y_pred_balance": {
-            "1": 693,
-            "0": 7707
+            "1": 682,
+            "0": 7718
         },
         "confusion_matrix": [
             [
-                4706,
-                41
+                4713,
+                34
             ],
             [
-                3001,
-                652
+                3005,
+                648
             ]
         ],
-        "accuracy": 0.6378571428571429,
-        "precision": 0.9408369408369408,
-        "recall": 0.17848343826991514,
-        "f1": 0.3000460193281178,
-        "roc_auc": 0.601121944206582
+        "accuracy": 0.6382142857142857,
+        "precision": 0.9501466275659824,
+        "recall": 0.1773884478510813,
+        "f1": 0.29896193771626295,
+        "roc_auc": 0.602327483215731
     }
 }

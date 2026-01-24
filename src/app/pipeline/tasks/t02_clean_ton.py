@@ -21,8 +21,41 @@ class T02_CleanTON(Task):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         context.logger.info("loading", f"Reading TON dataset from {ton_path}")
+        if not os.path.exists(ton_path):
+            context.logger.error("loading", f"ERREUR : Fichier ToN-IoT introuvable : {ton_path}. Interruption.")
+            return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error=f"File not found: {ton_path}")
+
         lf = pl.scan_csv(ton_path, infer_schema_length=100)
         
+        # --- VALIDATION INTERACTIVE ---
+        # On collect un petit échantillon pour la validation
+        df_val = lf.head(10000).collect()
+        
+        print(f"\n--- VALIDATION DES DONNÉES ToN-IoT ---")
+        print(f"Fichier source : {ton_path}")
+        print(f"Nombre de colonnes (features) : {df_val.width}")
+        
+        # Estimation du nombre de lignes (scan rapide)
+        print(f"Nombre de lignes (échantillon/total) : {df_val.height} / (Scan en cours...)")
+        
+        if "type" in df_val.columns:
+            counts = df_val["type"].value_counts().to_dicts()
+            print("Répartition proposée dans l'échantillon (type) :")
+            for r in counts:
+                print(f"  - {r['type']} : {r['count']} lignes")
+        
+        print(f"\nListe des features : {df_val.columns[:20]} ... (+{max(0, len(df_val.columns)-20)})")
+        
+        print("\nExemple de donnée au hasard :")
+        print(df_val.sample(1).to_pandas().iloc[0].to_dict())
+        
+        try:
+            confirm = input("\n?> Confirmez-vous l'utilisation de ces données ToN-IoT ? (o/n) : ").lower()
+            if confirm != 'o':
+                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="Validation utilisateur refusée pour ToN-IoT")
+        except EOFError:
+            pass # Mode non-interactif
+
         # Keep only type in {"normal", "ddos"}
         lf = lf.filter(pl.col("type").is_in(["normal", "ddos"]))
         lf = lf.with_columns([
@@ -33,14 +66,19 @@ class T02_CleanTON(Task):
         # Add global sample_id
         lf = lf.with_row_index("sample_id")
         
-        if cfg.test_mode:
-            # Apply global cap
-            lf = lf.head(cfg.test_max_rows_total_per_dataset)
-            reason = "test_mode"
-        else:
-            reason = "full_run"
-            
-        df = lf.collect()
+        df_full = lf.collect()
+
+        # --- SAMPLING STRATIFIÉ (50%) ---
+        sampling_ratio = cfg.sample_ratio
+        context.logger.info("sampling", f"Performing stratified sampling at {sampling_ratio*100}%")
+        
+        # Stratification sur la colonne 'type'
+        df = df_full.group_by("type").map_groups(
+            lambda group: group.sample(fraction=sampling_ratio, seed=cfg.seed)
+        )
+        
+        reason = f"stratified_sampling_{int(sampling_ratio*100)}"
+        context.logger.info("sampling", f"Sampling complete: {df_full.height} -> {df.height} rows")
         
         # Robust balance extraction for Polars
         y_counts = df.group_by("y").count().to_dicts()
@@ -81,6 +119,8 @@ class T02_CleanTON(Task):
             stats={"label_balance": label_balance}
         )
         context.artifact_store.save_table(artifact)
+        context.logger.info("writing", "TON Cleaning complete", 
+                            artifact=artifact.model_dump())
         
         monitor.snapshot(self.name)
         return TaskResult(task_name=self.name, status="ok", duration_s=time.time() - start_ts, outputs=["ton_clean"])

@@ -1,1 +1,224 @@
-{"artifact_id":"alignment_spec","mapping_table":{"artifact_id":"feature_mapping_table","name":"Feature Mapping Table","path":"Outputs/output/artifacts/feature_mapping.parquet","format":"parquet","n_rows":20,"n_cols":3,"columns":["feature","cic_source","ton_source"],"dtypes":{"feature":"String","cic_source":"String","ton_source":"String"},"feature_order":null,"version":"1.0.0","source_step":"T05_AlignFeatures","fingerprint":"5046414375288391290","stats":{}},"F_common":["ACK Flag Count","Active Max","Active Mean","Active Min","Active Std","Average Packet Size","Avg Bwd Segment Size","Avg Fwd Segment Size","Bwd Avg Bulk Rate","Bwd Avg Bytes/Bulk","Bwd Avg Packets/Bulk","Bwd Header Length","Bwd IAT Max","Bwd IAT Mean","Bwd IAT Min","Bwd IAT Std","Bwd IAT Total","Bwd PSH Flags","Bwd Packet Length Max","Bwd Packet Length Mean"],"metrics_summary":{"n_common":20}}
+{
+    "artifact_id": "alignment_spec_universal",
+    "version": "3.0.0",
+    "methodology": "Universal Feature Engineering",
+    "description": "Création de méta-features calculées identiquement sur CIC-DDoS2019 et TON_IoT pour garantir un espace commun sémantiquement cohérent",
+    
+    "mapping_table": {
+        "artifact_id": "feature_mapping_table_universal",
+        "name": "Universal Feature Mapping Table",
+        "path": "Outputs/output/artifacts/feature_mapping_universal.parquet",
+        "format": "parquet",
+        "n_rows": 15,
+        "n_cols": 5,
+        "columns": ["feature", "cic_formula", "ton_formula", "mapping_type", "description"],
+        "version": "3.0.0",
+        "source_step": "T05_AlignFeatures_Universal"
+    },
+
+    "F_common": [
+        "flow_duration",
+        "total_fwd_packets",
+        "total_bwd_packets",
+        "total_fwd_bytes",
+        "total_bwd_bytes",
+        "total_packets",
+        "total_bytes",
+        "bytes_per_packet",
+        "fwd_packet_ratio",
+        "fwd_byte_ratio",
+        "bytes_per_second",
+        "packets_per_second",
+        "avg_packet_size",
+        "flow_asymmetry",
+        "header_ratio"
+    ],
+
+    "feature_engineering_spec": [
+        {
+            "feature": "flow_duration",
+            "cic_formula": "Flow Duration",
+            "ton_formula": "duration * 1e6",
+            "mapping_type": "direct",
+            "unit": "microseconds",
+            "description": "Durée totale du flux (normalisée en microsecondes)"
+        },
+        {
+            "feature": "total_fwd_packets",
+            "cic_formula": "Total Fwd Packets",
+            "ton_formula": "src_pkts",
+            "mapping_type": "direct",
+            "unit": "count",
+            "description": "Nombre total de paquets forward (source → destination)"
+        },
+        {
+            "feature": "total_bwd_packets",
+            "cic_formula": "Total Backward Packets",
+            "ton_formula": "dst_pkts",
+            "mapping_type": "direct",
+            "unit": "count",
+            "description": "Nombre total de paquets backward (destination → source)"
+        },
+        {
+            "feature": "total_fwd_bytes",
+            "cic_formula": "Total Length of Fwd Packets",
+            "ton_formula": "src_bytes",
+            "mapping_type": "direct",
+            "unit": "bytes",
+            "description": "Volume total de données forward"
+        },
+        {
+            "feature": "total_bwd_bytes",
+            "cic_formula": "Total Length of Bwd Packets",
+            "ton_formula": "dst_bytes",
+            "mapping_type": "direct",
+            "unit": "bytes",
+            "description": "Volume total de données backward"
+        },
+        {
+            "feature": "total_packets",
+            "cic_formula": "Total Fwd Packets + Total Backward Packets",
+            "ton_formula": "src_pkts + dst_pkts",
+            "mapping_type": "computed",
+            "unit": "count",
+            "description": "Nombre total de paquets dans le flux"
+        },
+        {
+            "feature": "total_bytes",
+            "cic_formula": "Total Length of Fwd Packets + Total Length of Bwd Packets",
+            "ton_formula": "src_bytes + dst_bytes",
+            "mapping_type": "computed",
+            "unit": "bytes",
+            "description": "Volume total de données échangées"
+        },
+        {
+            "feature": "bytes_per_packet",
+            "cic_formula": "(Total Length of Fwd Packets + Total Length of Bwd Packets) / (Total Fwd Packets + Total Backward Packets + 1)",
+            "ton_formula": "(src_bytes + dst_bytes) / (src_pkts + dst_pkts + 1)",
+            "mapping_type": "computed",
+            "unit": "bytes/packet",
+            "description": "Taille moyenne des paquets (indicateur de type de trafic)"
+        },
+        {
+            "feature": "fwd_packet_ratio",
+            "cic_formula": "Total Fwd Packets / (Total Fwd Packets + Total Backward Packets + 1)",
+            "ton_formula": "src_pkts / (src_pkts + dst_pkts + 1)",
+            "mapping_type": "computed",
+            "unit": "ratio [0-1]",
+            "description": "Proportion de paquets forward (asymétrie directionnelle)"
+        },
+        {
+            "feature": "fwd_byte_ratio",
+            "cic_formula": "Total Length of Fwd Packets / (Total Length of Fwd Packets + Total Length of Bwd Packets + 1)",
+            "ton_formula": "src_bytes / (src_bytes + dst_bytes + 1)",
+            "mapping_type": "computed",
+            "unit": "ratio [0-1]",
+            "description": "Proportion de bytes forward (asymétrie volumétrique)"
+        },
+        {
+            "feature": "bytes_per_second",
+            "cic_formula": "Flow Bytes/s",
+            "ton_formula": "(src_bytes + dst_bytes) / (duration + 1e-6)",
+            "mapping_type": "computed",
+            "unit": "bytes/second",
+            "description": "Débit moyen du flux (indicateur d'intensité)"
+        },
+        {
+            "feature": "packets_per_second",
+            "cic_formula": "Flow Packets/s",
+            "ton_formula": "(src_pkts + dst_pkts) / (duration + 1e-6)",
+            "mapping_type": "computed",
+            "unit": "packets/second",
+            "description": "Cadence de paquets (indicateur DDoS)"
+        },
+        {
+            "feature": "avg_packet_size",
+            "cic_formula": "Average Packet Size",
+            "ton_formula": "(src_bytes + dst_bytes) / (src_pkts + dst_pkts + 1)",
+            "mapping_type": "computed",
+            "unit": "bytes",
+            "description": "Taille moyenne des paquets (redondant avec bytes_per_packet mais explicite)"
+        },
+        {
+            "feature": "flow_asymmetry",
+            "cic_formula": "abs(Total Fwd Packets - Total Backward Packets) / (Total Fwd Packets + Total Backward Packets + 1)",
+            "ton_formula": "abs(src_pkts - dst_pkts) / (src_pkts + dst_pkts + 1)",
+            "mapping_type": "computed",
+            "unit": "ratio [0-1]",
+            "description": "Degré d'asymétrie du flux (0=symétrique, 1=unidirectionnel)"
+        },
+        {
+            "feature": "header_ratio",
+            "cic_formula": "(Fwd Header Length + Bwd Header Length) / (Total Bytes + Headers + epsilon)",
+            "ton_formula": "(total_packets * 40) / (total_bytes + total_packets * 40 + epsilon)",
+            "mapping_type": "approximate",
+            "unit": "ratio [0-1]",
+            "description": "Ratio overhead headers vs total (indicateur de petits paquets, approximé à 40 bytes/paquet)"
+        }
+    ],
+
+    "source_columns": {
+        "cic": {
+            "required": [
+                "Flow Duration",
+                "Total Fwd Packets",
+                "Total Backward Packets",
+                "Total Length of Fwd Packets",
+                "Total Length of Bwd Packets",
+                "Fwd Header Length",
+                "Bwd Header Length",
+                "Flow Bytes/s",
+                "Flow Packets/s",
+                "Average Packet Size"
+            ],
+            "optional": []
+        },
+        "ton": {
+            "required": [
+                "duration",
+                "src_pkts",
+                "dst_pkts",
+                "src_bytes",
+                "dst_bytes",
+                "src_ip_bytes",
+                "dst_ip_bytes"
+            ],
+            "optional": [
+                "missed_bytes",
+                "conn_state"
+            ]
+        }
+    },
+
+    "preprocessing": {
+        "handle_infinity": "replace_with_max",
+        "handle_nan": "replace_with_zero",
+        "epsilon": 1e-6,
+        "clip_percentile": 99.9,
+        "scaling": "RobustScaler"
+    },
+
+    "metrics_summary": {
+        "n_common": 15,
+        "n_direct_mappings": 5,
+        "n_computed_features": 9,
+        "n_approximate_mappings": 1,
+        "coverage_cic": "100% des features nécessaires disponibles",
+        "coverage_ton": "100% des features nécessaires disponibles"
+    },
+
+    "advantages": [
+        "Toutes les features sont calculables sur les DEUX datasets",
+        "Sémantique cohérente : même formule = même signification",
+        "Explicabilité élevée pour XAI (SHAP/LIME)",
+        "15 features > 7 du mapping sémantique simple",
+        "Features dérivées capturent des patterns DDoS (asymétrie, débit, cadence)"
+    ],
+
+    "ddos_relevance": {
+        "high_packets_per_second": "Indicateur principal d'attaque volumétrique",
+        "high_flow_asymmetry": "Trafic unidirectionnel typique des floods",
+        "low_bytes_per_packet": "Petits paquets = SYN flood, UDP flood",
+        "high_fwd_packet_ratio": "Attaque entrante sans réponse"
+    }
+}
