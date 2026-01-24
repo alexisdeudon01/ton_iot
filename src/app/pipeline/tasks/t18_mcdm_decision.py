@@ -242,3 +242,211 @@ class T18_MCDM_Decision(Task):
                 continue
 
         return files
+
+    def _generate_sampling_variation(self, all_metrics: dict) -> dict:
+        output_root = os.path.join("graph", "decision", "variations", "sampling")
+        perf_dir = os.path.join(output_root, "performance")
+        expl_dir = os.path.join(output_root, "explainability")
+        os.makedirs(perf_dir, exist_ok=True)
+        os.makedirs(expl_dir, exist_ok=True)
+
+        pred_cic_path = os.path.join("work", "data", "predictions_cic.parquet")
+        pred_ton_path = os.path.join("work", "data", "predictions_ton.parquet")
+        if not (os.path.exists(pred_cic_path) and os.path.exists(pred_ton_path)):
+            return {"files": [], "perf_derivative_peaks": {}, "expl_derivative_peaks": {}}
+
+        df_cic = pl.read_parquet(pred_cic_path).filter(pl.col("split") == "test")
+        df_ton = pl.read_parquet(pred_ton_path).filter(pl.col("split") == "test")
+        if df_cic.is_empty() or df_ton.is_empty():
+            return {"files": [], "perf_derivative_peaks": {}, "expl_derivative_peaks": {}}
+
+        models = sorted(set(df_cic["model"].unique().to_list()) & set(df_ton["model"].unique().to_list()))
+        if not models:
+            return {"files": [], "perf_derivative_peaks": {}, "expl_derivative_peaks": {}}
+
+        fractions = [i / 10 for i in range(1, 11)]
+        results_perf = {m: [] for m in models}
+        results_expl = {m: [] for m in models}
+        stds = {m: [] for m in models}
+
+        fused_metrics = {k.replace("fused_", ""): v for k, v in all_metrics.items() if k.startswith("fused_") and k != "fused_global"}
+
+        for frac in fractions:
+            for model in models:
+                df_cic_m = df_cic.filter(pl.col("model") == model)
+                df_ton_m = df_ton.filter(pl.col("model") == model)
+                if df_cic_m.is_empty() or df_ton_m.is_empty():
+                    results_perf[model].append(0.0)
+                    results_expl[model].append(0.0)
+                    stds[model].append(0.0)
+                    continue
+
+                n_cic = max(1, int(len(df_cic_m) * frac))
+                n_ton = max(1, int(len(df_ton_m) * frac))
+                sample_cic = df_cic_m.sample(n=n_cic, seed=int(42 + frac * 100)).to_pandas()
+                sample_ton = df_ton_m.sample(n=n_ton, seed=int(84 + frac * 100)).to_pandas()
+
+                def _safe_auc(y_true, y_score):
+                    try:
+                        if len(set(y_true)) < 2:
+                            return 0.5
+                        return float(roc_auc_score(y_true, y_score))
+                    except Exception:
+                        return 0.5
+
+                def _compute_basic(sample):
+                    y_true = sample["y_true"].to_numpy()
+                    proba = sample["proba"].to_numpy()
+                    y_pred = (proba >= 0.5).astype(int)
+                    f1 = float(f1_score(y_true, y_pred, zero_division=0))
+                    recall = float(recall_score(y_true, y_pred, zero_division=0))
+                    auc = _safe_auc(y_true, proba)
+                    return f1, recall, auc, y_true, proba
+
+                f1_cic, recall_cic, auc_cic, y_cic, p_cic = _compute_basic(sample_cic)
+                f1_ton, recall_ton, auc_ton, y_ton, p_ton = _compute_basic(sample_ton)
+
+                y_combined = np.concatenate([y_cic, y_ton])
+                p_combined = np.concatenate([p_cic, p_ton])
+                y_pred_combined = (p_combined >= 0.5).astype(int)
+                f1_combined = float(f1_score(y_combined, y_pred_combined, zero_division=0))
+                recall_combined = float(recall_score(y_combined, y_pred_combined, zero_division=0))
+                auc_combined = _safe_auc(y_combined, p_combined)
+                gap = abs(f1_cic - f1_ton)
+                f_perf = float(compute_f_perf(f1_combined, recall_combined, auc_combined, gap))
+                results_perf[model].append(f_perf)
+                stds[model].append(float(np.std(p_combined)))
+
+        for model in models:
+            max_std = max(stds[model]) if stds[model] else 0.0
+            if max_std <= 0:
+                max_std = 1.0
+            metrics = fused_metrics.get(model, {})
+            mcdm_inputs = metrics.get("mcdm_inputs", {})
+            s_intrinsic = float(metrics.get("faithfulness", mcdm_inputs.get("s_intrinsic", 0.0)))
+            shap_available = bool(mcdm_inputs.get("shap_available", False))
+            n_params = int(mcdm_inputs.get("n_params", 1000))
+            for std_val in stds[model]:
+                stability = max(0.0, 1.0 - (std_val / max_std))
+                shap_std = 1.0 - stability
+                f_expl = float(compute_f_expl(s_intrinsic, shap_available, n_params, shap_std))
+                results_expl[model].append(f_expl)
+
+        x_vals = [int(frac * 100) for frac in fractions]
+        files = []
+
+        def _plot_lines(data_map, title, y_label, out_path):
+            import matplotlib.pyplot as plt
+            plt.figure(figsize=(10, 6))
+            for model, values in data_map.items():
+                plt.plot(x_vals, values, marker='o', label=model)
+            plt.title(title)
+            plt.xlabel("Sampling (%)")
+            plt.ylabel(y_label)
+            plt.grid(alpha=0.3)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(out_path, dpi=150, bbox_inches='tight')
+            plt.close()
+
+        perf_plot = os.path.join(perf_dir, "performance_sampling_curve.png")
+        _plot_lines(results_perf, "Performance vs Sampling", "f_perf", perf_plot)
+        files.append(perf_plot)
+
+        expl_plot = os.path.join(expl_dir, "explainability_sampling_curve.png")
+        _plot_lines(results_expl, "Explicabilite vs Sampling", "f_expl", expl_plot)
+        files.append(expl_plot)
+
+        perf_derivative_peaks = {}
+        expl_derivative_peaks = {}
+
+        def _plot_derivative(data_map, title, y_label, out_path, peaks_out):
+            import matplotlib.pyplot as plt
+            plt.figure(figsize=(10, 6))
+            for model, values in data_map.items():
+                deriv = np.gradient(values, x_vals)
+                plt.plot(x_vals, deriv, marker='o', label=model)
+                idx = int(np.argmax(np.abs(deriv)))
+                peaks_out[model] = {"peak": float(deriv[idx]), "at": x_vals[idx]}
+            plt.axhline(0, color='black', linewidth=1)
+            plt.title(title)
+            plt.xlabel("Sampling (%)")
+            plt.ylabel(y_label)
+            plt.grid(alpha=0.3)
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(out_path, dpi=150, bbox_inches='tight')
+            plt.close()
+
+        perf_deriv_plot = os.path.join(perf_dir, "performance_sampling_derivative.png")
+        _plot_derivative(results_perf, "Derivee performance vs Sampling", "d(f_perf)/d(sampling)", perf_deriv_plot, perf_derivative_peaks)
+        files.append(perf_deriv_plot)
+
+        expl_deriv_plot = os.path.join(expl_dir, "explainability_sampling_derivative.png")
+        _plot_derivative(results_expl, "Derivee explicabilite vs Sampling", "d(f_expl)/d(sampling)", expl_deriv_plot, expl_derivative_peaks)
+        files.append(expl_deriv_plot)
+
+        return {
+            "files": files,
+            "perf_derivative_peaks": perf_derivative_peaks,
+            "expl_derivative_peaks": expl_derivative_peaks,
+        }
+
+    def _write_graphs_report(self, sampling_summary: dict) -> list:
+        report_path = os.path.join("reports", "analysis_graphs_report.md")
+        os.makedirs(os.path.dirname(report_path), exist_ok=True)
+
+        def _collect_files(root, exts):
+            collected = []
+            if not os.path.exists(root):
+                return collected
+            for dirpath, _, files in os.walk(root):
+                for f in files:
+                    if any(f.endswith(ext) for ext in exts):
+                        rel = os.path.join(dirpath, f)
+                        collected.append(rel)
+            return sorted(collected)
+
+        sections = [
+            ("Graphiques de decision", "graph/decision", [".png"]),
+            ("Variations (seuils)", "graph/decision/variations", [".png"]),
+            ("Distributions features", "graph/feature_distributions", [".png", ".md"]),
+            ("Dtreeviz", "graph/algorithms/dtreeviz", [".svg", ".png"]),
+        ]
+
+        lines = ["# Rapport des graphiques", ""]
+        for title, root, exts in sections:
+            files = _collect_files(root, exts)
+            lines.append(f"## {title}")
+            if not files:
+                lines.append("- Aucun fichier.")
+                lines.append("")
+                continue
+            for f in files:
+                lines.append(f"- {f}")
+            lines.append("")
+
+        lines.append("## Synthese des derives (sampling)")
+        if sampling_summary.get("perf_derivative_peaks"):
+            lines.append("### Performance")
+            for model, info in sampling_summary["perf_derivative_peaks"].items():
+                lines.append(f"- {model}: pic de derivee {info['peak']:.4f} a {info['at']}%")
+        else:
+            lines.append("- Pas de donnees de derivee performance.")
+        if sampling_summary.get("expl_derivative_peaks"):
+            lines.append("### Explicabilite")
+            for model, info in sampling_summary["expl_derivative_peaks"].items():
+                lines.append(f"- {model}: pic de derivee {info['peak']:.4f} a {info['at']}%")
+        else:
+            lines.append("- Pas de donnees de derivee explicabilite.")
+        lines.append("")
+
+        with open(report_path, "w") as f:
+            f.write("\n".join(lines))
+
+        return [{
+            "name": os.path.basename(report_path),
+            "path": os.path.abspath(report_path),
+            "url": f"file://{os.path.abspath(report_path)}",
+            "type": "graphs_report"
+        }]
