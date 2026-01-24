@@ -2,7 +2,7 @@
 
 ## RÉSULTAT PROFIL A
 - **Gagnant** : **fused_RF**
-- **Consensus** : 1.0000
+- **Consensus** : 0.9000
 
 ## RÉSULTAT PROFIL B
 - **Gagnant** : **fused_LR**
