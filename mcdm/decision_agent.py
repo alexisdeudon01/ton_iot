@@ -397,7 +397,7 @@ class DDoSDecisionAgent:
         filename: str,
         out_dir: str,
     ) -> Tuple[str, List[str], List[str]]:
-        items = list(scores.items())
+        items = [(self._display_name(k), v) for k, v in scores.items()]
         reverse = True if direction == "gte" else False
         items_sorted = sorted(items, key=lambda x: x[1], reverse=reverse)
 
