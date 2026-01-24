@@ -9,7 +9,9 @@ from src.app.pipeline.registry import TaskRegistry
 
 @TaskRegistry.register("T05_AlignFeatures")
 class T05_AlignFeatures(Task):
+    """Align CIC and TON feature names into a common schema."""
     def run(self, context: DAGContext) -> TaskResult:
+        """Compute shared feature names and emit an alignment artifact."""
         from src.infra.resources.monitor import ResourceMonitor
         monitor = ResourceMonitor(context.event_bus, context.run_id)
         monitor.snapshot(self.name)
@@ -26,11 +28,22 @@ class T05_AlignFeatures(Task):
         cic_cols = set(cic_art.columns)
         ton_cols = set(ton_art.columns)
         exclude = {"y", "Label", "source_file", "sample_id", "type", "ts"}
-        common = sorted(list((cic_cols & ton_cols) - exclude))
-        
-        intersection_size = len(common)
+        raw_common = sorted(list((cic_cols & ton_cols) - exclude))
+
+        intersection_size = len(raw_common)
+        common = raw_common
         status = "ok"
         reason = ""
+        source = "intersection"
+
+        context.logger.debug(
+            "alignment",
+            "Alignment input summary",
+            cic_columns_count=len(cic_cols),
+            ton_columns_count=len(ton_cols),
+            excluded_columns=sorted(exclude),
+            raw_intersection_count=intersection_size,
+        )
 
         if intersection_size == 0:
             if context.config.test_mode:
@@ -39,11 +52,19 @@ class T05_AlignFeatures(Task):
                 common = [c for c, t in cic_art.dtypes.items() if t in numeric_types and c not in exclude][:5]
                 status = "degraded"
                 reason = "No alignable features in test sample, using CIC top numeric as fallback"
+                source = "fallback"
                 context.logger.warning("alignment", reason)
             else:
                 return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="No alignable features")
 
-        mapping_df = pl.DataFrame({"feature": common, "status": [status] * len(common)})
+        mapping_df = pl.DataFrame(
+            {
+                "feature": common,
+                "status": [status] * len(common),
+                "source": [source] * len(common),
+                "reason": [reason] * len(common),
+            }
+        )
         context.table_io.write_parquet(mapping_df, output_path)
 
         mapping_art = TableArtifact(
@@ -65,7 +86,12 @@ class T05_AlignFeatures(Task):
             artifact_id="alignment_spec",
             mapping_table=mapping_art,
             F_common=common,
-            metrics_summary={"intersection_size": intersection_size, "status": status, "reason": reason}
+            metrics_summary={
+                "raw_intersection_size": intersection_size,
+                "selected_feature_count": len(common),
+                "status": status,
+                "reason": reason,
+            }
         )
         context.artifact_store.save_alignment(artifact)
         
