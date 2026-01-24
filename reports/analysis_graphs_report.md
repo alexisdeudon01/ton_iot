@@ -152,13 +152,13 @@
 ## Synthese des derives (sampling)
 ### Performance
 - CNN: pic de derivee 0.0046 a 20%
-- DT: pic de derivee 0.0011 a 10%
-- LR: pic de derivee 0.0076 a 10%
-- RF: pic de derivee 0.0029 a 10%
-- TabNet: pic de derivee -0.0031 a 40%
+- DT: pic de derivee -0.0016 a 10%
+- LR: pic de derivee 0.0058 a 10%
+- RF: pic de derivee 0.0026 a 30%
+- TabNet: pic de derivee -0.0029 a 40%
 ### Explicabilite
-- CNN: pic de derivee -0.0003 a 10%
+- CNN: pic de derivee -0.0004 a 20%
 - DT: pic de derivee 0.0007 a 10%
-- LR: pic de derivee 0.0003 a 50%
-- RF: pic de derivee -0.0002 a 10%
-- TabNet: pic de derivee -0.0026 a 10%
+- LR: pic de derivee 0.0003 a 10%
+- RF: pic de derivee 0.0001 a 60%
+- TabNet: pic de derivee -0.0025 a 10%
