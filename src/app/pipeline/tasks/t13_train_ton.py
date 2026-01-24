@@ -4,6 +4,8 @@ import joblib
 import polars as pl
 import pandas as pd
 import numpy as np
+import psutil
+import tracemalloc
 from sklearn.model_selection import train_test_split
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
@@ -93,10 +95,40 @@ class T13_TrainTON(Task):
                 train_kwargs = {}
                 if model_type == "TabNet":
                     train_kwargs["max_epochs"] = 5 if cfg.test_mode else 20
+
+                process = psutil.Process()
+                tracemalloc.start()
+                cpu_start = process.cpu_percent(interval=None)
+                train_start = time.time()
                 model.train(X_train_transformed, y_train, **train_kwargs)
+                duration = time.time() - train_start
+                cpu_end = process.cpu_percent(interval=None)
+                _, mem_peak = tracemalloc.get_traced_memory()
+                tracemalloc.stop()
+
                 model.save(output_path)
-                duration = time.time() - algo_start
-                per_algo_perf[model_type] = {"train_duration_s": duration}
+
+                n_params = 0
+                try:
+                    if model_type == "LR":
+                        n_params = model.model.coef_.size + model.model.intercept_.size
+                    elif model_type == "DT":
+                        n_params = model.model.tree_.node_count
+                    elif model_type == "RF":
+                        n_params = sum(t.tree_.node_count for t in model.model.estimators_)
+                    elif model_type == "CNN":
+                        n_params = sum(p.numel() for p in model.model.parameters())
+                    elif model_type == "TabNet" and hasattr(model, "model") and model.model is not None:
+                        n_params = sum(p.numel() for p in model.model.network.parameters())
+                except Exception:
+                    n_params = 0
+
+                per_algo_perf[model_type] = {
+                    "train_duration_s": duration,
+                    "memory_bytes": int(mem_peak),
+                    "cpu_percent": float(max(cpu_start, cpu_end)),
+                    "n_params": int(n_params),
+                }
                 
                 artifact = ModelArtifact(
                     artifact_id=f"model_ton_{model_type}",
@@ -105,7 +137,7 @@ class T13_TrainTON(Task):
                     dataset="ton",
                     feature_order=ton_art.feature_order,
                     calibration="none",
-                    metrics_cv={"train_duration_s": duration},
+                    metrics_cv=per_algo_perf[model_type],
                     version="1.0.0"
                 )
                 context.artifact_store.save_model(artifact)

@@ -29,24 +29,43 @@
                 "1": 33
             },
             "y_pred_balance": {
-                "0": 13,
-                "1": 33
+                "0": 12,
+                "1": 34
             },
             "confusion_matrix": [
                 [
-                    13,
-                    0
+                    10,
+                    3
                 ],
                 [
-                    0,
-                    33
+                    2,
+                    31
                 ]
             ],
-            "accuracy": 1.0,
-            "precision": 1.0,
-            "recall": 1.0,
-            "f1": 1.0,
-            "roc_auc": 1.0
+            "accuracy": 0.8913043478260869,
+            "precision": 0.9117647058823529,
+            "recall": 0.9393939393939394,
+            "f1": 0.9253731343283582,
+            "roc_auc": 0.8543123543123543,
+            "faithfulness": 1.0,
+            "stability": 0.5,
+            "complexity": 3.4657359027997265,
+            "latency": 0.07738756096881369,
+            "cpu_percent": 530.9,
+            "ram_percent": 0.0002779047879828528,
+            "mcdm_inputs": {
+                "s_intrinsic": 1.0,
+                "shap_available": false,
+                "n_params": 31,
+                "shap_std": 0.5,
+                "memory_bytes": 44355.0,
+                "cpu_percent": 530.9
+            },
+            "mcdm_scores": {
+                "f_perf": 0.8228299064119959,
+                "f_expl": 0.5577078016355586,
+                "f_res": 3.318167300224304
+            }
         },
         "ton": {
             "methodology_context": {
@@ -69,24 +88,43 @@
                 "1": 150
             },
             "y_pred_balance": {
-                "1": 146,
-                "0": 379
+                "1": 148,
+                "0": 377
             },
             "confusion_matrix": [
                 [
-                    373,
-                    2
+                    372,
+                    3
                 ],
                 [
-                    6,
-                    144
+                    5,
+                    145
                 ]
             ],
             "accuracy": 0.9847619047619047,
-            "precision": 0.9863013698630136,
-            "recall": 0.96,
-            "f1": 0.972972972972973,
-            "roc_auc": 0.9881955555555557
+            "precision": 0.9797297297297297,
+            "recall": 0.9666666666666667,
+            "f1": 0.9731543624161074,
+            "roc_auc": 0.9905599999999999,
+            "faithfulness": 1.0,
+            "stability": 0.5,
+            "complexity": 4.248495242049359,
+            "latency": 0.016276949927920385,
+            "cpu_percent": 685.3,
+            "ram_percent": 0.0016360700656526308,
+            "mcdm_inputs": {
+                "s_intrinsic": 1.0,
+                "shap_available": false,
+                "n_params": 69,
+                "shap_std": 0.5,
+                "memory_bytes": 261125.0,
+                "cpu_percent": 685.3
+            },
+            "mcdm_scores": {
+                "f_perf": 0.8773737449664429,
+                "f_expl": 0.5470754911104774,
+                "f_res": 4.283374028205872
+            }
         },
         "fused": {
             "methodology_context": {
@@ -109,25 +147,58 @@
                 "0": 388
             },
             "y_pred_balance": {
-                "1": 391,
-                "0": 180
+                "1": 326,
+                "0": 245
             },
             "confusion_matrix": [
                 [
-                    178,
-                    210
+                    240,
+                    148
                 ],
                 [
-                    2,
-                    181
+                    5,
+                    178
                 ]
             ],
-            "accuracy": 0.6287215411558669,
-            "precision": 0.4629156010230179,
-            "recall": 0.9890710382513661,
-            "f1": 0.6306620209059234,
-            "roc_auc": 0.8878373049405667
+            "accuracy": 0.7320490367775832,
+            "precision": 0.5460122699386503,
+            "recall": 0.9726775956284153,
+            "f1": 0.6994106090373281,
+            "roc_auc": 0.8369246802997015,
+            "gap": 0.047781228087749206,
+            "faithfulness": 1.0,
+            "stability": 0.5,
+            "complexity": 3.4657359027997265,
+            "latency": 0.006234374438818616,
+            "cpu_percent": 530.9,
+            "ram_percent": 0.0002779047879828528,
+            "mcdm_inputs": {
+                "s_intrinsic": 1.0,
+                "shap_available": false,
+                "n_params": 31,
+                "shap_std": 0.5,
+                "memory_bytes": 44355.0,
+                "cpu_percent": 530.9
+            },
+            "mcdm_scores": {
+                "f_perf": 0.7341743355546212,
+                "f_expl": 0.5577078016355586,
+                "f_res": 3.318167300224304
+            }
         }
+    },
+    "mcdm_inputs": {
+        "s_intrinsic": 1.0,
+        "shap_available": false,
+        "n_params": 31,
+        "shap_std": 0.5,
+        "memory_bytes": 44355.0,
+        "cpu_percent": 530.9
+    },
+    "mcdm_scores": {
+        "f_perf": 0.7341743355546212,
+        "f_expl": 0.5577078016355586,
+        "f_res": 3.318167300224304
     },
     "explainability": {
         "shap_available": false,

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 import psutil
+from matplotlib.patches import Patch
 from typing import List, Dict, Tuple
 
 # PyMCDM imports
@@ -29,6 +30,20 @@ class DDoSDecisionAgent:
         self.profiles = {
             "A": np.array([0.70, 0.15, 0.15]), # Focus Performance
             "B": np.array([0.15, 0.70, 0.15])  # Focus Explicabilité
+        }
+        # Profils AHP pour sensibilite (3 dimensions)
+        self.ahp_profiles = {
+            "Balanced": np.array([0.33, 0.33, 0.34]),
+            "Compliance-First": np.array([0.25, 0.50, 0.25]),
+            "Resource-Constrained": np.array([0.30, 0.30, 0.40]),
+            "Performance-First": np.array([0.50, 0.25, 0.25])
+        }
+        self.colors = {
+            "LR": "#2E86AB",
+            "DT": "#A23B72",
+            "RF": "#F18F01",
+            "CNN": "#C73E1D",
+            "TabNet": "#3B1F2B"
         }
 
     def get_system_load_penalty(self) -> float:
@@ -57,6 +72,453 @@ class DDoSDecisionAgent:
                 global_weights[crit['key']] = pillar_weight * crit['weight']
                 
         return global_weights
+
+    # --- OUTILS TOPSIS + VISUALISATIONS ---
+
+    @staticmethod
+    def _build_matrix(df: pd.DataFrame) -> Tuple[np.ndarray, List[str]]:
+        dims = ['dim_performance', 'dim_explainability', 'dim_resources']
+        missing = [d for d in dims if d not in df.columns]
+        if missing:
+            raise ValueError(f"Missing dimensions in DF: {missing}")
+        M = df[dims].to_numpy()
+        algorithms = df['model'].tolist()
+        return M, algorithms
+
+    @staticmethod
+    def _topsis_compute(M: np.ndarray, weights: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        tau = np.array([1.0, 1.0, 1.0])
+        M_norm = M / tau
+        V = M_norm * weights
+        # f_perf, f_expl maximize; f_res minimize
+        A_plus = np.array([V[:, 0].max(), V[:, 1].max(), V[:, 2].min()])
+        A_minus = np.array([V[:, 0].min(), V[:, 1].min(), V[:, 2].max()])
+        D_plus = np.sqrt(((V - A_plus) ** 2).sum(axis=1))
+        D_minus = np.sqrt(((V - A_minus) ** 2).sum(axis=1))
+        CC = D_minus / (D_plus + D_minus + 1e-9)
+        return M_norm, V, A_plus, A_minus, D_plus, D_minus, CC
+
+    @staticmethod
+    def _identify_pareto_front(M: np.ndarray) -> Tuple[List[int], List[int]]:
+        n = len(M)
+        is_dominated = [False] * n
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    continue
+                better_perf = M[j, 0] >= M[i, 0]
+                better_expl = M[j, 1] >= M[i, 1]
+                better_res = M[j, 2] <= M[i, 2]
+                strictly = (M[j, 0] > M[i, 0] or M[j, 1] > M[i, 1] or M[j, 2] < M[i, 2])
+                if better_perf and better_expl and better_res and strictly:
+                    is_dominated[i] = True
+                    break
+        pareto_idx = [i for i in range(n) if not is_dominated[i]]
+        dominated_idx = [i for i in range(n) if is_dominated[i]]
+        return pareto_idx, dominated_idx
+
+    # --- VISUALISATIONS ---
+
+    def _viz_matrix_heatmap(self, M: np.ndarray, algorithms: List[str], title: str, filename: str, out_dir: str) -> str:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        df = pd.DataFrame(M, index=algorithms, columns=["f_perf", "f_expl", "f_res"])
+        sns.heatmap(df, annot=True, fmt=".3f", cmap="YlGnBu", linewidths=0.5, ax=ax, vmin=0, vmax=1)
+        ax.set_title(title, fontsize=12, fontweight='bold')
+        ax.set_xlabel("Criteres")
+        ax.set_ylabel("Algorithmes")
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_3d_tradeoffs(self, M: np.ndarray, algorithms: List[str], title: str, filename: str, out_dir: str) -> str:
+        fig = plt.figure(figsize=(12, 9))
+        ax = fig.add_subplot(111, projection='3d')
+        for i, algo in enumerate(algorithms):
+            algo_key = algo.replace("fused_", "")
+            ax.scatter(M[i, 0], M[i, 1], M[i, 2], c=self.colors.get(algo_key, 'steelblue'), s=200, alpha=0.8, edgecolors='black')
+            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {algo}', fontsize=10, fontweight='bold')
+        ax.set_xlabel('Performance (f_perf)')
+        ax.set_ylabel('Explicabilite (f_expl)')
+        ax.set_zlabel('Ressources (f_res)')
+        ax.set_title(title, fontsize=12, fontweight='bold')
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_normalization_comparison(self, M: np.ndarray, M_norm: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        df_M = pd.DataFrame(M, index=algorithms, columns=["f_perf", "f_expl", "f_res"])
+        sns.heatmap(df_M, annot=True, fmt=".3f", cmap="Blues", ax=axes[0], vmin=0, vmax=1, linewidths=0.5)
+        axes[0].set_title("M (brute)", fontsize=11, fontweight='bold')
+        df_norm = pd.DataFrame(M_norm, index=algorithms, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
+        sns.heatmap(df_norm, annot=True, fmt=".3f", cmap="Greens", ax=axes[1], vmin=0, vmax=1, linewidths=0.5)
+        axes[1].set_title("M normalisee", fontsize=11, fontweight='bold')
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_weighting_transformation(self, M_norm: np.ndarray, V: np.ndarray, weights: np.ndarray, profile_name: str, algorithms: List[str], filename: str, out_dir: str) -> str:
+        fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+        df_norm = pd.DataFrame(M_norm, index=algorithms, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
+        sns.heatmap(df_norm, annot=True, fmt=".3f", cmap="Blues", ax=axes[0], vmin=0, vmax=1, linewidths=0.5)
+        axes[0].set_title("M normalisee", fontsize=11, fontweight='bold')
+        colors_w = ['steelblue', 'forestgreen', 'coral']
+        bars = axes[1].bar(["w_perf", "w_expl", "w_res"], weights, color=colors_w)
+        axes[1].set_ylim(0, 0.6)
+        axes[1].set_title(f"Poids AHP ({profile_name})", fontsize=11, fontweight='bold')
+        for bar, val in zip(bars, weights):
+            axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, f'{val:.2f}', ha='center', fontsize=10)
+        df_V = pd.DataFrame(V, index=algorithms, columns=["v_perf", "v_expl", "v_res"])
+        sns.heatmap(df_V, annot=True, fmt=".3f", cmap="Oranges", ax=axes[2], vmin=0, vmax=max(0.5, V.max()), linewidths=0.5)
+        axes[2].set_title("V ponderee", fontsize=11, fontweight='bold')
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_profiles_comparison(self, profiles: Dict[str, np.ndarray], filename: str, out_dir: str) -> str:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        x = np.arange(3)
+        width = 0.2
+        colors = ['steelblue', 'forestgreen', 'coral', 'purple']
+        for i, (name, weights) in enumerate(profiles.items()):
+            offset = (i - 1.5) * width
+            bars = ax.bar(x + offset, weights, width, label=name, color=colors[i], alpha=0.8)
+            for bar, val in zip(bars, weights):
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01, f'{val:.2f}', ha='center', fontsize=8)
+        ax.set_xticks(x)
+        ax.set_xticklabels(["w_perf", "w_expl", "w_res"])
+        ax.set_ylabel("Poids")
+        ax.set_title("Comparaison des profils AHP", fontsize=12, fontweight='bold')
+        ax.legend(title="Profil")
+        ax.set_ylim(0, 0.65)
+        ax.grid(axis='y', alpha=0.3)
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_ideal_solutions(self, V: np.ndarray, A_plus: np.ndarray, A_minus: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
+        fig = plt.figure(figsize=(12, 9))
+        ax = fig.add_subplot(111, projection='3d')
+        for i, algo in enumerate(algorithms):
+            algo_key = algo.replace("fused_", "")
+            ax.scatter(V[i, 0], V[i, 1], V[i, 2], c=self.colors.get(algo_key, 'steelblue'), s=200, alpha=0.7)
+            ax.text(V[i, 0], V[i, 1], V[i, 2], f'  {algo}', fontsize=10)
+        ax.scatter(*A_plus, c='green', s=400, marker='*', edgecolors='black', linewidths=2, label='A_plus')
+        ax.scatter(*A_minus, c='red', s=400, marker='X', edgecolors='black', linewidths=2, label='A_minus')
+        ax.set_xlabel('v_perf')
+        ax.set_ylabel('v_expl')
+        ax.set_zlabel('v_res')
+        ax.set_title('Solutions ideale et anti-ideale', fontsize=12, fontweight='bold')
+        ax.legend(loc='upper left')
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_distances(self, D_plus: np.ndarray, D_minus: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
+        fig, ax = plt.subplots(figsize=(10, 6))
+        x = np.arange(len(algorithms))
+        width = 0.35
+        bars1 = ax.bar(x - width/2, D_plus, width, label='D_plus', color='green', alpha=0.7)
+        bars2 = ax.bar(x + width/2, D_minus, width, label='D_minus', color='red', alpha=0.7)
+        ax.set_xticks(x)
+        ax.set_xticklabels(algorithms)
+        ax.set_ylabel("Distance")
+        ax.set_title("Distances TOPSIS", fontsize=12, fontweight='bold')
+        ax.legend()
+        for bar in list(bars1) + list(bars2):
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005, f'{bar.get_height():.3f}', ha='center', fontsize=8)
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_closeness(self, CC: np.ndarray, algorithms: List[str], profile_name: str, filename: str, out_dir: str) -> str:
+        sorted_idx = np.argsort(CC)[::-1]
+        sorted_cc = CC[sorted_idx]
+        sorted_labels = [algorithms[i] for i in sorted_idx]
+        fig, ax = plt.subplots(figsize=(10, 6))
+        colors = plt.cm.RdYlGn(sorted_cc)
+        bars = ax.barh(sorted_labels, sorted_cc, color=colors, edgecolor='black')
+        ax.set_xlim(0, 1)
+        ax.set_xlabel("CC")
+        ax.set_title(f"Classement TOPSIS - {profile_name}", fontsize=12, fontweight='bold')
+        for i, (bar, cc) in enumerate(zip(bars, sorted_cc)):
+            ax.text(cc + 0.02, bar.get_y() + bar.get_height()/2, f'#{i+1} CC={cc:.3f}', va='center', fontsize=9)
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_radar(self, M: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
+        categories = ['Performance', 'Explicabilite', 'Ressources(inv)']
+        N = len(categories)
+        angles = [n / float(N) * 2 * np.pi for n in range(N)]
+        angles += angles[:1]
+        fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+        for i, algo in enumerate(algorithms):
+            values = [M[i, 0], M[i, 1], 1 - M[i, 2]]
+            values += values[:1]
+            algo_key = algo.replace("fused_", "")
+            color = self.colors.get(algo_key, f'C{i}')
+            ax.plot(angles, values, linewidth=2, linestyle='solid', label=algo, color=color)
+            ax.fill(angles, values, alpha=0.1, color=color)
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories, fontsize=11)
+        ax.set_ylim(0, 1)
+        ax.set_title("Radar comparatif", fontsize=12, fontweight='bold', pad=20)
+        ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1))
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_2d_perf_expl(self, M: np.ndarray, CC: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
+        fig, ax = plt.subplots(figsize=(10, 8))
+        scatter = ax.scatter(M[:, 0], M[:, 1], s=CC * 800, c=M[:, 2], cmap='RdYlGn_r', alpha=0.7, edgecolors='black', linewidths=2)
+        for i, algo in enumerate(algorithms):
+            ax.annotate(f'{algo}\\nCC={CC[i]:.3f}', (M[i, 0], M[i, 1]), textcoords="offset points", xytext=(10, 10), fontsize=10)
+        ax.set_xlabel('f_perf')
+        ax.set_ylabel('f_expl')
+        ax.set_title('Performance vs Explicabilite', fontsize=12, fontweight='bold')
+        cbar = plt.colorbar(scatter)
+        cbar.set_label('f_res', fontsize=10)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_pareto_3d(self, M: np.ndarray, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
+        fig = plt.figure(figsize=(14, 10))
+        ax = fig.add_subplot(111, projection='3d')
+        for i in dominated_idx:
+            ax.scatter(M[i, 0], M[i, 1], M[i, 2], c='gray', s=150, alpha=0.4, marker='o')
+            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {algorithms[i]}', fontsize=9, color='gray')
+        for i in pareto_idx:
+            algo_key = algorithms[i].replace("fused_", "")
+            ax.scatter(M[i, 0], M[i, 1], M[i, 2], c=self.colors.get(algo_key, 'green'), s=400, alpha=0.9, edgecolors='black', linewidths=2, marker='*')
+            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {algorithms[i]} *', fontsize=11, fontweight='bold')
+        ax.set_xlabel('Performance')
+        ax.set_ylabel('Explicabilite')
+        ax.set_zlabel('Ressources')
+        ax.set_title('Front de Pareto', fontsize=12, fontweight='bold')
+        legend_elements = [
+            Patch(facecolor='green', label=f'Pareto-optimal ({len(pareto_idx)})'),
+            Patch(facecolor='gray', label=f'Domine ({len(dominated_idx)})')
+        ]
+        ax.legend(handles=legend_elements, loc='upper left')
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_pareto_2d(self, M: np.ndarray, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
+        fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+        projections = [
+            (0, 1, 'Performance', 'Explicabilite'),
+            (0, 2, 'Performance', 'Ressources(inv)'),
+            (1, 2, 'Explicabilite', 'Ressources(inv)')
+        ]
+        for ax, (xi, yi, xlabel, ylabel) in zip(axes, projections):
+            for i in dominated_idx:
+                y_val = 1 - M[i, yi] if yi == 2 else M[i, yi]
+                ax.scatter(M[i, xi], y_val, c='gray', s=100, alpha=0.4)
+                ax.annotate(algorithms[i], (M[i, xi], y_val), fontsize=8, color='gray')
+            for i in pareto_idx:
+                y_val = 1 - M[i, yi] if yi == 2 else M[i, yi]
+                algo_key = algorithms[i].replace("fused_", "")
+                ax.scatter(M[i, xi], y_val, c=self.colors.get(algo_key, 'green'), s=200, marker='*', edgecolors='black', linewidths=1)
+                ax.annotate(f'{algorithms[i]} *', (M[i, xi], y_val), fontsize=9, fontweight='bold')
+            ax.set_xlabel(xlabel, fontsize=10)
+            ax.set_ylabel(ylabel, fontsize=10)
+            ax.set_title(f'{xlabel} vs {ylabel}', fontsize=11, fontweight='bold')
+            ax.grid(True, alpha=0.3)
+        plt.suptitle('Projections 2D Pareto', fontsize=14, fontweight='bold')
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_pareto_list(self, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
+        pareto_list = [algorithms[i] for i in pareto_idx]
+        dominated_list = [algorithms[i] for i in dominated_idx]
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.axis('off')
+        ax.set_title('Liste des solutions Pareto', fontsize=12, fontweight='bold')
+
+        left_text = "Non-dominees (Pareto):\\n" + "\\n".join(pareto_list) if pareto_list else "Non-dominees (Pareto):\\nAucune"
+        right_text = "Dominees:\\n" + "\\n".join(dominated_list) if dominated_list else "Dominees:\\nAucune"
+
+        ax.text(0.02, 0.95, left_text, va='top', ha='left', fontsize=10, family='monospace')
+        ax.text(0.52, 0.95, right_text, va='top', ha='left', fontsize=10, family='monospace')
+
+        plt.tight_layout()
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_sensitivity_weights(self, M: np.ndarray, algorithms: List[str], out_dir: str) -> str:
+        results = {}
+        for profile_name, weights in self.ahp_profiles.items():
+            _, _, _, _, _, _, cc = self._topsis_compute(M, weights)
+            results[profile_name] = cc
+        fig, ax = plt.subplots(figsize=(12, 6))
+        df = pd.DataFrame(results, index=algorithms)
+        df.plot(kind='bar', ax=ax, width=0.8, alpha=0.8)
+        ax.set_ylabel("CC")
+        ax.set_xlabel("Algorithme")
+        ax.set_title("Sensibilite aux poids", fontsize=12, fontweight='bold')
+        ax.legend(title="Profil", loc='upper right')
+        ax.set_xticklabels(algorithms, rotation=0)
+        ax.grid(axis='y', alpha=0.3)
+        plt.tight_layout()
+        path = os.path.join(out_dir, "viz_sensitivity_weights.png")
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_sensitivity_criteria(self, M: np.ndarray, algorithms: List[str], weights: np.ndarray, out_dir: str) -> str:
+        results = {'Full Model': self._topsis_compute(M, weights)[-1]}
+        criteria = ['f_perf', 'f_expl', 'f_res']
+        for i, criterion in enumerate(criteria):
+            mask = [j for j in range(3) if j != i]
+            M_reduced = M[:, mask]
+            w_reduced = weights[mask]
+            w_reduced = w_reduced / w_reduced.sum()
+            tau = np.array([1.0, 1.0])
+            M_norm = M_reduced / tau
+            V = M_norm * w_reduced
+            if i == 2:
+                A_plus = V.max(axis=0)
+                A_minus = V.min(axis=0)
+            else:
+                # keep last as cost if present
+                A_plus = np.array([V[:, 0].max(), V[:, 1].min() if mask[1] == 2 else V[:, 1].max()])
+                A_minus = np.array([V[:, 0].min(), V[:, 1].max() if mask[1] == 2 else V[:, 1].min()])
+            D_plus = np.sqrt(((V - A_plus) ** 2).sum(axis=1))
+            D_minus = np.sqrt(((V - A_minus) ** 2).sum(axis=1))
+            CC = D_minus / (D_plus + D_minus + 1e-9)
+            results[f'Sans {criterion}'] = CC
+        fig, ax = plt.subplots(figsize=(12, 6))
+        df = pd.DataFrame(results, index=algorithms)
+        x = np.arange(len(algorithms))
+        width = 0.2
+        colors = ['green', 'steelblue', 'orange', 'red']
+        for i, (scenario, values) in enumerate(results.items()):
+            offset = (i - len(results)/2) * width
+            ax.bar(x + offset, values, width, label=scenario, color=colors[i % len(colors)], alpha=0.8)
+        ax.set_xticks(x)
+        ax.set_xticklabels(algorithms)
+        ax.set_ylabel("CC")
+        ax.set_title("Sensibilite retrait criteres", fontsize=12, fontweight='bold')
+        ax.legend()
+        ax.grid(axis='y', alpha=0.3)
+        plt.tight_layout()
+        path = os.path.join(out_dir, "viz_sensitivity_criteria.png")
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_sensitivity_algorithms(self, M: np.ndarray, algorithms: List[str], weights: np.ndarray, out_dir: str) -> str:
+        results = {}
+        ranking_full = self._topsis_compute(M, weights)[-1]
+        results['Complet'] = {algo: rank for algo, rank in zip(algorithms, np.argsort(np.argsort(-ranking_full)) + 1)}
+        for i, removed_algo in enumerate(algorithms):
+            mask = [j for j in range(len(algorithms)) if j != i]
+            M_reduced = M[mask]
+            algos_reduced = [algorithms[j] for j in mask]
+            cc = self._topsis_compute(M_reduced, weights)[-1]
+            ranks = np.argsort(np.argsort(-cc)) + 1
+            results[f'Sans {removed_algo}'] = {algo: ranks[k] for k, algo in enumerate(algos_reduced)}
+        fig, ax = plt.subplots(figsize=(12, 6))
+        scenarios = list(results.keys())
+        x = np.arange(len(algorithms))
+        width = 0.15
+        colors = plt.cm.tab10(np.linspace(0, 1, len(scenarios)))
+        for i, (scenario, ranks) in enumerate(results.items()):
+            offset = (i - len(scenarios)/2) * width
+            values = [ranks.get(algo, 0) for algo in algorithms]
+            ax.bar(x + offset, values, width, label=scenario, color=colors[i], alpha=0.8)
+        ax.set_xticks(x)
+        ax.set_xticklabels(algorithms)
+        ax.set_ylabel("Rang (1=meilleur)")
+        ax.set_title("Sensibilite retrait algorithmes", fontsize=12, fontweight='bold')
+        ax.legend(loc='upper right', fontsize=8)
+        ax.invert_yaxis()
+        ax.grid(axis='y', alpha=0.3)
+        plt.tight_layout()
+        path = os.path.join(out_dir, "viz_sensitivity_algorithms.png")
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
+
+    def _viz_constraints_impact(self, df: pd.DataFrame, algorithms: List[str], out_dir: str) -> str:
+        profiles = {
+            'micro_enterprise': {'tau_memory': 256 * 1024 * 1024, 'tau_cpu': 50.0},
+            'small_enterprise': {'tau_memory': 512 * 1024 * 1024, 'tau_cpu': 70.0},
+            'medium_enterprise': {'tau_memory': 1024 * 1024 * 1024, 'tau_cpu': 80.0},
+            'large_enterprise': {'tau_memory': 4 * 1024 * 1024 * 1024, 'tau_cpu': 95.0},
+        }
+        results = {}
+        for profile_name, config in profiles.items():
+            f_res_vals = []
+            for _, row in df.iterrows():
+                mem_bytes = float(row.get('memory_bytes', config['tau_memory']))
+                cpu_percent = float(row.get('cpu_percent', config['tau_cpu']))
+                m_norm = mem_bytes / config['tau_memory']
+                cpu_norm = cpu_percent / config['tau_cpu']
+                f_res = 0.5 * m_norm + 0.5 * cpu_norm
+                f_res_vals.append(f_res)
+            admissible = sum(1 for f in f_res_vals if f <= 1.0)
+            results[profile_name] = {'f_res_values': f_res_vals, 'admissible_count': admissible, 'total': len(algorithms)}
+
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        profiles_list = list(results.keys())
+        x = np.arange(len(algorithms))
+        width = 0.2
+        colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D']
+        for i, profile in enumerate(profiles_list):
+            offset = (i - 1.5) * width
+            axes[0].bar(x + offset, results[profile]['f_res_values'], width, label=profile.replace('_', ' ').title(), color=colors[i], alpha=0.8)
+        axes[0].axhline(y=1.0, color='red', linestyle='--', linewidth=2, label='Seuil admissibilite')
+        axes[0].set_xticks(x)
+        axes[0].set_xticklabels(algorithms, rotation=45, ha='right')
+        axes[0].set_ylabel('f_res')
+        axes[0].set_title('f_res par profil', fontsize=12, fontweight='bold')
+        axes[0].legend(loc='upper left', fontsize=8)
+        admissible_counts = [results[p]['admissible_count'] for p in profiles_list]
+        totals = [results[p]['total'] for p in profiles_list]
+        bars = axes[1].bar(profiles_list, admissible_counts, color=colors, alpha=0.8)
+        axes[1].axhline(y=totals[0], color='gray', linestyle='--', alpha=0.5)
+        for bar, count, total in zip(bars, admissible_counts, totals):
+            axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, f'{count}/{total}', ha='center', fontsize=10, fontweight='bold')
+        axes[1].set_ylabel('Nombre admissibles')
+        axes[1].set_title('Admissibilite par profil PME', fontsize=12, fontweight='bold')
+        axes[1].set_xticklabels([p.replace('_', '\\n').title() for p in profiles_list], rotation=0)
+        plt.tight_layout()
+        path = os.path.join(out_dir, "viz_constraints_impact.png")
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path
 
     # --- BLOC 1 : MOO (Génération et Filtrage) ---
     
@@ -131,7 +593,7 @@ class DDoSDecisionAgent:
         return df
 
     def visualize_sad(self, results_df: pd.DataFrame, output_dir: str):
-        """Génère les graphiques Heatmap, Unified, 3D et Radar."""
+        """Génère toutes les visualisations MCDM/MOO."""
         os.makedirs(output_dir, exist_ok=True)
         plt.style.use('ggplot')
         
@@ -192,6 +654,31 @@ class DDoSDecisionAgent:
         plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
         plt.savefig(os.path.join(output_dir, 'radar_comparison.png'))
         plt.close()
+
+        # ---- Visualisations TOPSIS avancées ----
+        M, algorithms = self._build_matrix(df)
+        default_profile = "Balanced"
+        weights = self.ahp_profiles.get(default_profile, np.array([0.33, 0.33, 0.34]))
+        M_norm, V, A_plus, A_minus, D_plus, D_minus, CC = self._topsis_compute(M, weights)
+        pareto_idx, dominated_idx = self._identify_pareto_front(M)
+
+        self._viz_matrix_heatmap(M, algorithms, "Etape 0 : Matrice M", "viz_01_matrix_M.png", output_dir)
+        self._viz_3d_tradeoffs(M, algorithms, "Espace 3D des compromis", "viz_02_3d_tradeoffs.png", output_dir)
+        self._viz_normalization_comparison(M, M_norm, algorithms, "viz_03_normalization.png", output_dir)
+        self._viz_weighting_transformation(M_norm, V, weights, default_profile, algorithms, "viz_04_weighting.png", output_dir)
+        self._viz_profiles_comparison(self.ahp_profiles, "viz_05_profiles.png", output_dir)
+        self._viz_ideal_solutions(V, A_plus, A_minus, algorithms, "viz_06_ideal_solutions.png", output_dir)
+        self._viz_distances(D_plus, D_minus, algorithms, "viz_07_distances.png", output_dir)
+        self._viz_closeness(CC, algorithms, default_profile, "viz_08_closeness.png", output_dir)
+        self._viz_radar(M, algorithms, "viz_09_radar.png", output_dir)
+        self._viz_2d_perf_expl(M, CC, algorithms, "viz_10_2d_perf_expl.png", output_dir)
+        self._viz_pareto_3d(M, algorithms, pareto_idx, dominated_idx, "viz_11_pareto_3d.png", output_dir)
+        self._viz_pareto_2d(M, algorithms, pareto_idx, dominated_idx, "viz_12_pareto_2d.png", output_dir)
+        self._viz_pareto_list(algorithms, pareto_idx, dominated_idx, "viz_13_pareto_list.png", output_dir)
+        self._viz_sensitivity_weights(M, algorithms, output_dir)
+        self._viz_sensitivity_criteria(M, algorithms, weights, output_dir)
+        self._viz_sensitivity_algorithms(M, algorithms, weights, output_dir)
+        self._viz_constraints_impact(df, algorithms, output_dir)
 
     def normalize_matrix(self, df: pd.DataFrame, criteria_info: List[Dict]) -> pd.DataFrame:
         norm_df = df.copy()

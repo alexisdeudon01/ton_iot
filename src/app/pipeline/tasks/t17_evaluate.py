@@ -3,12 +3,14 @@ import time
 import json
 import polars as pl
 import numpy as np
+import psutil
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
 from src.core.contracts.events import Event
 from src.app.pipeline.registry import TaskRegistry
+from src.mcdm.metrics_utils import compute_f_perf, compute_f_expl, compute_f_res, explainability_metrics
 
 @TaskRegistry.register("T17_Evaluate")
 class T17_Evaluate(Task):
@@ -101,6 +103,50 @@ class T17_Evaluate(Task):
             context.logger.info("validating", f"Metrics for {name}", f1=res["f1"], accuracy=res["accuracy"])
             return res
 
+        def augment_with_resource_metrics(metrics: dict, algo_key: str, dataset: str):
+            try:
+                model_art = context.artifact_store.load_model(f"model_{dataset}_{algo_key}")
+                mcv = model_art.metrics_cv or {}
+            except Exception:
+                mcv = {}
+
+            n_params = int(mcv.get("n_params", 0))
+            s_intrinsic, shap_available, _, shap_std = explainability_metrics(algo_key, n_params)
+
+            memory_bytes = float(mcv.get("memory_bytes", 0.0))
+            cpu_percent = float(mcv.get("cpu_percent", 0.0))
+            training_time = float(mcv.get("train_duration_s", 0.0))
+
+            total_ram = psutil.virtual_memory().total if psutil else 1
+            ram_percent = (memory_bytes / total_ram) * 100 if total_ram else 0.0
+            latency_ms = (training_time * 1000.0) / max(metrics.get("n_eval_rows", 1), 1)
+
+            metrics.update({
+                "faithfulness": s_intrinsic,
+                "stability": max(0.0, 1.0 - shap_std),
+                "complexity": float(np.log1p(max(n_params, 1))),
+                "latency": float(latency_ms),
+                "cpu_percent": cpu_percent,
+                "ram_percent": float(ram_percent),
+                "mcdm_inputs": {
+                    "s_intrinsic": s_intrinsic,
+                    "shap_available": shap_available,
+                    "n_params": n_params,
+                    "shap_std": shap_std,
+                    "memory_bytes": memory_bytes,
+                    "cpu_percent": cpu_percent,
+                },
+            })
+
+            gap = metrics.get("gap", 0.0)
+            metrics["mcdm_scores"] = {
+                "f_perf": compute_f_perf(metrics.get("f1", 0.0), metrics.get("recall", 0.0), metrics.get("roc_auc", 0.0), gap),
+                "f_expl": compute_f_expl(s_intrinsic, shap_available, n_params, shap_std),
+                "f_res": compute_f_res(memory_bytes, cpu_percent),
+            }
+
+            return metrics
+
         # 2. Evaluate Per-Algorithm
         for path, ds_name in [(pred_cic_path, "cic"), (pred_ton_path, "ton")]:
             if os.path.exists(path):
@@ -109,12 +155,14 @@ class T17_Evaluate(Task):
                     df_algo = df_ds.filter(pl.col("model") == algo)
                     if df_algo.height > 0:
                         m = compute_metrics(df_algo, f"{ds_name}_{algo}")
-                        if m: all_metrics[f"{ds_name}_{algo}"] = m
+                        if m:
+                            all_metrics[f"{ds_name}_{algo}"] = augment_with_resource_metrics(m, algo, ds_name)
 
         # 3. Evaluate Fused (global)
         df_fused = context.table_io.read_parquet(pred_fused_art.path).collect()
         m_fused = compute_metrics(df_fused, "fused_global")
-        if m_fused: all_metrics["fused_global"] = m_fused
+        if m_fused:
+            all_metrics["fused_global"] = m_fused
 
         # 3b. Evaluate Fused per algorithm (if available)
         fused_by_algo_metrics = {}
@@ -125,7 +173,13 @@ class T17_Evaluate(Task):
                 if df_algo.height > 0:
                     m = compute_metrics(df_algo, f"fused_{algo}")
                     if m:
-                        fused_by_algo_metrics[algo] = m
+                        # Add gap vs CIC/TON if available
+                        cic_f1 = all_metrics.get(f"cic_{algo}", {}).get("f1")
+                        ton_f1 = all_metrics.get(f"ton_{algo}", {}).get("f1")
+                        if cic_f1 is not None and ton_f1 is not None:
+                            m["gap"] = abs(float(cic_f1) - float(ton_f1))
+                        fused_by_algo_metrics[algo] = augment_with_resource_metrics(m, algo, "cic")
+                        all_metrics[f"fused_{algo}"] = fused_by_algo_metrics[algo]
         
         # 4. Liste des graphiques de distribution générés
         dist_dir = os.path.join("graph", "feature_distributions")
@@ -161,6 +215,9 @@ class T17_Evaluate(Task):
             results_cic = all_metrics.get(f"cic_{algo_key}")
             results_ton = all_metrics.get(f"ton_{algo_key}")
             results_fused = fused_by_algo_metrics.get(algo_key) if fused_by_algo_metrics else all_metrics.get("fused_global")
+            if results_fused and isinstance(results_fused, dict):
+                # Use CIC model resources as proxy for fused explainability/resources
+                results_fused = augment_with_resource_metrics(results_fused, algo_key, "cic")
 
             payload = {
                 "algorithm": algo_cfg.name if algo_cfg else algo_key,
@@ -176,6 +233,8 @@ class T17_Evaluate(Task):
                     "ton": results_ton or {},
                     "fused": results_fused or {},
                 },
+                "mcdm_inputs": (results_fused.get("mcdm_inputs") if isinstance(results_fused, dict) else {}),
+                "mcdm_scores": (results_fused.get("mcdm_scores") if isinstance(results_fused, dict) else {}),
                 "explainability": {
                     "shap_available": False,
                     "lime_available": False,

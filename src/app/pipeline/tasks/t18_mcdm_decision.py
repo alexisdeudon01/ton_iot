@@ -33,19 +33,25 @@ class T18_MCDM_Decision(Task):
         rows = []
         for model_name, metrics in all_metrics.items():
             if model_name == "_metadata": continue
+            if not model_name.startswith("fused_"):
+                continue
+            if model_name == "fused_global":
+                continue
             
+            mcdm_inputs = metrics.get("mcdm_inputs", {})
+            shap_std = mcdm_inputs.get("shap_std", 0.5)
             row = {
                 "model": model_name,
                 "f1": metrics.get("f1", 0),
                 "recall": metrics.get("recall", 0),
                 "precision": metrics.get("precision", 0),
                 "accuracy": metrics.get("accuracy", 0),
-                "faithfulness": 0.85, 
-                "stability": 0.80,
-                "complexity": 2.5,
-                "latency": 1.5,
-                "cpu_percent": 15.0,
-                "ram_percent": 120.0
+                "faithfulness": metrics.get("faithfulness", mcdm_inputs.get("s_intrinsic", 0.0)),
+                "stability": metrics.get("stability", max(0.0, 1.0 - shap_std)),
+                "complexity": metrics.get("complexity", mcdm_inputs.get("n_params", 1000)),
+                "latency": metrics.get("latency", 1.0),
+                "cpu_percent": metrics.get("cpu_percent", 0.0),
+                "ram_percent": metrics.get("ram_percent", 0.0)
             }
             rows.append(row)
             
