@@ -5,6 +5,9 @@ import time
 import yaml
 import joblib
 import numpy as np
+import polars as pl
+from sklearn.metrics import f1_score, recall_score, roc_auc_score
+from src.mcdm.metrics_utils import compute_f_perf, compute_f_expl
 from src.core.dag.task import Task
 from src.core.dag.context import DAGContext
 from src.core.dag.result import TaskResult
@@ -80,6 +83,9 @@ class T18_MCDM_Decision(Task):
         dtreeviz_dir = os.path.join("graph", "algorithms", "dtreeviz")
         dtreeviz_files = self._generate_dtreeviz(context, dtreeviz_dir)
 
+        sampling_summary = self._generate_sampling_variation(all_metrics)
+        report_links = self._write_graphs_report(sampling_summary)
+
         # 6. Mise à jour du rapport JSON avec les sorties MCDM et liens vers les graphiques complets
         if "_metadata" in all_metrics:
             # Ajout des fichiers de décision
@@ -121,6 +127,8 @@ class T18_MCDM_Decision(Task):
             all_metrics["_metadata"]["outputs"]["generated_files"].extend(decision_files)
             all_metrics["_metadata"]["outputs"]["generated_files"].extend(algo_viz_files)
             all_metrics["_metadata"]["outputs"]["generated_files"].extend(variation_reports)
+            for entry in report_links:
+                all_metrics["_metadata"]["outputs"]["generated_files"].append(entry)
             all_metrics["_metadata"]["outputs"]["final_report_markdown"] = {
                 "path": os.path.abspath(report_md_path),
                 "url": f"file://{os.path.abspath(report_md_path)}"
