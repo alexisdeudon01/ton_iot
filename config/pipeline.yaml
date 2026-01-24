@@ -131,3 +131,4 @@ paths:
 sampling:
   default_frac: 0.5
   random_state: 42
+  validation_sample_size: 10000
