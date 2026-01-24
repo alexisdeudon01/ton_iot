@@ -1,0 +1,66 @@
+{
+  "chapter": "Analyse",
+  "approach": "top_down",
+  "sections": [
+    {
+      "id": "5.1",
+      "title": "Synthese globale",
+      "intent": "Verdict principal + modele recommande",
+      "artefacts": [
+        "reports/final_justification_report.md",
+        "reports/run_report.json"
+      ]
+    },
+    {
+      "id": "5.2",
+      "title": "Preuves par axes (performance, explicabilite, ressources)",
+      "intent": "Montrer preuves quantitatives et justifier les compromis",
+      "artefacts": [
+        "reports/run_report.json",
+        "graph/feature_distributions/*"
+      ]
+    },
+    {
+      "id": "5.3",
+      "title": "Late Fusion",
+      "intent": "Valider la fusion des probabilites et l'effet cross-dataset",
+      "artefacts": [
+        "fusion/late_fusion.py",
+        "reports/run_report.json"
+      ]
+    },
+    {
+      "id": "5.4",
+      "title": "Decision MCDM",
+      "intent": "Classement TOPSIS/WSM et profils de poids",
+      "artefacts": [
+        "graph/decision/*",
+        "reports/final_justification_report.md"
+      ]
+    },
+    {
+      "id": "5.5",
+      "title": "Pareto et compromis",
+      "intent": "Solutions dominees/non-dominees",
+      "artefacts": [
+        "graph/decision/viz_11_pareto_3d.png",
+        "graph/decision/viz_13_pareto_list.png"
+      ]
+    },
+    {
+      "id": "5.6",
+      "title": "Sensibilite et contraintes",
+      "intent": "Stabilite du classement et seuils PME",
+      "artefacts": [
+        "graph/decision/variations/*",
+        "reports/variations/*"
+      ]
+    },
+    {
+      "id": "5.7",
+      "title": "Synthese critique",
+      "intent": "Forces, limites, validite",
+      "artefacts": []
+    }
+  ]
+}

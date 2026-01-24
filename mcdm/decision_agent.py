@@ -38,6 +38,14 @@ class DDoSDecisionAgent:
             "Resource-Constrained": np.array([0.30, 0.30, 0.40]),
             "Performance-First": np.array([0.50, 0.25, 0.25])
         }
+
+    def _display_name(self, name: str) -> str:
+        if name.startswith("fused_"):
+            return name.replace("fused_", "")
+        return name
+
+    def _display_list(self, algorithms: List[str]) -> List[str]:
+        return [self._display_name(a) for a in algorithms]
         self.colors = {
             "LR": "#2E86AB",
             "DT": "#A23B72",
@@ -121,7 +129,8 @@ class DDoSDecisionAgent:
 
     def _viz_matrix_heatmap(self, M: np.ndarray, algorithms: List[str], title: str, filename: str, out_dir: str) -> str:
         fig, ax = plt.subplots(figsize=(10, 6))
-        df = pd.DataFrame(M, index=algorithms, columns=["f_perf", "f_expl", "f_res"])
+        labels = self._display_list(algorithms)
+        df = pd.DataFrame(M, index=labels, columns=["f_perf", "f_expl", "f_res"])
         sns.heatmap(df, annot=True, fmt=".3f", cmap="YlGnBu", linewidths=0.5, ax=ax, vmin=0, vmax=1)
         ax.set_title(title, fontsize=12, fontweight='bold')
         ax.set_xlabel("Criteres")
@@ -138,7 +147,7 @@ class DDoSDecisionAgent:
         for i, algo in enumerate(algorithms):
             algo_key = algo.replace("fused_", "")
             ax.scatter(M[i, 0], M[i, 1], M[i, 2], c=self.colors.get(algo_key, 'steelblue'), s=200, alpha=0.8, edgecolors='black')
-            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {algo}', fontsize=10, fontweight='bold')
+            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {self._display_name(algo)}', fontsize=10, fontweight='bold')
         ax.set_xlabel('Performance (f_perf)')
         ax.set_ylabel('Explicabilite (f_expl)')
         ax.set_zlabel('Ressources (f_res)')
@@ -151,10 +160,11 @@ class DDoSDecisionAgent:
 
     def _viz_normalization_comparison(self, M: np.ndarray, M_norm: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-        df_M = pd.DataFrame(M, index=algorithms, columns=["f_perf", "f_expl", "f_res"])
+        labels = self._display_list(algorithms)
+        df_M = pd.DataFrame(M, index=labels, columns=["f_perf", "f_expl", "f_res"])
         sns.heatmap(df_M, annot=True, fmt=".3f", cmap="Blues", ax=axes[0], vmin=0, vmax=1, linewidths=0.5)
         axes[0].set_title("M (brute)", fontsize=11, fontweight='bold')
-        df_norm = pd.DataFrame(M_norm, index=algorithms, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
+        df_norm = pd.DataFrame(M_norm, index=labels, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
         sns.heatmap(df_norm, annot=True, fmt=".3f", cmap="Greens", ax=axes[1], vmin=0, vmax=1, linewidths=0.5)
         axes[1].set_title("M normalisee", fontsize=11, fontweight='bold')
         plt.tight_layout()
@@ -165,7 +175,8 @@ class DDoSDecisionAgent:
 
     def _viz_weighting_transformation(self, M_norm: np.ndarray, V: np.ndarray, weights: np.ndarray, profile_name: str, algorithms: List[str], filename: str, out_dir: str) -> str:
         fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-        df_norm = pd.DataFrame(M_norm, index=algorithms, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
+        labels = self._display_list(algorithms)
+        df_norm = pd.DataFrame(M_norm, index=labels, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
         sns.heatmap(df_norm, annot=True, fmt=".3f", cmap="Blues", ax=axes[0], vmin=0, vmax=1, linewidths=0.5)
         axes[0].set_title("M normalisee", fontsize=11, fontweight='bold')
         colors_w = ['steelblue', 'forestgreen', 'coral']
@@ -174,7 +185,7 @@ class DDoSDecisionAgent:
         axes[1].set_title(f"Poids AHP ({profile_name})", fontsize=11, fontweight='bold')
         for bar, val in zip(bars, weights):
             axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, f'{val:.2f}', ha='center', fontsize=10)
-        df_V = pd.DataFrame(V, index=algorithms, columns=["v_perf", "v_expl", "v_res"])
+        df_V = pd.DataFrame(V, index=labels, columns=["v_perf", "v_expl", "v_res"])
         sns.heatmap(df_V, annot=True, fmt=".3f", cmap="Oranges", ax=axes[2], vmin=0, vmax=max(0.5, V.max()), linewidths=0.5)
         axes[2].set_title("V ponderee", fontsize=11, fontweight='bold')
         plt.tight_layout()
@@ -212,7 +223,7 @@ class DDoSDecisionAgent:
         for i, algo in enumerate(algorithms):
             algo_key = algo.replace("fused_", "")
             ax.scatter(V[i, 0], V[i, 1], V[i, 2], c=self.colors.get(algo_key, 'steelblue'), s=200, alpha=0.7)
-            ax.text(V[i, 0], V[i, 1], V[i, 2], f'  {algo}', fontsize=10)
+            ax.text(V[i, 0], V[i, 1], V[i, 2], f'  {self._display_name(algo)}', fontsize=10)
         ax.scatter(*A_plus, c='green', s=400, marker='*', edgecolors='black', linewidths=2, label='A_plus')
         ax.scatter(*A_minus, c='red', s=400, marker='X', edgecolors='black', linewidths=2, label='A_minus')
         ax.set_xlabel('v_perf')
@@ -233,7 +244,7 @@ class DDoSDecisionAgent:
         bars1 = ax.bar(x - width/2, D_plus, width, label='D_plus', color='green', alpha=0.7)
         bars2 = ax.bar(x + width/2, D_minus, width, label='D_minus', color='red', alpha=0.7)
         ax.set_xticks(x)
-        ax.set_xticklabels(algorithms)
+        ax.set_xticklabels(self._display_list(algorithms))
         ax.set_ylabel("Distance")
         ax.set_title("Distances TOPSIS", fontsize=12, fontweight='bold')
         ax.legend()
@@ -248,7 +259,7 @@ class DDoSDecisionAgent:
     def _viz_closeness(self, CC: np.ndarray, algorithms: List[str], profile_name: str, filename: str, out_dir: str) -> str:
         sorted_idx = np.argsort(CC)[::-1]
         sorted_cc = CC[sorted_idx]
-        sorted_labels = [algorithms[i] for i in sorted_idx]
+        sorted_labels = [self._display_name(algorithms[i]) for i in sorted_idx]
         fig, ax = plt.subplots(figsize=(10, 6))
         colors = plt.cm.RdYlGn(sorted_cc)
         bars = ax.barh(sorted_labels, sorted_cc, color=colors, edgecolor='black')
@@ -274,7 +285,7 @@ class DDoSDecisionAgent:
             values += values[:1]
             algo_key = algo.replace("fused_", "")
             color = self.colors.get(algo_key, f'C{i}')
-            ax.plot(angles, values, linewidth=2, linestyle='solid', label=algo, color=color)
+            ax.plot(angles, values, linewidth=2, linestyle='solid', label=self._display_name(algo), color=color)
             ax.fill(angles, values, alpha=0.1, color=color)
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(categories, fontsize=11)
@@ -291,7 +302,7 @@ class DDoSDecisionAgent:
         fig, ax = plt.subplots(figsize=(10, 8))
         scatter = ax.scatter(M[:, 0], M[:, 1], s=CC * 800, c=M[:, 2], cmap='RdYlGn_r', alpha=0.7, edgecolors='black', linewidths=2)
         for i, algo in enumerate(algorithms):
-            ax.annotate(f'{algo}\\nCC={CC[i]:.3f}', (M[i, 0], M[i, 1]), textcoords="offset points", xytext=(10, 10), fontsize=10)
+            ax.annotate(f'{self._display_name(algo)}\\nCC={CC[i]:.3f}', (M[i, 0], M[i, 1]), textcoords="offset points", xytext=(10, 10), fontsize=10)
         ax.set_xlabel('f_perf')
         ax.set_ylabel('f_expl')
         ax.set_title('Performance vs Explicabilite', fontsize=12, fontweight='bold')
@@ -309,11 +320,11 @@ class DDoSDecisionAgent:
         ax = fig.add_subplot(111, projection='3d')
         for i in dominated_idx:
             ax.scatter(M[i, 0], M[i, 1], M[i, 2], c='gray', s=150, alpha=0.4, marker='o')
-            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {algorithms[i]}', fontsize=9, color='gray')
+            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {self._display_name(algorithms[i])}', fontsize=9, color='gray')
         for i in pareto_idx:
             algo_key = algorithms[i].replace("fused_", "")
             ax.scatter(M[i, 0], M[i, 1], M[i, 2], c=self.colors.get(algo_key, 'green'), s=400, alpha=0.9, edgecolors='black', linewidths=2, marker='*')
-            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {algorithms[i]} *', fontsize=11, fontweight='bold')
+            ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {self._display_name(algorithms[i])} *', fontsize=11, fontweight='bold')
         ax.set_xlabel('Performance')
         ax.set_ylabel('Explicabilite')
         ax.set_zlabel('Ressources')
@@ -340,12 +351,12 @@ class DDoSDecisionAgent:
             for i in dominated_idx:
                 y_val = 1 - M[i, yi] if yi == 2 else M[i, yi]
                 ax.scatter(M[i, xi], y_val, c='gray', s=100, alpha=0.4)
-                ax.annotate(algorithms[i], (M[i, xi], y_val), fontsize=8, color='gray')
+                ax.annotate(self._display_name(algorithms[i]), (M[i, xi], y_val), fontsize=8, color='gray')
             for i in pareto_idx:
                 y_val = 1 - M[i, yi] if yi == 2 else M[i, yi]
                 algo_key = algorithms[i].replace("fused_", "")
                 ax.scatter(M[i, xi], y_val, c=self.colors.get(algo_key, 'green'), s=200, marker='*', edgecolors='black', linewidths=1)
-                ax.annotate(f'{algorithms[i]} *', (M[i, xi], y_val), fontsize=9, fontweight='bold')
+                ax.annotate(f'{self._display_name(algorithms[i])} *', (M[i, xi], y_val), fontsize=9, fontweight='bold')
             ax.set_xlabel(xlabel, fontsize=10)
             ax.set_ylabel(ylabel, fontsize=10)
             ax.set_title(f'{xlabel} vs {ylabel}', fontsize=11, fontweight='bold')
@@ -358,8 +369,8 @@ class DDoSDecisionAgent:
         return path
 
     def _viz_pareto_list(self, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
-        pareto_list = [algorithms[i] for i in pareto_idx]
-        dominated_list = [algorithms[i] for i in dominated_idx]
+        pareto_list = [self._display_name(algorithms[i]) for i in pareto_idx]
+        dominated_list = [self._display_name(algorithms[i]) for i in dominated_idx]
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.axis('off')
         ax.set_title('Liste des solutions Pareto', fontsize=12, fontweight='bold')
@@ -555,7 +566,7 @@ class DDoSDecisionAgent:
             _, _, _, _, _, _, cc = self._topsis_compute(M, weights)
             results[profile_name] = cc
         fig, ax = plt.subplots(figsize=(12, 6))
-        df = pd.DataFrame(results, index=algorithms)
+        df = pd.DataFrame(results, index=self._display_list(algorithms))
         df.plot(kind='bar', ax=ax, width=0.8, alpha=0.8)
         ax.set_ylabel("CC")
         ax.set_xlabel("Algorithme")
@@ -592,7 +603,8 @@ class DDoSDecisionAgent:
             CC = D_minus / (D_plus + D_minus + 1e-9)
             results[f'Sans {criterion}'] = CC
         fig, ax = plt.subplots(figsize=(12, 6))
-        df = pd.DataFrame(results, index=algorithms)
+        labels = self._display_list(algorithms)
+        df = pd.DataFrame(results, index=labels)
         x = np.arange(len(algorithms))
         width = 0.2
         colors = ['green', 'steelblue', 'orange', 'red']
@@ -600,7 +612,7 @@ class DDoSDecisionAgent:
             offset = (i - len(results)/2) * width
             ax.bar(x + offset, values, width, label=scenario, color=colors[i % len(colors)], alpha=0.8)
         ax.set_xticks(x)
-        ax.set_xticklabels(algorithms)
+        ax.set_xticklabels(labels)
         ax.set_ylabel("CC")
         ax.set_title("Sensibilite retrait criteres", fontsize=12, fontweight='bold')
         ax.legend()
@@ -627,12 +639,13 @@ class DDoSDecisionAgent:
         x = np.arange(len(algorithms))
         width = 0.15
         colors = plt.cm.tab10(np.linspace(0, 1, len(scenarios)))
+        labels = self._display_list(algorithms)
         for i, (scenario, ranks) in enumerate(results.items()):
             offset = (i - len(scenarios)/2) * width
             values = [ranks.get(algo, 0) for algo in algorithms]
             ax.bar(x + offset, values, width, label=scenario, color=colors[i], alpha=0.8)
         ax.set_xticks(x)
-        ax.set_xticklabels(algorithms)
+        ax.set_xticklabels(labels)
         ax.set_ylabel("Rang (1=meilleur)")
         ax.set_title("Sensibilite retrait algorithmes", fontsize=12, fontweight='bold')
         ax.legend(loc='upper right', fontsize=8)
@@ -669,12 +682,13 @@ class DDoSDecisionAgent:
         x = np.arange(len(algorithms))
         width = 0.2
         colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D']
+        labels = self._display_list(algorithms)
         for i, profile in enumerate(profiles_list):
             offset = (i - 1.5) * width
             axes[0].bar(x + offset, results[profile]['f_res_values'], width, label=profile.replace('_', ' ').title(), color=colors[i], alpha=0.8)
         axes[0].axhline(y=1.0, color='red', linestyle='--', linewidth=2, label='Seuil admissibilite')
         axes[0].set_xticks(x)
-        axes[0].set_xticklabels(algorithms, rotation=45, ha='right')
+        axes[0].set_xticklabels(labels, rotation=45, ha='right')
         axes[0].set_ylabel('f_res')
         axes[0].set_title('f_res par profil', fontsize=12, fontweight='bold')
         axes[0].legend(loc='upper left', fontsize=8)
@@ -773,6 +787,8 @@ class DDoSDecisionAgent:
         df = self.run_moo_phase(results_df)
         df = self.run_mcdm_phase(df, "A")
         df = self.run_mcdm_phase(df, "B")
+        df = df.copy()
+        df["model_label"] = df["model"].apply(self._display_name)
         
         all_crit_info = [c for p in self.hierarchy['criteria'].values() for c in p]
         criteria_keys = [c['key'] for c in all_crit_info]
@@ -780,7 +796,9 @@ class DDoSDecisionAgent:
 
         # 1. Heatmap
         plt.figure(figsize=(12, 8))
-        sns.heatmap(norm_df.set_index('model')[criteria_keys], annot=True, cmap='YlGnBu', fmt='.2f')
+        norm_df = norm_df.copy()
+        norm_df["model_label"] = norm_df["model"].apply(self._display_name)
+        sns.heatmap(norm_df.set_index('model_label')[criteria_keys], annot=True, cmap='YlGnBu', fmt='.2f')
         plt.title('Matrice de Décision Normalisée')
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'decision_matrix_heatmap.png'))
@@ -793,7 +811,7 @@ class DDoSDecisionAgent:
         colors = ['#3498db', '#e67e22', '#2ecc71']
         for i, dim in enumerate(dims):
             df_sorted = df.sort_values(by=dim, ascending=True)
-            axes[i].barh(df_sorted['model'], df_sorted[dim], color=colors[i])
+            axes[i].barh(df_sorted['model_label'], df_sorted[dim], color=colors[i])
             axes[i].set_title(titles[i])
         plt.suptitle('Comparaison Unifiée des Dimensions')
         plt.tight_layout()
@@ -806,7 +824,7 @@ class DDoSDecisionAgent:
         for i, row in df.iterrows():
             color = 'green' if row['is_pareto_efficient'] else 'red'
             ax.scatter(row['dim_performance'], row['dim_explainability'], row['dim_resources'], c=color, s=100)
-            ax.text(row['dim_performance'], row['dim_explainability'], row['dim_resources'], row['model'])
+            ax.text(row['dim_performance'], row['dim_explainability'], row['dim_resources'], row['model_label'])
         ax.set_xlabel('Performance')
         ax.set_ylabel('Explicabilité')
         ax.set_zlabel('Ressources')
@@ -821,7 +839,7 @@ class DDoSDecisionAgent:
         for i, row in df.iterrows():
             values = row[dims].tolist()
             values += values[:1]
-            ax.plot(angles, values, label=row['model'], linewidth=4 if row['model'] == winner_a['model'] else 1)
+            ax.plot(angles, values, label=row['model_label'], linewidth=4 if row['model'] == winner_a['model'] else 1)
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(['Performance', 'Explicabilité', 'Ressources'])
         plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
