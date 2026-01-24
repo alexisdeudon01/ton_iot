@@ -172,8 +172,6 @@ def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_ov
     config = PipelineConfig.model_validate(config_dict)
     if test_mode_override is not None:
         config.test_mode = test_mode_override
-        if config.test_mode:
-            config.sample_ratio = 0.01 # Force small sample in test mode
 
     run_id = str(uuid.uuid4())
     
