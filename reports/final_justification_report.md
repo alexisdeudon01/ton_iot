@@ -5,5 +5,5 @@
 - **Consensus** : 1.0000
 
 ## RÉSULTAT PROFIL B
-- **Gagnant** : **fused_LR**
+- **Gagnant** : **fused_DT**
 - **Consensus** : 1.0000
