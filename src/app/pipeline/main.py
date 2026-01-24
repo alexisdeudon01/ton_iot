@@ -174,8 +174,11 @@ def setup_output_directories():
     with open(report_index, "w") as f:
         f.write("# Repertoires de sortie\n\n")
         f.write("- graph/ : graphiques (distributions + MCDM)\n")
+        f.write("- graph/decision/variations/ : variations par seuil (ressource, performance, explicabilite)\n")
+        f.write("- graph/algorithms/dtreeviz/ : visualisations arbres (dtreeviz)\n")
         f.write("- algorithm_configurations/ : JSON des algorithmes\n")
         f.write("- reports/ : rapports (run_report, final_report)\n")
+        f.write("- reports/variations/ : rapports DOCX par seuil\n")
         f.write("- other/ : reserve pour elements oublies\n")
 
 def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_override: bool = None):

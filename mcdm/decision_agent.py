@@ -376,6 +376,179 @@ class DDoSDecisionAgent:
         plt.close()
         return path
 
+    def _viz_threshold_variation(
+        self,
+        scores: Dict[str, float],
+        threshold: float,
+        direction: str,
+        title: str,
+        formula: str,
+        filename: str,
+        out_dir: str,
+    ) -> Tuple[str, List[str], List[str]]:
+        items = list(scores.items())
+        reverse = True if direction == "gte" else False
+        items_sorted = sorted(items, key=lambda x: x[1], reverse=reverse)
+
+        admissible = []
+        rejected = []
+        for algo, score in items_sorted:
+            if direction == "gte":
+                (admissible if score >= threshold else rejected).append(algo)
+            else:
+                (admissible if score <= threshold else rejected).append(algo)
+
+        fig, axes = plt.subplots(1, 2, figsize=(13, 6))
+        axes[0].axis('off')
+        axes[0].set_title("Solutions", fontsize=11, fontweight='bold')
+        left_text = "Admissibles:\\n" + "\\n".join(admissible) if admissible else "Admissibles:\\nAucune"
+        right_text = "Rejetees:\\n" + "\\n".join(rejected) if rejected else "Rejetees:\\nAucune"
+        axes[0].text(0.02, 0.95, left_text, va='top', ha='left', fontsize=9, family='monospace')
+        axes[0].text(0.52, 0.95, right_text, va='top', ha='left', fontsize=9, family='monospace')
+
+        labels = [algo for algo, _ in items_sorted]
+        values = [score for _, score in items_sorted]
+        colors = ["#2ecc71" if algo in admissible else "#bdc3c7" for algo in labels]
+        axes[1].barh(labels, values, color=colors, alpha=0.9)
+        axes[1].axvline(threshold, color='red', linestyle='--', linewidth=1.5, label=f"Seuil {threshold:.1f}")
+        axes[1].set_xlabel("Score")
+        axes[1].set_title(title, fontsize=11, fontweight='bold')
+        axes[1].legend(loc="lower right", fontsize=8)
+        axes[1].grid(axis='x', alpha=0.3)
+
+        fig.suptitle(f"{title} - Seuil {threshold:.1f}", fontsize=12, fontweight='bold')
+        fig.text(0.5, 0.02, f"Formule: {formula}", ha='center', fontsize=9, style='italic')
+        plt.tight_layout()
+        os.makedirs(out_dir, exist_ok=True)
+        path = os.path.join(out_dir, filename)
+        plt.savefig(path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return path, admissible, rejected
+
+    def _write_variation_docx(
+        self,
+        docx_path: str,
+        title: str,
+        threshold: float,
+        formula: str,
+        admissible: List[str],
+        rejected: List[str],
+        criteria_summary: str,
+    ) -> str:
+        total = len(admissible) + len(rejected)
+        if total == 0:
+            total = 1
+        if len(admissible) == 0:
+            interp = "Seuil tres strict: aucune solution admissible. Relacher la contrainte ou ajuster les poids."
+        elif len(admissible) == total:
+            interp = "Seuil permissif: toutes les solutions sont admissibles. La contrainte ne discrimine pas."
+        else:
+            interp = (
+                "Seuil intermediaire: la contrainte filtre une partie des solutions. "
+                "Cela illustre le compromis entre performances, explicabilite et ressources."
+            )
+
+        try:
+            from docx import Document
+            doc = Document()
+            doc.add_heading(title, level=1)
+            doc.add_paragraph(f"Seuil applique: {threshold:.1f}")
+            doc.add_paragraph(f"Formule: {formula}")
+            doc.add_paragraph(f"Solutions admissibles: {len(admissible)}/{total}")
+            doc.add_heading("Solutions admissibles", level=2)
+            for algo in admissible:
+                doc.add_paragraph(algo, style='List Bullet')
+            doc.add_heading("Solutions rejetees", level=2)
+            for algo in rejected:
+                doc.add_paragraph(algo, style='List Bullet')
+            doc.add_heading("Interpretation", level=2)
+            doc.add_paragraph(interp)
+            doc.add_heading("Lien avec criteres du prof", level=2)
+            doc.add_paragraph(criteria_summary)
+            doc.save(docx_path)
+            return docx_path
+        except Exception:
+            md_path = docx_path.replace(".docx", ".md")
+            with open(md_path, "w") as f:
+                f.write(f"# {title}\n\n")
+                f.write(f"- Seuil applique: {threshold:.1f}\n")
+                f.write(f"- Formule: {formula}\n")
+                f.write(f"- Solutions admissibles: {len(admissible)}/{total}\n\n")
+                f.write("## Solutions admissibles\n")
+                for algo in admissible:
+                    f.write(f"- {algo}\n")
+                f.write("\n## Solutions rejetees\n")
+                for algo in rejected:
+                    f.write(f"- {algo}\n")
+                f.write("\n## Interpretation\n")
+                f.write(f"{interp}\n\n")
+                f.write("## Lien avec criteres du prof\n")
+                f.write(criteria_summary + "\n")
+            return md_path
+
+    def _generate_threshold_variations(
+        self,
+        df: pd.DataFrame,
+        score_series: pd.Series,
+        thresholds: List[float],
+        direction: str,
+        title_prefix: str,
+        formula: str,
+        out_dir: str,
+        report_dir: str,
+    ) -> List[str]:
+        os.makedirs(out_dir, exist_ok=True)
+        os.makedirs(report_dir, exist_ok=True)
+        results = []
+        files = []
+        scores = {row["model"]: float(score_series.loc[idx]) for idx, row in df.iterrows()}
+        weights_summary = []
+        for pillar in self.hierarchy["pillars"]:
+            weights_summary.append(f"{pillar['name']}: {pillar['weight']:.2f}")
+        criteria_summary = "Poids des piliers: " + ", ".join(weights_summary)
+
+        for threshold in thresholds:
+            slug = title_prefix.lower().replace(" ", "_")
+            filename = f"{slug}_seuil_{int(threshold)}.png"
+            plot_path, admissible, rejected = self._viz_threshold_variation(
+                scores,
+                threshold,
+                direction,
+                title_prefix,
+                formula,
+                filename,
+                out_dir,
+            )
+            files.append(plot_path)
+            results.append({"threshold": threshold, "admissible": len(admissible)})
+            docx_path = os.path.join(report_dir, f"{slug}_seuil_{int(threshold)}.docx")
+            self._write_variation_docx(
+                docx_path,
+                f"{title_prefix} - Seuil {threshold:.1f}",
+                threshold,
+                formula,
+                admissible,
+                rejected,
+                criteria_summary,
+            )
+
+        # Resume des admissibles par seuil
+        if results:
+            fig, ax = plt.subplots(figsize=(8, 4))
+            xs = [r["threshold"] for r in results]
+            ys = [r["admissible"] for r in results]
+            ax.plot(xs, ys, marker='o')
+            ax.set_title(f"Nombre de solutions admissibles - {title_prefix}", fontsize=11, fontweight='bold')
+            ax.set_xlabel("Seuil")
+            ax.set_ylabel("Nombre admissibles")
+            ax.grid(alpha=0.3)
+            summary_path = os.path.join(out_dir, f"{title_prefix.lower().replace(' ', '_')}_resume.png")
+            plt.tight_layout()
+            plt.savefig(summary_path, dpi=150, bbox_inches='tight')
+            plt.close()
+            files.append(summary_path)
+        return files
+
     def _viz_sensitivity_weights(self, M: np.ndarray, algorithms: List[str], out_dir: str) -> str:
         results = {}
         for profile_name, weights in self.ahp_profiles.items():
@@ -679,6 +852,52 @@ class DDoSDecisionAgent:
         self._viz_sensitivity_criteria(M, algorithms, weights, output_dir)
         self._viz_sensitivity_algorithms(M, algorithms, weights, output_dir)
         self._viz_constraints_impact(df, algorithms, output_dir)
+
+        # ---- Variations de contraintes (100 -> 30) ----
+        thresholds = list(range(100, 20, -10))
+        variations_root = os.path.join(output_dir, "variations")
+
+        # Ressources (moyenne CPU/RAM en %)
+        if "cpu_percent" in df.columns and "ram_percent" in df.columns:
+            resource_scores = ((df["cpu_percent"].fillna(100.0) + df["ram_percent"].fillna(100.0)) / 2.0)
+            self._generate_threshold_variations(
+                df,
+                resource_scores,
+                thresholds,
+                direction="lte",
+                title_prefix="Contrainte Ressource",
+                formula="(CPU% + RAM%) / 2 <= Seuil",
+                out_dir=os.path.join(variations_root, "resource"),
+                report_dir=os.path.join("reports", "variations", "resource"),
+            )
+
+        # Performance (dimension normalisee, en %)
+        if "dim_performance" in df.columns:
+            perf_scores = df["dim_performance"].fillna(0.0) * 100.0
+            self._generate_threshold_variations(
+                df,
+                perf_scores,
+                thresholds,
+                direction="gte",
+                title_prefix="Performance",
+                formula="dim_performance >= Seuil",
+                out_dir=os.path.join(variations_root, "performance"),
+                report_dir=os.path.join("reports", "variations", "performance"),
+            )
+
+        # Explicabilite (dimension normalisee, en %)
+        if "dim_explainability" in df.columns:
+            expl_scores = df["dim_explainability"].fillna(0.0) * 100.0
+            self._generate_threshold_variations(
+                df,
+                expl_scores,
+                thresholds,
+                direction="gte",
+                title_prefix="Explicabilite",
+                formula="dim_explainability >= Seuil",
+                out_dir=os.path.join(variations_root, "explainability"),
+                report_dir=os.path.join("reports", "variations", "explainability"),
+            )
 
     def normalize_matrix(self, df: pd.DataFrame, criteria_info: List[Dict]) -> pd.DataFrame:
         norm_df = df.copy()
