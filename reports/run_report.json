@@ -300,444 +300,8 @@
                     "name": "dist_fwd_byte_ratio.png",
                     "path": "/home/tor/ton_iot/ton_iot/graph/feature_distributions/ton/dist_fwd_byte_ratio.png",
                     "type": "distribution_plot"
-                },
-                {
-                    "name": "viz_06_ideal_solutions.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_06_ideal_solutions.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_06_ideal_solutions.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_03_normalization.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_03_normalization.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_03_normalization.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_08_closeness.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_08_closeness.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_08_closeness.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_11_pareto_3d.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_11_pareto_3d.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_11_pareto_3d.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_05_profiles.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_05_profiles.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_05_profiles.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "3d_solution_space.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/3d_solution_space.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/3d_solution_space.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_01_matrix_M.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_01_matrix_M.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_01_matrix_M.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_04_weighting.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_04_weighting.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_04_weighting.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_sensitivity_weights.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_sensitivity_weights.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_sensitivity_weights.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_sensitivity_criteria.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_sensitivity_criteria.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_sensitivity_criteria.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_13_pareto_list.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_13_pareto_list.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_13_pareto_list.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_12_pareto_2d.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_12_pareto_2d.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_12_pareto_2d.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_07_distances.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_07_distances.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_07_distances.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "radar_comparison.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/radar_comparison.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/radar_comparison.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_sensitivity_algorithms.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_sensitivity_algorithms.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_sensitivity_algorithms.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_02_3d_tradeoffs.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_02_3d_tradeoffs.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_02_3d_tradeoffs.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "decision_matrix_heatmap.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/decision_matrix_heatmap.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/decision_matrix_heatmap.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "unified_dimensions_comparison.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/unified_dimensions_comparison.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/unified_dimensions_comparison.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_10_2d_perf_expl.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_10_2d_perf_expl.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_10_2d_perf_expl.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_constraints_impact.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_constraints_impact.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_constraints_impact.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "viz_09_radar.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/viz_09_radar.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/viz_09_radar.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_30.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_30.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_30.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_80.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_80.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_80.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_resume.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_resume.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_resume.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_60.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_60.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_60.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_50.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_50.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_50.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_40.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_40.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_40.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_70.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_70.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_70.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_100.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_100.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_100.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_90.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_90.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_90.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_50.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_50.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_50.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_70.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_70.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_70.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_resume.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_resume.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_resume.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_100.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_100.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_100.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_80.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_80.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_80.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_30.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_30.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_30.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_40.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_40.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_40.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_60.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_60.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_60.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "explicabilite_seuil_90.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_90.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_90.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_60.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_60.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_60.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_80.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_80.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_80.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_30.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_30.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_30.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_90.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_90.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_90.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_resume.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_resume.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_resume.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_70.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_70.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_70.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_40.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_40.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_40.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_50.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_50.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_50.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "performance_seuil_100.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_100.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_100.png",
-                    "type": "decision_plot"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_50.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_50.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_50.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_60.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_60.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_60.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_40.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_40.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_40.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_90.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_90.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_90.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_80.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_80.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_80.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_100.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_100.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_100.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_70.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_70.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_70.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "contrainte_ressource_seuil_30.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_30.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_30.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_70.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_70.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_70.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_60.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_60.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_60.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_40.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_40.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_40.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_90.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_90.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_90.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_100.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_100.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_100.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_30.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_30.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_30.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_50.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_50.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_50.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_80.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_80.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_80.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_70.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_70.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_70.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_80.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_80.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_80.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_60.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_60.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_60.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_90.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_90.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_90.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_40.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_40.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_40.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_30.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_30.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_30.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_50.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_50.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_50.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_100.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_100.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_100.md",
-                    "type": "variation_report"
                 }
-            ],
-            "final_report_markdown": {
-                "path": "/home/tor/ton_iot/ton_iot/reports/final_justification_report.md",
-                "url": "file:///home/tor/ton_iot/ton_iot/reports/final_justification_report.md"
-            }
+            ]
         }
     },
     "cic_LR": {
@@ -757,46 +321,46 @@
         },
         "n_eval_rows": 46,
         "y_true_balance": {
-            "1": 33,
-            "0": 13
+            "0": 13,
+            "1": 33
         },
         "y_pred_balance": {
-            "1": 34,
-            "0": 12
+            "1": 32,
+            "0": 14
         },
         "confusion_matrix": [
             [
-                11,
-                2
+                12,
+                1
             ],
             [
-                1,
-                32
+                2,
+                31
             ]
         ],
         "accuracy": 0.9347826086956522,
-        "precision": 0.9411764705882353,
-        "recall": 0.9696969696969697,
-        "f1": 0.9552238805970149,
-        "roc_auc": 0.951048951048951,
+        "precision": 0.96875,
+        "recall": 0.9393939393939394,
+        "f1": 0.9538461538461539,
+        "roc_auc": 0.9813519813519813,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 2.889731655950132,
-        "cpu_percent": 555.4,
-        "ram_percent": 0.0004184141505192851,
+        "latency": 2.456882725591245,
+        "cpu_percent": 397.3,
+        "ram_percent": 0.00042672215973730475,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 66781.0,
-            "cpu_percent": 555.4
+            "memory_bytes": 68107.0,
+            "cpu_percent": 397.3
         },
         "mcdm_scores": {
-            "f_perf": 0.8632084333576872,
+            "f_perf": 0.8596270396270396,
             "f_expl": 0.5705912247729522,
-            "f_res": 3.471313687324524
+            "f_res": 2.4831899518966676
         }
     },
     "cic_DT": {
@@ -820,42 +384,42 @@
             "1": 33
         },
         "y_pred_balance": {
-            "0": 13,
-            "1": 33
+            "1": 33,
+            "0": 13
         },
         "confusion_matrix": [
             [
-                13,
-                0
+                11,
+                2
             ],
             [
-                0,
-                33
+                2,
+                31
             ]
         ],
-        "accuracy": 1.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "roc_auc": 1.0,
+        "accuracy": 0.9130434782608695,
+        "precision": 0.9393939393939394,
+        "recall": 0.9393939393939394,
+        "f1": 0.9393939393939394,
+        "roc_auc": 0.8904428904428904,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 3.6888794541139363,
-        "latency": 0.13564462247102158,
-        "cpu_percent": 466.3,
+        "complexity": 3.6375861597263857,
+        "latency": 0.18973454185154126,
+        "cpu_percent": 447.5,
         "ram_percent": 0.0002781929994640209,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 39,
+            "n_params": 37,
             "shap_std": 0.5,
             "memory_bytes": 44401.0,
-            "cpu_percent": 466.3
+            "cpu_percent": 447.5
         },
         "mcdm_scores": {
-            "f_perf": 0.8999999999999999,
-            "f_expl": 0.5542170061363634,
-            "f_res": 2.914417344093323
+            "f_perf": 0.8356643356643356,
+            "f_expl": 0.5549815155484987,
+            "f_res": 2.796917344093323
         }
     },
     "cic_RF": {
@@ -879,8 +443,8 @@
             "1": 33
         },
         "y_pred_balance": {
-            "1": 34,
-            "0": 12
+            "0": 13,
+            "1": 33
         },
         "confusion_matrix": [
             [
@@ -888,33 +452,33 @@
                 2
             ],
             [
-                1,
-                32
+                2,
+                31
             ]
         ],
-        "accuracy": 0.9347826086956522,
-        "precision": 0.9411764705882353,
-        "recall": 0.9696969696969697,
-        "f1": 0.9552238805970149,
-        "roc_auc": 0.993006993006993,
+        "accuracy": 0.9130434782608695,
+        "precision": 0.9393939393939394,
+        "recall": 0.9393939393939394,
+        "f1": 0.9393939393939394,
+        "roc_auc": 0.9836829836829837,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.43372200355424,
-        "latency": 2.7419432349826978,
-        "cpu_percent": 380.0,
-        "ram_percent": 0.00039363422860581014,
+        "complexity": 5.572154032177765,
+        "latency": 3.3705027207084326,
+        "cpu_percent": 206.1,
+        "ram_percent": 0.0003956830363088964,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 228,
+            "n_params": 262,
             "shap_std": 0.5,
-            "memory_bytes": 62826.0,
-            "cpu_percent": 380.0
+            "memory_bytes": 63153.0,
+            "cpu_percent": 206.1
         },
         "mcdm_scores": {
-            "f_perf": 0.8716000417492955,
-            "f_expl": 0.13680718297130007,
-            "f_res": 2.3750599155426024
+            "f_perf": 0.8543123543123543,
+            "f_expl": 0.1358927622684246,
+            "f_res": 1.288185227394104
         }
     },
     "cic_CNN": {
@@ -938,42 +502,42 @@
             "0": 13
         },
         "y_pred_balance": {
-            "1": 17,
-            "0": 29
+            "0": 1,
+            "1": 45
         },
         "confusion_matrix": [
             [
-                7,
-                6
+                1,
+                12
             ],
             [
-                22,
-                11
+                0,
+                33
             ]
         ],
-        "accuracy": 0.391304347826087,
-        "precision": 0.6470588235294118,
-        "recall": 0.3333333333333333,
-        "f1": 0.44,
-        "roc_auc": 0.5314685314685315,
+        "accuracy": 0.7391304347826086,
+        "precision": 0.7333333333333333,
+        "recall": 1.0,
+        "f1": 0.8461538461538461,
+        "roc_auc": 0.4755244755244755,
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 132.6921608137048,
-        "cpu_percent": 94.5,
-        "ram_percent": 0.3370810209048539,
+        "latency": 152.98105322796366,
+        "cpu_percent": 90.8,
+        "ram_percent": 0.337079241512231,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 53799824.0,
-            "cpu_percent": 94.5
+            "memory_bytes": 53799540.0,
+            "cpu_percent": 90.8
         },
         "mcdm_scores": {
-            "f_perf": 0.3822937062937063,
+            "f_perf": 0.7335664335664336,
             "f_expl": 0.13093033152356187,
-            "f_res": 0.6419325103759765
+            "f_res": 0.6188072395324707
         }
     },
     "cic_TabNet": {
@@ -997,41 +561,42 @@
             "1": 33
         },
         "y_pred_balance": {
-            "1": 46
+            "1": 41,
+            "0": 5
         },
         "confusion_matrix": [
             [
-                0,
-                13
+                3,
+                10
             ],
             [
-                0,
-                33
+                2,
+                31
             ]
         ],
-        "accuracy": 0.717391304347826,
-        "precision": 0.717391304347826,
-        "recall": 1.0,
-        "f1": 0.8354430379746836,
-        "roc_auc": 0.289044289044289,
+        "accuracy": 0.7391304347826086,
+        "precision": 0.7560975609756098,
+        "recall": 0.9393939393939394,
+        "f1": 0.8378378378378378,
+        "roc_auc": 0.8344988344988344,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 14.11736011505127,
-        "cpu_percent": 235.5,
-        "ram_percent": 0.0034894265262380834,
+        "latency": 9.944547777590545,
+        "cpu_percent": 257.8,
+        "ram_percent": 0.0034667204738956224,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 556930.0,
-            "cpu_percent": 235.5
+            "memory_bytes": 553306.0,
+            "cpu_percent": 257.8
         },
         "mcdm_scores": {
-            "f_perf": 0.6919860729987313,
+            "f_perf": 0.7838530838530839,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.4724061298370361
+            "f_res": 1.6117776737213136
         }
     },
     "ton_LR": {
@@ -1051,12 +616,12 @@
         },
         "n_eval_rows": 525,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "1": 150,
+            "0": 375
         },
         "y_pred_balance": {
-            "0": 381,
-            "1": 144
+            "1": 144,
+            "0": 381
         },
         "confusion_matrix": [
             [
@@ -1076,21 +641,21 @@
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.46725318545386907,
-        "cpu_percent": 464.3,
-        "ram_percent": 0.002566661080075563,
+        "latency": 0.3261043911888486,
+        "cpu_percent": 449.1,
+        "ram_percent": 0.0025629268617543416,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 409652.0,
-            "cpu_percent": 464.3
+            "memory_bytes": 409056.0,
+            "cpu_percent": 449.1
         },
         "mcdm_scores": {
             "f_perf": 0.8517477369614512,
             "f_expl": 0.5705912247729522,
-            "f_res": 2.902265674591064
+            "f_res": 2.807265106201172
         }
     },
     "ton_DT": {
@@ -1114,42 +679,42 @@
             "1": 150
         },
         "y_pred_balance": {
-            "1": 150,
-            "0": 375
+            "1": 148,
+            "0": 377
         },
         "confusion_matrix": [
             [
-                371,
-                4
+                373,
+                2
             ],
             [
                 4,
                 146
             ]
         ],
-        "accuracy": 0.9847619047619047,
-        "precision": 0.9733333333333334,
+        "accuracy": 0.9885714285714285,
+        "precision": 0.9864864864864865,
         "recall": 0.9733333333333334,
-        "f1": 0.9733333333333334,
-        "roc_auc": 0.9929244444444444,
+        "f1": 0.9798657718120806,
+        "roc_auc": 0.9956622222222222,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 4.248495242049359,
-        "latency": 0.03640765235537574,
-        "cpu_percent": 413.1,
-        "ram_percent": 0.0016357818541714625,
+        "latency": 0.021669751121884302,
+        "cpu_percent": 517.2,
+        "ram_percent": 0.0016373106281150497,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 69,
             "shap_std": 0.5,
-            "memory_bytes": 261079.0,
-            "cpu_percent": 413.1
+            "memory_bytes": 261323.0,
+            "cpu_percent": 517.2
         },
         "mcdm_scores": {
-            "f_perf": 0.8799182222222223,
+            "f_perf": 0.8830787531692768,
             "f_expl": 0.5470754911104774,
-            "f_res": 2.582123984336853
+            "f_res": 3.2327492170333865
         }
     },
     "ton_RF": {
@@ -1173,42 +738,42 @@
             "0": 375
         },
         "y_pred_balance": {
-            "1": 145,
-            "0": 380
+            "1": 147,
+            "0": 378
         },
         "confusion_matrix": [
             [
-                374,
-                1
+                373,
+                2
             ],
             [
-                6,
-                144
+                5,
+                145
             ]
         ],
         "accuracy": 0.9866666666666667,
-        "precision": 0.993103448275862,
-        "recall": 0.96,
-        "f1": 0.976271186440678,
-        "roc_auc": 0.9975288888888889,
+        "precision": 0.9863945578231292,
+        "recall": 0.9666666666666667,
+        "f1": 0.9764309764309764,
+        "roc_auc": 0.9974577777777778,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.8944028342648505,
-        "latency": 0.42355037870861234,
-        "cpu_percent": 197.6,
-        "ram_percent": 0.0024117599398816715,
+        "complexity": 5.916202062607435,
+        "latency": 0.33969969976515996,
+        "cpu_percent": 274.4,
+        "ram_percent": 0.0024117286125467617,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 362,
+            "n_params": 370,
             "shap_std": 0.5,
-            "memory_bytes": 384929.0,
-            "cpu_percent": 197.6
+            "memory_bytes": 384924.0,
+            "cpu_percent": 274.4
         },
         "mcdm_scores": {
-            "f_perf": 0.8780142523540491,
-            "f_expl": 0.13393049399972745,
-            "f_res": 1.2353670969009398
+            "f_perf": 0.8800639461279461,
+            "f_expl": 0.13380547146353797,
+            "f_res": 1.7153670921325683
         }
     },
     "ton_CNN": {
@@ -1228,8 +793,8 @@
         },
         "n_eval_rows": 525,
         "y_true_balance": {
-            "1": 150,
-            "0": 375
+            "0": 375,
+            "1": 150
         },
         "y_pred_balance": {
             "0": 525
@@ -1252,21 +817,21 @@
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 0.7525098891485305,
-        "cpu_percent": 316.2,
-        "ram_percent": 0.0014636005560414484,
+        "latency": 0.9138402484712147,
+        "cpu_percent": 318.8,
+        "ram_percent": 0.0014690013885798592,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 233598.0,
-            "cpu_percent": 316.2
+            "memory_bytes": 234460.0,
+            "cpu_percent": 318.8
         },
         "mcdm_scores": {
             "f_perf": 0.18465066666666669,
             "f_expl": 0.13093033152356187,
-            "f_res": 1.9764727764129637
+            "f_res": 1.9927235984802247
         }
     },
     "ton_TabNet": {
@@ -1290,8 +855,8 @@
             "0": 375
         },
         "y_pred_balance": {
-            "1": 232,
-            "0": 293
+            "0": 293,
+            "1": 232
         },
         "confusion_matrix": [
             [
@@ -1311,21 +876,21 @@
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 2.7250748588925315,
-        "cpu_percent": 269.8,
-        "ram_percent": 0.014502112531010955,
+        "latency": 3.208740779331752,
+        "cpu_percent": 262.3,
+        "ram_percent": 0.014499474769411567,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 2314610.0,
-            "cpu_percent": 269.8
+            "memory_bytes": 2314189.0,
+            "cpu_percent": 262.3
         },
         "mcdm_scores": {
             "f_perf": 0.6855828830715532,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.6884573841094972
+            "f_res": 1.64158198261261
         }
     },
     "fused_global": {
@@ -1349,24 +914,24 @@
             "0": 388
         },
         "y_pred_balance": {
-            "1": 133,
-            "0": 438
+            "1": 138,
+            "0": 433
         },
         "confusion_matrix": [
             [
-                382,
-                6
+                380,
+                8
             ],
             [
-                56,
-                127
+                53,
+                130
             ]
         ],
-        "accuracy": 0.8914185639229422,
-        "precision": 0.9548872180451128,
-        "recall": 0.6939890710382514,
-        "f1": 0.8037974683544303,
-        "roc_auc": 0.9390738549940848
+        "accuracy": 0.8931698774080561,
+        "precision": 0.9420289855072463,
+        "recall": 0.7103825136612022,
+        "f1": 0.8099688473520249,
+        "roc_auc": 0.923455016618782
     },
     "fused_LR": {
         "methodology_context": {
@@ -1385,47 +950,47 @@
         },
         "n_eval_rows": 571,
         "y_true_balance": {
-            "1": 183,
-            "0": 388
+            "0": 388,
+            "1": 183
         },
         "y_pred_balance": {
-            "1": 248,
-            "0": 323
+            "1": 202,
+            "0": 369
         },
         "confusion_matrix": [
             [
-                255,
-                133
+                299,
+                89
             ],
             [
-                68,
-                115
+                70,
+                113
             ]
         ],
-        "accuracy": 0.647985989492119,
-        "precision": 0.4637096774193548,
-        "recall": 0.6284153005464481,
-        "f1": 0.5336426914153132,
-        "roc_auc": 0.7764632978423751,
-        "gap": 0.00964564930449785,
+        "accuracy": 0.7215411558669002,
+        "precision": 0.5594059405940595,
+        "recall": 0.6174863387978142,
+        "f1": 0.587012987012987,
+        "roc_auc": 0.7826882992507465,
+        "gap": 0.008267922553636842,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.23279799680158678,
-        "cpu_percent": 555.4,
-        "ram_percent": 0.0004184141505192851,
+        "latency": 0.19792750503887438,
+        "cpu_percent": 397.3,
+        "ram_percent": 0.00042672215973730475,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 66781.0,
-            "cpu_percent": 555.4
+            "memory_bytes": 68107.0,
+            "cpu_percent": 397.3
         },
         "mcdm_scores": {
-            "f_perf": 0.556309761368085,
+            "f_perf": 0.5757619640393248,
             "f_expl": 0.5705912247729522,
-            "f_res": 3.471313687324524
+            "f_res": 2.4831899518966676
         }
     },
     "fused_DT": {
@@ -1449,43 +1014,43 @@
             "1": 183
         },
         "y_pred_balance": {
-            "1": 334,
-            "0": 237
+            "0": 173,
+            "1": 398
         },
         "confusion_matrix": [
             [
-                237,
-                151
+                172,
+                216
             ],
             [
-                0,
-                183
+                1,
+                182
             ]
         ],
-        "accuracy": 0.7355516637478109,
-        "precision": 0.5479041916167665,
-        "recall": 1.0,
-        "f1": 0.7079303675048356,
-        "roc_auc": 0.9164835783899499,
-        "gap": 0.026666666666666616,
+        "accuracy": 0.6199649737302977,
+        "precision": 0.457286432160804,
+        "recall": 0.994535519125683,
+        "f1": 0.6265060240963856,
+        "roc_auc": 0.7772379020900231,
+        "gap": 0.04047183241814112,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 3.6888794541139363,
-        "latency": 0.010927587799767062,
-        "cpu_percent": 466.3,
+        "complexity": 3.6375861597263857,
+        "latency": 0.015285094439878981,
+        "cpu_percent": 447.5,
         "ram_percent": 0.0002781929994640209,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 39,
+            "n_params": 37,
             "shap_std": 0.5,
             "memory_bytes": 44401.0,
-            "cpu_percent": 466.3
+            "cpu_percent": 447.5
         },
         "mcdm_scores": {
-            "f_perf": 0.7638021960132575,
-            "f_expl": 0.5542170061363634,
-            "f_res": 2.914417344093323
+            "f_perf": 0.7003634625524497,
+            "f_expl": 0.5549815155484987,
+            "f_res": 2.796917344093323
         }
     },
     "fused_RF": {
@@ -1505,47 +1070,47 @@
         },
         "n_eval_rows": 571,
         "y_true_balance": {
-            "0": 388,
-            "1": 183
+            "1": 183,
+            "0": 388
         },
         "y_pred_balance": {
-            "0": 356,
-            "1": 215
+            "0": 271,
+            "1": 300
         },
         "confusion_matrix": [
             [
-                339,
-                49
+                260,
+                128
             ],
             [
-                17,
-                166
+                11,
+                172
             ]
         ],
-        "accuracy": 0.8844133099824869,
-        "precision": 0.772093023255814,
-        "recall": 0.907103825136612,
-        "f1": 0.8341708542713567,
-        "roc_auc": 0.9658469945355193,
-        "gap": 0.0210473058436631,
+        "accuracy": 0.7565674255691769,
+        "precision": 0.5733333333333334,
+        "recall": 0.9398907103825137,
+        "f1": 0.7122153209109731,
+        "roc_auc": 0.9559320601656245,
+        "gap": 0.03703703703703698,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.43372200355424,
-        "latency": 0.22089209949072522,
-        "cpu_percent": 380.0,
-        "ram_percent": 0.00039363422860581014,
+        "complexity": 5.572154032177765,
+        "latency": 0.27152911585391926,
+        "cpu_percent": 206.1,
+        "ram_percent": 0.0003956830363088964,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 228,
+            "n_params": 262,
             "shap_std": 0.5,
-            "memory_bytes": 62826.0,
-            "cpu_percent": 380.0
+            "memory_bytes": 63153.0,
+            "cpu_percent": 206.1
         },
         "mcdm_scores": {
-            "f_perf": 0.7968641575722638,
-            "f_expl": 0.13680718297130007,
-            "f_res": 2.3750599155426024
+            "f_perf": 0.7543360498085646,
+            "f_expl": 0.1358927622684246,
+            "f_res": 1.288185227394104
         }
     },
     "fused_CNN": {
@@ -1565,8 +1130,8 @@
         },
         "n_eval_rows": 571,
         "y_true_balance": {
-            "0": 388,
-            "1": 183
+            "1": 183,
+            "0": 388
         },
         "y_pred_balance": {
             "0": 571
@@ -1585,26 +1150,26 @@
         "precision": 0.0,
         "recall": 0.0,
         "f1": 0.0,
-        "roc_auc": 0.7847022702946314,
-        "gap": 0.44,
+        "roc_auc": 0.8093487690834319,
+        "gap": 0.8461538461538461,
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 10.689736247689002,
-        "cpu_percent": 94.5,
-        "ram_percent": 0.3370810209048539,
+        "latency": 12.324217948312308,
+        "cpu_percent": 90.8,
+        "ram_percent": 0.337079241512231,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 53799824.0,
-            "cpu_percent": 94.5
+            "memory_bytes": 53799540.0,
+            "cpu_percent": 90.8
         },
         "mcdm_scores": {
-            "f_perf": 0.11294045405892628,
+            "f_perf": 0.07725436920130177,
             "f_expl": 0.13093033152356187,
-            "f_res": 0.6419325103759765
+            "f_res": 0.6188072395324707
         }
     },
     "fused_TabNet": {
@@ -1628,43 +1193,43 @@
             "0": 388
         },
         "y_pred_balance": {
-            "1": 263,
-            "0": 308
+            "1": 258,
+            "0": 313
         },
         "confusion_matrix": [
             [
-                269,
-                119
+                271,
+                117
             ],
             [
-                39,
-                144
+                42,
+                141
             ]
         ],
-        "accuracy": 0.723292469352014,
-        "precision": 0.5475285171102662,
-        "recall": 0.7868852459016393,
-        "f1": 0.6457399103139013,
-        "roc_auc": 0.677440707565771,
-        "gap": 0.14957916362913382,
+        "accuracy": 0.7215411558669002,
+        "precision": 0.5465116279069767,
+        "recall": 0.7704918032786885,
+        "f1": 0.6394557823129252,
+        "roc_auc": 0.6569770717142697,
+        "gap": 0.1519739634922881,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 1.1373004646100848,
-        "cpu_percent": 235.5,
-        "ram_percent": 0.0034894265262380834,
+        "latency": 0.8011369488076445,
+        "cpu_percent": 257.8,
+        "ram_percent": 0.0034667204738956224,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 556930.0,
-            "cpu_percent": 235.5
+            "memory_bytes": 553306.0,
+            "cpu_percent": 257.8
         },
         "mcdm_scores": {
-            "f_perf": 0.6148917630462931,
+            "f_perf": 0.6031278719024018,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.4724061298370361
+            "f_res": 1.6117776737213136
         }
     }
 }
