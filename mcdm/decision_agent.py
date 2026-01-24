@@ -38,6 +38,13 @@ class DDoSDecisionAgent:
             "Resource-Constrained": np.array([0.30, 0.30, 0.40]),
             "Performance-First": np.array([0.50, 0.25, 0.25])
         }
+        self.colors = {
+            "LR": "#2E86AB",
+            "DT": "#A23B72",
+            "RF": "#F18F01",
+            "CNN": "#C73E1D",
+            "TabNet": "#3B1F2B"
+        }
 
     def _display_name(self, name: str) -> str:
         if name.startswith("fused_"):
@@ -46,13 +53,6 @@ class DDoSDecisionAgent:
 
     def _display_list(self, algorithms: List[str]) -> List[str]:
         return [self._display_name(a) for a in algorithms]
-        self.colors = {
-            "LR": "#2E86AB",
-            "DT": "#A23B72",
-            "RF": "#F18F01",
-            "CNN": "#C73E1D",
-            "TabNet": "#3B1F2B"
-        }
 
     def get_system_load_penalty(self) -> float:
         """Vérifie la charge actuelle du système local."""

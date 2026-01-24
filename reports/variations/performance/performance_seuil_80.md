@@ -2,16 +2,16 @@
 
 - Seuil applique: 80.0
 - Formule: dim_performance >= Seuil
-- Solutions admissibles: 1/5
+- Solutions admissibles: 2/5
 
 ## Solutions admissibles
-- fused_RF
+- RF
+- TabNet
 
 ## Solutions rejetees
-- fused_DT
-- fused_TabNet
-- fused_LR
-- fused_CNN
+- LR
+- DT
+- CNN
 
 ## Interpretation
 Seuil intermediaire: la contrainte filtre une partie des solutions. Cela illustre le compromis entre performances, explicabilite et ressources.
