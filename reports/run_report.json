@@ -2,7 +2,7 @@
     "_metadata": {
         "methodology": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -428,9 +428,123 @@
                     "type": "decision_plot"
                 },
                 {
+                    "name": "resource_pareto_threshold_50_3d_points.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_points.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_points.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_90.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_90.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_90.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_100_3d_color.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_color.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_color.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_70_3d_points.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_points.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_points.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_80_3d_color.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_color.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_color.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_70.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_70.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_70.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_80_3d_points.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_points.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_points.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_50.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_50.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_50.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_70_3d_color.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_color.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_color.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_90_3d_color.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_color.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_color.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_50_3d_color.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_color.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_color.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_60.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_60.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_60.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_60_3d_points.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_points.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_points.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_100.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_100.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_100.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_90_3d_points.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_points.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_points.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_100_3d_points.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_points.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_points.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_80.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_80.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_80.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_pareto_threshold_60_3d_color.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_color.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_color.png",
+                    "type": "decision_plot"
+                },
+                {
                     "name": "resource_constraint_threshold_70.png",
                     "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_70.png",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_70.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_constraint_threshold_20.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_20.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_20.png",
                     "type": "decision_plot"
                 },
                 {
@@ -461,6 +575,12 @@
                     "name": "resource_constraint_threshold_100.png",
                     "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_100.png",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_100.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "resource_constraint_threshold_10.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_10.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_10.png",
                     "type": "decision_plot"
                 },
                 {
@@ -512,6 +632,12 @@
                     "type": "decision_plot"
                 },
                 {
+                    "name": "explainability_threshold_20.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_20.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_20.png",
+                    "type": "decision_plot"
+                },
+                {
                     "name": "explainability_threshold_90.png",
                     "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_90.png",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_90.png",
@@ -560,6 +686,12 @@
                     "type": "decision_plot"
                 },
                 {
+                    "name": "explainability_threshold_10.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_10.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_10.png",
+                    "type": "decision_plot"
+                },
+                {
                     "name": "performance_threshold_60.png",
                     "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_60.png",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_60.png",
@@ -575,6 +707,12 @@
                     "name": "performance_threshold_100.png",
                     "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_100.png",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_100.png",
+                    "type": "decision_plot"
+                },
+                {
+                    "name": "performance_threshold_10.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_10.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_10.png",
                     "type": "decision_plot"
                 },
                 {
@@ -614,6 +752,12 @@
                     "type": "decision_plot"
                 },
                 {
+                    "name": "performance_threshold_20.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_20.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_20.png",
+                    "type": "decision_plot"
+                },
+                {
                     "name": "cic_dt_dtreeviz.svg",
                     "path": "/home/tor/ton_iot/ton_iot/graph/algorithms/dtreeviz/cic_dt_dtreeviz.svg",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/algorithms/dtreeviz/cic_dt_dtreeviz.svg",
@@ -636,6 +780,24 @@
                     "path": "/home/tor/ton_iot/ton_iot/graph/algorithms/dtreeviz/ton_rf_dtreeviz.svg",
                     "url": "file:///home/tor/ton_iot/ton_iot/graph/algorithms/dtreeviz/ton_rf_dtreeviz.svg",
                     "type": "algorithm_viz"
+                },
+                {
+                    "name": "cnn_architecture.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/algorithms/nnviz/cnn_architecture.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/algorithms/nnviz/cnn_architecture.png",
+                    "type": "algorithm_viz"
+                },
+                {
+                    "name": "tabnet_architecture.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/algorithms/nnviz/tabnet_architecture.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/algorithms/nnviz/tabnet_architecture.png",
+                    "type": "algorithm_viz"
+                },
+                {
+                    "name": "resource_constraint_threshold_20.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_20.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_20.docx",
+                    "type": "variation_report"
                 },
                 {
                     "name": "resource_constraint_threshold_60.docx",
@@ -671,6 +833,12 @@
                     "name": "resource_constraint_threshold_90.docx",
                     "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_90.docx",
                     "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_90.docx",
+                    "type": "variation_report"
+                },
+                {
+                    "name": "resource_constraint_threshold_10.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_10.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_10.docx",
                     "type": "variation_report"
                 },
                 {
@@ -716,6 +884,12 @@
                     "type": "variation_report"
                 },
                 {
+                    "name": "explainability_threshold_10.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_10.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_10.docx",
+                    "type": "variation_report"
+                },
+                {
                     "name": "explainability_threshold_30.docx",
                     "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_30.docx",
                     "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_30.docx",
@@ -728,9 +902,21 @@
                     "type": "variation_report"
                 },
                 {
+                    "name": "explainability_threshold_20.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_20.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_20.docx",
+                    "type": "variation_report"
+                },
+                {
                     "name": "explainability_threshold_100.docx",
                     "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_100.docx",
                     "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_100.docx",
+                    "type": "variation_report"
+                },
+                {
+                    "name": "performance_threshold_10.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_10.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_10.docx",
                     "type": "variation_report"
                 },
                 {
@@ -779,6 +965,12 @@
                     "name": "performance_threshold_80.docx",
                     "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_80.docx",
                     "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_80.docx",
+                    "type": "variation_report"
+                },
+                {
+                    "name": "performance_threshold_20.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_20.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_20.docx",
                     "type": "variation_report"
                 },
                 {
@@ -863,7 +1055,7 @@
     "cic_LR": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -875,54 +1067,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 46,
+        "n_eval_rows": 91,
         "y_true_balance": {
-            "0": 13,
-            "1": 33
+            "0": 25,
+            "1": 66
         },
         "y_pred_balance": {
-            "1": 32,
-            "0": 14
+            "1": 70,
+            "0": 21
         },
         "confusion_matrix": [
             [
-                12,
-                1
+                20,
+                5
             ],
             [
-                2,
-                31
+                1,
+                65
             ]
         ],
-        "accuracy": 0.9347826086956522,
-        "precision": 0.96875,
-        "recall": 0.9393939393939394,
-        "f1": 0.9538461538461539,
-        "roc_auc": 0.9836829836829837,
+        "accuracy": 0.9340659340659341,
+        "precision": 0.9285714285714286,
+        "recall": 0.9848484848484849,
+        "f1": 0.9558823529411765,
+        "roc_auc": 0.9696969696969697,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.7414558659429136,
-        "cpu_percent": 495.3,
-        "ram_percent": 0.00042298167594910133,
+        "latency": 1.4744643326644058,
+        "cpu_percent": 386.7,
+        "ram_percent": 0.0006238462819223237,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 67510.0,
-            "cpu_percent": 495.3
+            "memory_bytes": 99569.0,
+            "cpu_percent": 386.7
         },
         "mcdm_scores": {
-            "f_perf": 0.8600932400932401,
+            "f_perf": 0.87174688057041,
             "f_expl": 0.5705912247729522,
-            "f_res": 3.0956893825531004
+            "f_res": 2.4169699563980105
         }
     },
     "cic_DT": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -934,54 +1126,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 46,
+        "n_eval_rows": 91,
         "y_true_balance": {
-            "0": 13,
-            "1": 33
+            "1": 66,
+            "0": 25
         },
         "y_pred_balance": {
-            "1": 34,
-            "0": 12
+            "1": 67,
+            "0": 24
         },
         "confusion_matrix": [
             [
-                11,
-                2
+                22,
+                3
             ],
             [
-                1,
-                32
+                2,
+                64
             ]
         ],
-        "accuracy": 0.9347826086956522,
-        "precision": 0.9411764705882353,
+        "accuracy": 0.945054945054945,
+        "precision": 0.9552238805970149,
         "recall": 0.9696969696969697,
-        "f1": 0.9552238805970149,
-        "roc_auc": 0.9055944055944056,
+        "f1": 0.9624060150375939,
+        "roc_auc": 0.9627272727272728,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 3.6375861597263857,
-        "latency": 0.11999710746433424,
-        "cpu_percent": 507.2,
-        "ram_percent": 0.0002769774988695293,
+        "complexity": 4.330733340286331,
+        "latency": 0.05451925508268587,
+        "cpu_percent": 771.1,
+        "ram_percent": 0.00031329214549671034,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 37,
+            "n_params": 75,
             "shap_std": 0.5,
-            "memory_bytes": 44207.0,
-            "cpu_percent": 507.2
+            "memory_bytes": 50003.0,
+            "cpu_percent": 771.1
         },
         "mcdm_scores": {
-            "f_perf": 0.854117524266778,
-            "f_expl": 0.5549815155484987,
-            "f_res": 3.1700421590805052
+            "f_perf": 0.8684169514695831,
+            "f_expl": 0.5461815550127538,
+            "f_res": 4.819422686576843
         }
     },
     "cic_RF": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -993,54 +1185,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 46,
+        "n_eval_rows": 91,
         "y_true_balance": {
-            "0": 13,
-            "1": 33
+            "0": 25,
+            "1": 66
         },
         "y_pred_balance": {
-            "0": 14,
-            "1": 32
+            "0": 24,
+            "1": 67
         },
         "confusion_matrix": [
             [
-                11,
-                2
+                24,
+                1
             ],
             [
-                3,
-                30
+                0,
+                66
             ]
         ],
-        "accuracy": 0.8913043478260869,
-        "precision": 0.9375,
-        "recall": 0.9090909090909091,
-        "f1": 0.9230769230769231,
-        "roc_auc": 0.986013986013986,
+        "accuracy": 0.989010989010989,
+        "precision": 0.9850746268656716,
+        "recall": 1.0,
+        "f1": 0.9924812030075187,
+        "roc_auc": 0.9978787878787879,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.442417710521793,
-        "latency": 2.9684149700662363,
-        "cpu_percent": 358.3,
-        "ram_percent": 0.0003944675357144049,
+        "complexity": 5.739792912179234,
+        "latency": 1.2270172873696128,
+        "cpu_percent": 393.3,
+        "ram_percent": 0.000566135065551902,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 230,
+            "n_params": 310,
             "shap_std": 0.5,
-            "memory_bytes": 62959.0,
-            "cpu_percent": 358.3
+            "memory_bytes": 90358.0,
+            "cpu_percent": 393.3
         },
         "mcdm_scores": {
-            "f_perf": 0.8391608391608392,
-            "f_expl": 0.13674837372613668,
-            "f_res": 2.2394350423812863
+            "f_perf": 0.8965682387787651,
+            "f_expl": 0.13484446269404968,
+            "f_res": 2.4582111721038817
         }
     },
     "cic_CNN": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1052,54 +1244,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 46,
+        "n_eval_rows": 91,
         "y_true_balance": {
-            "1": 33,
-            "0": 13
+            "1": 66,
+            "0": 25
         },
         "y_pred_balance": {
-            "0": 22,
-            "1": 24
+            "1": 84,
+            "0": 7
         },
         "confusion_matrix": [
             [
-                12,
-                1
+                7,
+                18
             ],
             [
-                10,
-                23
+                0,
+                66
             ]
         ],
-        "accuracy": 0.7608695652173914,
-        "precision": 0.9583333333333334,
-        "recall": 0.696969696969697,
-        "f1": 0.8070175438596491,
-        "roc_auc": 0.8811188811188811,
+        "accuracy": 0.8021978021978022,
+        "precision": 0.7857142857142857,
+        "recall": 1.0,
+        "f1": 0.88,
+        "roc_auc": 0.8151515151515152,
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 103.4412435863329,
-        "cpu_percent": 96.2,
-        "ram_percent": 0.3377472405399749,
+        "latency": 68.01790195507007,
+        "cpu_percent": 99.5,
+        "ram_percent": 0.3373757359407492,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 53906156.0,
-            "cpu_percent": 96.2
+            "memory_bytes": 53846862.0,
+            "cpu_percent": 99.5
         },
         "mcdm_scores": {
-            "f_perf": 0.708121702858545,
+            "f_perf": 0.8150303030303031,
             "f_expl": 0.13093033152356187,
-            "f_res": 0.6526589164733887
+            "f_res": 0.6732273693084716
         }
     },
     "cic_TabNet": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1111,54 +1303,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 46,
+        "n_eval_rows": 91,
         "y_true_balance": {
-            "0": 13,
-            "1": 33
+            "1": 66,
+            "0": 25
         },
         "y_pred_balance": {
-            "1": 44,
-            "0": 2
+            "0": 11,
+            "1": 80
         },
         "confusion_matrix": [
             [
-                0,
-                13
+                11,
+                14
             ],
             [
-                2,
-                31
+                0,
+                66
             ]
         ],
-        "accuracy": 0.6739130434782609,
-        "precision": 0.7045454545454546,
-        "recall": 0.9393939393939394,
-        "f1": 0.8051948051948052,
-        "roc_auc": 0.5641025641025641,
+        "accuracy": 0.8461538461538461,
+        "precision": 0.825,
+        "recall": 1.0,
+        "f1": 0.9041095890410958,
+        "roc_auc": 0.8448484848484848,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 6.712618081466012,
-        "cpu_percent": 271.8,
-        "ram_percent": 0.003468775547065691,
+        "latency": 5.507283158354706,
+        "cpu_percent": 251.3,
+        "ram_percent": 0.004581234271572678,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 553634.0,
-            "cpu_percent": 271.8
+            "memory_bytes": 731188.0,
+            "cpu_percent": 251.3
         },
         "mcdm_scores": {
-            "f_perf": 0.7167166167166168,
+            "f_perf": 0.8306135325861354,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.6992779865264893
+            "f_res": 1.5713223152160647
         }
     },
     "ton_LR": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1170,54 +1362,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 525,
+        "n_eval_rows": 1050,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "0": 750,
+            "1": 300
         },
         "y_pred_balance": {
-            "1": 144,
-            "0": 381
+            "1": 287,
+            "0": 763
         },
         "confusion_matrix": [
             [
-                370,
-                5
+                739,
+                11
             ],
             [
-                11,
-                139
+                24,
+                276
             ]
         ],
-        "accuracy": 0.9695238095238096,
-        "precision": 0.9652777777777778,
-        "recall": 0.9266666666666666,
-        "f1": 0.9455782312925171,
-        "roc_auc": 0.9775822222222221,
+        "accuracy": 0.9666666666666667,
+        "precision": 0.9616724738675958,
+        "recall": 0.92,
+        "f1": 0.9403747870528109,
+        "roc_auc": 0.9835555555555555,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.17370042346772693,
-        "cpu_percent": 557.8,
-        "ram_percent": 0.002563791496197846,
+        "latency": 0.22509325118291945,
+        "cpu_percent": 591.7,
+        "ram_percent": 0.004907401951717225,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 409194.0,
-            "cpu_percent": 557.8
+            "memory_bytes": 783246.0,
+            "cpu_percent": 591.7
         },
         "mcdm_scores": {
-            "f_perf": 0.8517477369614512,
+            "f_perf": 0.8488610259322356,
             "f_expl": 0.5705912247729522,
-            "f_res": 3.4866402378082273
+            "f_res": 3.698871961593628
         }
     },
     "ton_DT": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1229,54 +1421,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 525,
+        "n_eval_rows": 1050,
         "y_true_balance": {
-            "1": 150,
-            "0": 375
+            "0": 750,
+            "1": 300
         },
         "y_pred_balance": {
-            "0": 378,
-            "1": 147
+            "1": 294,
+            "0": 756
         },
         "confusion_matrix": [
             [
-                373,
-                2
+                746,
+                4
             ],
             [
-                5,
-                145
+                10,
+                290
             ]
         ],
         "accuracy": 0.9866666666666667,
         "precision": 0.9863945578231292,
         "recall": 0.9666666666666667,
         "f1": 0.9764309764309764,
-        "roc_auc": 0.9919288888888889,
+        "roc_auc": 0.9919733333333332,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 4.248495242049359,
-        "latency": 0.034998939150855654,
-        "cpu_percent": 537.5,
-        "ram_percent": 0.0016373106281150497,
+        "complexity": 4.564348191467836,
+        "latency": 0.014197712852841332,
+        "cpu_percent": 659.5,
+        "ram_percent": 0.003248149658231507,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 69,
+            "n_params": 95,
             "shap_std": 0.5,
-            "memory_bytes": 261323.0,
-            "cpu_percent": 537.5
+            "memory_bytes": 518421.0,
+            "cpu_percent": 659.5
         },
         "mcdm_scores": {
-            "f_perf": 0.8789581683501684,
-            "f_expl": 0.5470754911104774,
-            "f_res": 3.359624217033386
+            "f_perf": 0.8789670572390572,
+            "f_expl": 0.543817866562823,
+            "f_res": 4.122369404792786
         }
     },
     "ton_RF": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1288,54 +1480,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 525,
+        "n_eval_rows": 1050,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "1": 300,
+            "0": 750
         },
         "y_pred_balance": {
-            "1": 148,
-            "0": 377
+            "1": 295,
+            "0": 755
         },
         "confusion_matrix": [
             [
-                372,
-                3
+                742,
+                8
             ],
             [
-                5,
-                145
+                13,
+                287
             ]
         ],
-        "accuracy": 0.9847619047619047,
-        "precision": 0.9797297297297297,
-        "recall": 0.9666666666666667,
-        "f1": 0.9731543624161074,
-        "roc_auc": 0.9974577777777777,
+        "accuracy": 0.98,
+        "precision": 0.9728813559322034,
+        "recall": 0.9566666666666667,
+        "f1": 0.9647058823529412,
+        "roc_auc": 0.9964977777777778,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.8888779583328805,
-        "latency": 0.34486634390694754,
-        "cpu_percent": 286.8,
-        "ram_percent": 0.0024117599398816715,
+        "complexity": 5.937536205082426,
+        "latency": 0.16845521472749256,
+        "cpu_percent": 299.2,
+        "ram_percent": 0.004638143508169415,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 360,
+            "n_params": 378,
             "shap_std": 0.5,
-            "memory_bytes": 384929.0,
-            "cpu_percent": 286.8
+            "memory_bytes": 740271.0,
+            "cpu_percent": 299.2
         },
         "mcdm_scores": {
-            "f_perf": 0.8787533005219985,
-            "f_expl": 0.13396232718951087,
-            "f_res": 1.79286709690094
+            "f_perf": 0.872181908496732,
+            "f_expl": 0.13368400513142195,
+            "f_res": 1.8707059774398802
         }
     },
     "ton_CNN": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1347,53 +1539,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 525,
+        "n_eval_rows": 1050,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "0": 750,
+            "1": 300
         },
         "y_pred_balance": {
-            "0": 525
+            "0": 892,
+            "1": 158
         },
         "confusion_matrix": [
             [
-                375,
+                750,
                 0
             ],
             [
-                150,
-                0
+                142,
+                158
             ]
         ],
-        "accuracy": 0.7142857142857143,
-        "precision": 0.0,
-        "recall": 0.0,
-        "f1": 0.0,
-        "roc_auc": 0.9232533333333334,
+        "accuracy": 0.8647619047619047,
+        "precision": 1.0,
+        "recall": 0.5266666666666666,
+        "f1": 0.6899563318777293,
+        "roc_auc": 0.9590311111111113,
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 0.6882935478573754,
-        "cpu_percent": 334.6,
-        "ram_percent": 0.0014643273502113504,
+        "latency": 0.7345892134166899,
+        "cpu_percent": 329.2,
+        "ram_percent": 0.0019352147867041762,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 233714.0,
-            "cpu_percent": 334.6
+            "memory_bytes": 308870.0,
+            "cpu_percent": 329.2
         },
         "mcdm_scores": {
-            "f_perf": 0.18465066666666669,
+            "f_perf": 0.625788754973314,
             "f_expl": 0.13093033152356187,
-            "f_res": 2.0914728870391848
+            "f_res": 2.0577945613861086
         }
     },
     "ton_TabNet": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1405,54 +1598,54 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 525,
+        "n_eval_rows": 1050,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "1": 300,
+            "0": 750
         },
         "y_pred_balance": {
-            "0": 293,
-            "1": 232
+            "0": 518,
+            "1": 532
         },
         "confusion_matrix": [
             [
-                274,
-                101
+                482,
+                268
             ],
             [
-                19,
-                131
+                36,
+                264
             ]
         ],
-        "accuracy": 0.7714285714285715,
-        "precision": 0.5646551724137931,
-        "recall": 0.8733333333333333,
-        "f1": 0.6858638743455497,
-        "roc_auc": 0.7461866666666667,
+        "accuracy": 0.7104761904761905,
+        "precision": 0.49624060150375937,
+        "recall": 0.88,
+        "f1": 0.6346153846153846,
+        "roc_auc": 0.7167111111111111,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 2.391692116146996,
-        "cpu_percent": 275.5,
-        "ram_percent": 0.014491417378872825,
+        "latency": 2.976264272417341,
+        "cpu_percent": 263.0,
+        "ram_percent": 0.026768982123421735,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 2312903.0,
-            "cpu_percent": 275.5
+            "memory_bytes": 4272464.0,
+            "cpu_percent": 263.0
         },
         "mcdm_scores": {
-            "f_perf": 0.6855828830715532,
+            "f_perf": 0.6611883760683761,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.724080756187439
+            "f_res": 1.6478245391845703
         }
     },
     "fused_global": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1464,35 +1657,35 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 571,
+        "n_eval_rows": 1141,
         "y_true_balance": {
-            "1": 183,
-            "0": 388
+            "1": 366,
+            "0": 775
         },
         "y_pred_balance": {
-            "0": 434,
-            "1": 137
+            "0": 872,
+            "1": 269
         },
         "confusion_matrix": [
             [
-                380,
-                8
+                765,
+                10
             ],
             [
-                54,
-                129
+                107,
+                259
             ]
         ],
-        "accuracy": 0.8914185639229422,
-        "precision": 0.9416058394160584,
-        "recall": 0.7049180327868853,
-        "f1": 0.80625,
-        "roc_auc": 0.9609881133457271
+        "accuracy": 0.8974583698510079,
+        "precision": 0.9628252788104089,
+        "recall": 0.7076502732240437,
+        "f1": 0.815748031496063,
+        "roc_auc": 0.9723038956460426
     },
     "fused_LR": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1504,55 +1697,55 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 571,
+        "n_eval_rows": 1141,
         "y_true_balance": {
-            "0": 388,
-            "1": 183
+            "0": 775,
+            "1": 366
         },
         "y_pred_balance": {
-            "0": 367,
-            "1": 204
+            "1": 227,
+            "0": 914
         },
         "confusion_matrix": [
             [
-                299,
-                89
+                761,
+                14
             ],
             [
-                68,
-                115
+                153,
+                213
             ]
         ],
-        "accuracy": 0.7250437828371279,
-        "precision": 0.5637254901960784,
-        "recall": 0.6284153005464481,
-        "f1": 0.5943152454780362,
-        "roc_auc": 0.7861669765083656,
-        "gap": 0.008267922553636842,
+        "accuracy": 0.8536371603856266,
+        "precision": 0.9383259911894273,
+        "recall": 0.5819672131147541,
+        "f1": 0.718381112984823,
+        "roc_auc": 0.8462718138551031,
+        "gap": 0.01550756588836566,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.05973199620555871,
-        "cpu_percent": 495.3,
-        "ram_percent": 0.00042298167594910133,
+        "latency": 0.11759531487507532,
+        "cpu_percent": 386.7,
+        "ram_percent": 0.0006238462819223237,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 67510.0,
-            "cpu_percent": 495.3
+            "memory_bytes": 99569.0,
+            "cpu_percent": 386.7
         },
         "mcdm_scores": {
-            "f_perf": 0.5826572914014584,
+            "f_perf": 0.6296462153105395,
             "f_expl": 0.5705912247729522,
-            "f_res": 3.0956893825531004
+            "f_res": 2.4169699563980105
         }
     },
     "fused_DT": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1564,55 +1757,55 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 571,
+        "n_eval_rows": 1141,
         "y_true_balance": {
-            "0": 388,
-            "1": 183
+            "0": 775,
+            "1": 366
         },
         "y_pred_balance": {
-            "1": 378,
-            "0": 193
+            "0": 318,
+            "1": 823
         },
         "confusion_matrix": [
             [
-                192,
-                196
+                313,
+                462
             ],
             [
-                1,
-                182
+                5,
+                361
             ]
         ],
-        "accuracy": 0.6549912434325744,
-        "precision": 0.48148148148148145,
-        "recall": 0.994535519125683,
-        "f1": 0.6488413547237076,
-        "roc_auc": 0.8065038589375246,
-        "gap": 0.02120709583396152,
+        "accuracy": 0.5907099035933392,
+        "precision": 0.43863912515188336,
+        "recall": 0.9863387978142076,
+        "f1": 0.607232968881413,
+        "roc_auc": 0.861371408425877,
+        "gap": 0.014024961393382496,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 3.6375861597263857,
-        "latency": 0.00966701741393936,
-        "cpu_percent": 507.2,
-        "ram_percent": 0.0002769774988695293,
+        "complexity": 4.330733340286331,
+        "latency": 0.0043481614483123696,
+        "cpu_percent": 771.1,
+        "ram_percent": 0.00031329214549671034,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 37,
+            "n_params": 75,
             "shap_std": 0.5,
-            "memory_bytes": 44207.0,
-            "cpu_percent": 507.2
+            "memory_bytes": 50003.0,
+            "cpu_percent": 771.1
         },
         "mcdm_scores": {
-            "f_perf": 0.7170772598312968,
-            "f_expl": 0.5549815155484987,
-            "f_res": 3.1700421590805052
+            "f_perf": 0.7096666124426646,
+            "f_expl": 0.5461815550127538,
+            "f_res": 4.819422686576843
         }
     },
     "fused_RF": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1624,55 +1817,55 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 571,
+        "n_eval_rows": 1141,
         "y_true_balance": {
-            "0": 388,
-            "1": 183
+            "0": 775,
+            "1": 366
         },
         "y_pred_balance": {
-            "0": 412,
-            "1": 159
+            "1": 340,
+            "0": 801
         },
         "confusion_matrix": [
             [
-                380,
-                8
+                766,
+                9
             ],
             [
-                32,
-                151
+                35,
+                331
             ]
         ],
-        "accuracy": 0.9299474605954466,
-        "precision": 0.949685534591195,
-        "recall": 0.825136612021858,
-        "f1": 0.8830409356725146,
-        "roc_auc": 0.9799588755563067,
-        "gap": 0.05007743933918429,
+        "accuracy": 0.9614373356704645,
+        "precision": 0.9735294117647059,
+        "recall": 0.9043715846994536,
+        "f1": 0.9376770538243626,
+        "roc_auc": 0.9897373523708796,
+        "gap": 0.02777532065457755,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.442417710521793,
-        "latency": 0.23913675765857598,
-        "cpu_percent": 358.3,
-        "ram_percent": 0.0003944675357144049,
+        "complexity": 5.739792912179234,
+        "latency": 0.0978602744527912,
+        "cpu_percent": 393.3,
+        "ram_percent": 0.000566135065551902,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 230,
+            "n_params": 310,
             "shap_std": 0.5,
-            "memory_bytes": 62959.0,
-            "cpu_percent": 358.3
+            "memory_bytes": 90358.0,
+            "cpu_percent": 393.3
         },
         "mcdm_scores": {
-            "f_perf": 0.7917413890529061,
-            "f_expl": 0.13674837372613668,
-            "f_res": 2.2394350423812863
+            "f_perf": 0.8415522353482994,
+            "f_expl": 0.13484446269404968,
+            "f_res": 2.4582111721038817
         }
     },
     "fused_CNN": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1684,54 +1877,55 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 571,
+        "n_eval_rows": 1141,
         "y_true_balance": {
-            "1": 183,
-            "0": 388
+            "1": 366,
+            "0": 775
         },
         "y_pred_balance": {
-            "0": 571
+            "0": 925,
+            "1": 216
         },
         "confusion_matrix": [
             [
-                388,
-                0
+                766,
+                9
             ],
             [
-                183,
-                0
+                159,
+                207
             ]
         ],
-        "accuracy": 0.6795096322241682,
-        "precision": 0.0,
-        "recall": 0.0,
-        "f1": 0.0,
-        "roc_auc": 0.8457410850092952,
-        "gap": 0.8070175438596491,
+        "accuracy": 0.852760736196319,
+        "precision": 0.9583333333333334,
+        "recall": 0.5655737704918032,
+        "f1": 0.711340206185567,
+        "roc_auc": 0.8038251366120218,
+        "gap": 0.1900436681222707,
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 8.333270061245733,
-        "cpu_percent": 96.2,
-        "ram_percent": 0.3377472405399749,
+        "latency": 5.4247406467233805,
+        "cpu_percent": 99.5,
+        "ram_percent": 0.3373757359407492,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 53906156.0,
-            "cpu_percent": 96.2
+            "memory_bytes": 53846862.0,
+            "cpu_percent": 99.5
         },
         "mcdm_scores": {
-            "f_perf": 0.08844646261589414,
+            "f_perf": 0.5959688741319451,
             "f_expl": 0.13093033152356187,
-            "f_res": 0.6526589164733887
+            "f_res": 0.6732273693084716
         }
     },
     "fused_TabNet": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
+            "sample_description": "Stratified sampling (ratio=0.1)",
             "k_folds": {
                 "enabled": false,
                 "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -1743,49 +1937,49 @@
                 "method": "Stratified Shuffle Split"
             }
         },
-        "n_eval_rows": 571,
+        "n_eval_rows": 1141,
         "y_true_balance": {
-            "1": 183,
-            "0": 388
+            "1": 366,
+            "0": 775
         },
         "y_pred_balance": {
-            "0": 312,
-            "1": 259
+            "0": 496,
+            "1": 645
         },
         "confusion_matrix": [
             [
-                269,
-                119
+                409,
+                366
             ],
             [
-                43,
-                140
+                87,
+                279
             ]
         ],
-        "accuracy": 0.7162872154115587,
-        "precision": 0.5405405405405406,
-        "recall": 0.7650273224043715,
-        "f1": 0.6334841628959276,
-        "roc_auc": 0.6772012844346798,
-        "gap": 0.1193309308492555,
+        "accuracy": 0.6029798422436459,
+        "precision": 0.4325581395348837,
+        "recall": 0.7622950819672131,
+        "f1": 0.5519287833827893,
+        "roc_auc": 0.5745813502555966,
+        "gap": 0.26949420442571126,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 0.5407713340585578,
-        "cpu_percent": 271.8,
-        "ram_percent": 0.003468775547065691,
+        "latency": 0.43923117213871893,
+        "cpu_percent": 251.3,
+        "ram_percent": 0.004581234271572678,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 553634.0,
-            "cpu_percent": 271.8
+            "memory_bytes": 731188.0,
+            "cpu_percent": 251.3
         },
         "mcdm_scores": {
-            "f_perf": 0.606409025681693,
+            "f_perf": 0.5374268875518279,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.6992779865264893
+            "f_res": 1.5713223152160647
         }
     }
 }

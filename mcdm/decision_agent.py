@@ -30,11 +30,6 @@ class DDoSDecisionAgent:
         self.hierarchy = config['mcdm_hierarchy']
         self.logger = logger
         
-        # User profiles (weights: Performance, Explainability, Resources)
-        self.profiles = {
-            "A": np.array([0.70, 0.15, 0.15]), # Focus Performance
-            "B": np.array([0.15, 0.70, 0.15])  # Focus Explainability
-        }
         # AHP profiles for sensitivity (3 dimensions)
         self.ahp_profiles = {
             "Balanced": np.array([0.33, 0.33, 0.34]),
@@ -93,6 +88,15 @@ class DDoSDecisionAgent:
                 global_weights[crit['key']] = pillar_weight * crit['weight']
                 
         return global_weights
+
+    def get_pillar_weights(self) -> np.ndarray:
+        """Return pillar weights from config (Performance, Explainability, Resources)."""
+        pillars = self.hierarchy.get("pillars", [])
+        if len(pillars) >= 3:
+            weights = np.array([p.get("weight", 0.0) for p in pillars], dtype=float)
+            if weights.sum() > 0:
+                return weights / weights.sum()
+        return np.array([0.70, 0.15, 0.15], dtype=float)
 
     # --- OUTILS TOPSIS + VISUALISATIONS ---
 
@@ -933,26 +937,27 @@ class DDoSDecisionAgent:
 
     # --- BLOCK 2: MCDM (Decision Modeling) ---
 
-    def run_mcdm_phase(self, df: pd.DataFrame, profile_name: str) -> pd.DataFrame:
+    def run_mcdm_phase(self, df: pd.DataFrame, weights: np.ndarray = None) -> pd.DataFrame:
         """MCDM phase: ranking via TOPSIS and WSM."""
-        print(f"\n>>> START OF MCDM PHASE (Profile {profile_name})")
-        weights = self.profiles[profile_name]
+        if weights is None:
+            weights = self.get_pillar_weights()
+        print("\n>>> START OF MCDM PHASE (Config weights)")
         objectives = ['dim_performance', 'dim_explainability', 'dim_resources']
         matrix = df[objectives].to_numpy()
         types = np.array([1, 1, 1])
         
-        df[f'score_topsis_{profile_name}'] = TOPSIS()(matrix, weights, types)
-        df[f'score_wsm_{profile_name}'] = (matrix * weights).sum(axis=1)
+        df['score_topsis'] = TOPSIS()(matrix, weights, types)
+        df['score_wsm'] = (matrix * weights).sum(axis=1)
         return df
 
     # --- BLOCK 3: MCDA (Analysis and Justification) ---
 
-    def run_mcda_analysis(self, df: pd.DataFrame, profile_name: str) -> Dict:
+    def run_mcda_analysis(self, df: pd.DataFrame, weights: np.ndarray = None) -> Dict:
         """MCDA phase: sensitivity analysis and correlation."""
-        print(f"\n>>> START OF MCDA PHASE (Profile {profile_name})")
-        original_weights = self.profiles[profile_name].copy()
-        idx_main = 0 if profile_name == "A" else 1
-        original_winner = df.sort_values(by=f'score_topsis_{profile_name}', ascending=False).iloc[0]['model']
+        print("\n>>> START OF MCDA PHASE (Config weights)")
+        original_weights = self.get_pillar_weights() if weights is None else weights.copy()
+        idx_main = int(np.argmax(original_weights))
+        original_winner = df.sort_values(by='score_topsis', ascending=False).iloc[0]['model']
         
         test_weights = original_weights.copy()
         test_weights[idx_main] *= 1.05
@@ -962,13 +967,13 @@ class DDoSDecisionAgent:
         new_scores = TOPSIS()(df[objectives].to_numpy(), test_weights, np.array([1, 1, 1]))
         new_winner = df.iloc[np.argmax(new_scores)]['model']
         
-        corr, _ = spearmanr(df[f'score_topsis_{profile_name}'], df[f'score_wsm_{profile_name}'])
+        corr, _ = spearmanr(df['score_topsis'], df['score_wsm'])
         return {"is_stable": original_winner == new_winner, "spearman_corr": corr, "winner": original_winner}
 
     def rank_models(self, results_df: pd.DataFrame) -> pd.DataFrame:
         """Wrapper to keep pipeline compatibility."""
         df = self.run_moo_phase(results_df)
-        df = self.run_mcdm_phase(df, "A")
+        df = self.run_mcdm_phase(df)
         return df
 
     def visualize_sad(self, results_df: pd.DataFrame, output_dir: str):
@@ -977,8 +982,7 @@ class DDoSDecisionAgent:
         plt.style.use('ggplot')
         
         df = self.run_moo_phase(results_df)
-        df = self.run_mcdm_phase(df, "A")
-        df = self.run_mcdm_phase(df, "B")
+        df = self.run_mcdm_phase(df)
         df = df.copy()
         df["model_label"] = df["model"].apply(self._display_name)
         
@@ -1024,7 +1028,7 @@ class DDoSDecisionAgent:
         plt.close()
 
         # 4. Radar
-        winner_a = df.sort_values(by='score_topsis_A', ascending=False).iloc[0]
+        winner_a = df.sort_values(by='score_topsis', ascending=False).iloc[0]
         angles = np.linspace(0, 2*np.pi, len(dims), endpoint=False).tolist()
         angles += angles[:1]
         fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
@@ -1135,10 +1139,9 @@ class DDoSDecisionAgent:
     def generate_final_report(self, results_df: pd.DataFrame) -> str:
         df = self.run_moo_phase(results_df)
         report = ["# DECISION SUPPORT SYSTEM REPORT (DSS)"]
-        for p in ["A", "B"]:
-            df = self.run_mcdm_phase(df, p)
-            analysis = self.run_mcda_analysis(df, p)
-            report.append(f"\n## PROFILE RESULT {p}")
-            report.append(f"- **Winner**: **{analysis['winner']}**")
-            report.append(f"- **Consensus**: {analysis['spearman_corr']:.4f}")
+        df = self.run_mcdm_phase(df)
+        analysis = self.run_mcda_analysis(df)
+        report.append("\n## RESULT (Config weights)")
+        report.append(f"- **Winner**: **{analysis['winner']}**")
+        report.append(f"- **Consensus**: {analysis['spearman_corr']:.4f}")
         return "\n".join(report)

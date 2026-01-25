@@ -6,7 +6,9 @@
 - graph/decision/radar_comparison.png
 - graph/decision/unified_dimensions_comparison.png
 - graph/decision/variations/explainability/explainability_resume.png
+- graph/decision/variations/explainability/explainability_threshold_10.png
 - graph/decision/variations/explainability/explainability_threshold_100.png
+- graph/decision/variations/explainability/explainability_threshold_20.png
 - graph/decision/variations/explainability/explainability_threshold_30.png
 - graph/decision/variations/explainability/explainability_threshold_40.png
 - graph/decision/variations/explainability/explainability_threshold_50.png
@@ -15,7 +17,9 @@
 - graph/decision/variations/explainability/explainability_threshold_80.png
 - graph/decision/variations/explainability/explainability_threshold_90.png
 - graph/decision/variations/performance/performance_resume.png
+- graph/decision/variations/performance/performance_threshold_10.png
 - graph/decision/variations/performance/performance_threshold_100.png
+- graph/decision/variations/performance/performance_threshold_20.png
 - graph/decision/variations/performance/performance_threshold_30.png
 - graph/decision/variations/performance/performance_threshold_40.png
 - graph/decision/variations/performance/performance_threshold_50.png
@@ -24,7 +28,9 @@
 - graph/decision/variations/performance/performance_threshold_80.png
 - graph/decision/variations/performance/performance_threshold_90.png
 - graph/decision/variations/resource/resource_constraint_resume.png
+- graph/decision/variations/resource/resource_constraint_threshold_10.png
 - graph/decision/variations/resource/resource_constraint_threshold_100.png
+- graph/decision/variations/resource/resource_constraint_threshold_20.png
 - graph/decision/variations/resource/resource_constraint_threshold_30.png
 - graph/decision/variations/resource/resource_constraint_threshold_40.png
 - graph/decision/variations/resource/resource_constraint_threshold_50.png
@@ -32,6 +38,24 @@
 - graph/decision/variations/resource/resource_constraint_threshold_70.png
 - graph/decision/variations/resource/resource_constraint_threshold_80.png
 - graph/decision/variations/resource/resource_constraint_threshold_90.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_100.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_50.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_60.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_70.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_80.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_90.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_points.png
 - graph/decision/variations/sampling/explainability/explainability_sampling_curve.png
 - graph/decision/variations/sampling/explainability/explainability_sampling_derivative.png
 - graph/decision/variations/sampling/performance/performance_sampling_curve.png
@@ -56,7 +80,9 @@
 
 ## Threshold variations
 - graph/decision/variations/explainability/explainability_resume.png
+- graph/decision/variations/explainability/explainability_threshold_10.png
 - graph/decision/variations/explainability/explainability_threshold_100.png
+- graph/decision/variations/explainability/explainability_threshold_20.png
 - graph/decision/variations/explainability/explainability_threshold_30.png
 - graph/decision/variations/explainability/explainability_threshold_40.png
 - graph/decision/variations/explainability/explainability_threshold_50.png
@@ -65,7 +91,9 @@
 - graph/decision/variations/explainability/explainability_threshold_80.png
 - graph/decision/variations/explainability/explainability_threshold_90.png
 - graph/decision/variations/performance/performance_resume.png
+- graph/decision/variations/performance/performance_threshold_10.png
 - graph/decision/variations/performance/performance_threshold_100.png
+- graph/decision/variations/performance/performance_threshold_20.png
 - graph/decision/variations/performance/performance_threshold_30.png
 - graph/decision/variations/performance/performance_threshold_40.png
 - graph/decision/variations/performance/performance_threshold_50.png
@@ -74,7 +102,9 @@
 - graph/decision/variations/performance/performance_threshold_80.png
 - graph/decision/variations/performance/performance_threshold_90.png
 - graph/decision/variations/resource/resource_constraint_resume.png
+- graph/decision/variations/resource/resource_constraint_threshold_10.png
 - graph/decision/variations/resource/resource_constraint_threshold_100.png
+- graph/decision/variations/resource/resource_constraint_threshold_20.png
 - graph/decision/variations/resource/resource_constraint_threshold_30.png
 - graph/decision/variations/resource/resource_constraint_threshold_40.png
 - graph/decision/variations/resource/resource_constraint_threshold_50.png
@@ -82,6 +112,24 @@
 - graph/decision/variations/resource/resource_constraint_threshold_70.png
 - graph/decision/variations/resource/resource_constraint_threshold_80.png
 - graph/decision/variations/resource/resource_constraint_threshold_90.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_100.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_100_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_50.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_50_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_60.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_60_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_70.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_70_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_80.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_80_3d_points.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_90.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_color.png
+- graph/decision/variations/resource_pareto/resource_pareto_threshold_90_3d_points.png
 - graph/decision/variations/sampling/explainability/explainability_sampling_curve.png
 - graph/decision/variations/sampling/explainability/explainability_sampling_derivative.png
 - graph/decision/variations/sampling/performance/performance_sampling_curve.png
@@ -152,16 +200,20 @@
 - graph/algorithms/dtreeviz/ton_dt_dtreeviz.svg
 - graph/algorithms/dtreeviz/ton_rf_dtreeviz.svg
 
+## Neural model summaries
+- graph/algorithms/nnviz/cnn_architecture.png
+- graph/algorithms/nnviz/tabnet_architecture.png
+
 ## Derivative summary (sampling)
 ### Performance
-- CNN: derivative peak 0.0029 at 20%
-- DT: derivative peak 0.0011 at 10%
-- LR: derivative peak 0.0076 at 10%
-- RF: derivative peak -0.0015 at 10%
-- TabNet: derivative peak -0.0031 at 40%
+- CNN: derivative peak -0.0043 at 10%
+- DT: derivative peak 0.0022 at 10%
+- LR: derivative peak -0.0019 at 40%
+- RF: derivative peak -0.0011 at 40%
+- TabNet: derivative peak 0.0031 at 20%
 ### Explainability
-- CNN: derivative peak 0.0006 at 10%
-- DT: derivative peak 0.0007 at 10%
-- LR: derivative peak 0.0003 at 10%
-- RF: derivative peak -0.0003 at 10%
-- TabNet: derivative peak -0.0026 at 10%
+- CNN: derivative peak 0.0018 at 10%
+- DT: derivative peak 0.0006 at 10%
+- LR: derivative peak 0.0008 at 10%
+- RF: derivative peak 0.0005 at 10%
+- TabNet: derivative peak -0.0020 at 10%
