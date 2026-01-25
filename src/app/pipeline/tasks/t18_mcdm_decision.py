@@ -88,6 +88,8 @@ class T18_MCDM_Decision(Task):
 
         dtreeviz_dir = os.path.join("graph", "algorithms", "dtreeviz")
         dtreeviz_files = self._generate_dtreeviz(context, dtreeviz_dir)
+        nnviz_dir = os.path.join("graph", "algorithms", "nnviz")
+        nnviz_files = self._generate_nn_viz(context, nnviz_dir)
 
         sampling_summary = self._generate_sampling_variation(context, all_metrics)
         report_links = self._write_graphs_report(sampling_summary)
@@ -114,7 +116,7 @@ class T18_MCDM_Decision(Task):
                     "url": f"file://{os.path.abspath(p)}",
                     "type": "algorithm_viz"
                 }
-                for p in dtreeviz_files
+                for p in (dtreeviz_files + nnviz_files)
             ]
             variation_reports = []
             variations_dir = os.path.join("reports", "variations")
@@ -275,6 +277,110 @@ class T18_MCDM_Decision(Task):
             except Exception as exc:
                 context.logger.warning("mcdm", f"dtreeviz failed for {model_path}: {exc}")
                 continue
+
+        return files
+
+    def _generate_nn_viz(self, context: DAGContext, output_dir: str) -> list:
+        """Generate readable architecture summaries for CNN and TabNet."""
+        os.makedirs(output_dir, exist_ok=True)
+        files = []
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as exc:
+            context.logger.warning("mcdm", f"NN viz skipped: matplotlib missing ({exc})")
+            return files
+
+        # --- CNN ---
+        try:
+            from src.infra.models.torch_cnn import TorchCNNModel
+            cnn_model_path = None
+            for candidate in ["cic_CNN.model", "ton_CNN.model"]:
+                path = os.path.join("work", "models", candidate)
+                if os.path.exists(path):
+                    cnn_model_path = path
+                    break
+            if cnn_model_path:
+                # Load model to compute parameter count
+                art = context.artifact_store.load_table("cic_projected")
+                feature_order = art.feature_order if hasattr(art, "feature_order") else []
+                cnn = TorchCNNModel(feature_order)
+                cnn.load(cnn_model_path)
+                n_params = sum(p.numel() for p in cnn.model.parameters())
+                layers = [
+                    "Input (features)",
+                    "Conv1d(1 → 32, k=3)",
+                    "ReLU",
+                    "AdaptiveAvgPool1d(8)",
+                    "Flatten",
+                    "Linear(32*8 → 2)",
+                    "Softmax",
+                ]
+                fig, ax = plt.subplots(figsize=(8, 5))
+                ax.axis("off")
+                y = 0.9
+                for layer in layers:
+                    ax.text(0.1, y, layer, fontsize=11)
+                    y -= 0.1
+                ax.text(0.1, 0.1, f"Total parameters: {n_params}", fontsize=10, style="italic")
+                ax.set_title("CNN Architecture (Tabular)", fontsize=12, fontweight="bold")
+                out_path = os.path.join(output_dir, "cnn_architecture.png")
+                plt.tight_layout()
+                plt.savefig(out_path, dpi=150, bbox_inches="tight")
+                plt.close()
+                files.append(out_path)
+        except Exception as exc:
+            context.logger.warning("mcdm", f"CNN viz failed: {exc}")
+
+        # --- TabNet ---
+        try:
+            from src.infra.models.tabnet_model import TabNetModel, TABNET_AVAILABLE
+            tabnet_model_path = None
+            for candidate in ["cic_TabNet.model", "ton_TabNet.model", "cic_TabNet.model.zip", "ton_TabNet.model.zip"]:
+                path = os.path.join("work", "models", candidate)
+                if os.path.exists(path):
+                    tabnet_model_path = path
+                    break
+            params = {}
+            if tabnet_model_path and TABNET_AVAILABLE:
+                art = context.artifact_store.load_table("cic_projected")
+                feature_order = art.feature_order if hasattr(art, "feature_order") else []
+                tab = TabNetModel(feature_order)
+                tab.load(tabnet_model_path)
+                params = tab.kwargs or {}
+                try:
+                    n_params = sum(p.numel() for p in tab.model.network.parameters())
+                except Exception:
+                    n_params = None
+            else:
+                # fallback to config params
+                with open("config/pipeline.yaml", "r") as f:
+                    cfg = yaml.safe_load(f)
+                for algo in cfg.get("algorithms", []):
+                    if algo.get("key") == "TabNet":
+                        params = algo.get("params", {})
+                        break
+                n_params = None
+
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.axis("off")
+            ax.set_title("TabNet Architecture (Summary)", fontsize=12, fontweight="bold")
+            y = 0.85
+            for k in ["n_d", "n_a", "steps", "gamma", "lambda_sparse"]:
+                if k in params:
+                    ax.text(0.1, y, f"{k}: {params[k]}", fontsize=11)
+                    y -= 0.1
+            if not params:
+                ax.text(0.1, y, "TabNet parameters unavailable", fontsize=11)
+                y -= 0.1
+            if n_params:
+                ax.text(0.1, 0.1, f"Total parameters: {n_params}", fontsize=10, style="italic")
+            out_path = os.path.join(output_dir, "tabnet_architecture.png")
+            plt.tight_layout()
+            plt.savefig(out_path, dpi=150, bbox_inches="tight")
+            plt.close()
+            files.append(out_path)
+        except Exception as exc:
+            context.logger.warning("mcdm", f"TabNet viz failed: {exc}")
 
         return files
 
