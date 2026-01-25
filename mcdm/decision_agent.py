@@ -435,6 +435,114 @@ class DDoSDecisionAgent:
             files.append(path)
             self._log("info", "Resource Pareto plot saved", threshold=threshold, file=path)
 
+            if not pareto_idx:
+                continue
+
+            def _plot_pareto_3d_colored() -> str:
+                fig = plt.figure(figsize=(10, 8))
+                ax = fig.add_subplot(111, projection="3d")
+                scatter = ax.scatter(
+                    df_f["dim_performance"],
+                    df_f["dim_explainability"],
+                    df_f["dim_resources"],
+                    c=df_f["dim_resources"],
+                    cmap="viridis",
+                    s=120,
+                    alpha=0.85,
+                )
+                pareto_points = df_f.iloc[pareto_idx]
+                ax.scatter(
+                    pareto_points["dim_performance"],
+                    pareto_points["dim_explainability"],
+                    pareto_points["dim_resources"],
+                    c="none",
+                    edgecolors="black",
+                    s=200,
+                    linewidths=1.8,
+                    label="Pareto front",
+                )
+                if len(pareto_points) >= 2:
+                    sorted_pts = pareto_points.sort_values("dim_performance")
+                    ax.plot(
+                        sorted_pts["dim_performance"],
+                        sorted_pts["dim_explainability"],
+                        sorted_pts["dim_resources"],
+                        color="black",
+                        linestyle="--",
+                        linewidth=1.2,
+                    )
+                ax.set_xlabel("Performance (dim_performance)")
+                ax.set_ylabel("Explainability (dim_explainability)")
+                ax.set_zlabel("Resources (dim_resources)")
+                ax.set_title(
+                    f"Resource constraint Pareto front (<= {threshold:.0f}%) - colored 3D",
+                    fontsize=11,
+                    fontweight="bold",
+                )
+                fig.colorbar(scatter, ax=ax, shrink=0.6, pad=0.1, label="dim_resources")
+                ax.legend(loc="upper left", fontsize=8)
+                plt.tight_layout()
+                filename_3d = f"resource_pareto_threshold_{int(threshold)}_3d_color.png"
+                path_3d = os.path.join(out_dir, filename_3d)
+                plt.savefig(path_3d, dpi=150, bbox_inches="tight")
+                plt.close()
+                return path_3d
+
+            def _plot_pareto_3d_points() -> str:
+                fig = plt.figure(figsize=(10, 8))
+                ax = fig.add_subplot(111, projection="3d")
+                ax.scatter(
+                    df_f["dim_performance"],
+                    df_f["dim_explainability"],
+                    df_f["dim_resources"],
+                    c="#95a5a6",
+                    s=90,
+                    alpha=0.5,
+                    label="Dominated",
+                )
+                pareto_points = df_f.iloc[pareto_idx]
+                ax.scatter(
+                    pareto_points["dim_performance"],
+                    pareto_points["dim_explainability"],
+                    pareto_points["dim_resources"],
+                    c="#27ae60",
+                    s=220,
+                    marker="*",
+                    edgecolors="black",
+                    linewidths=1.5,
+                    label="Pareto front",
+                )
+                if len(pareto_points) >= 2:
+                    sorted_pts = pareto_points.sort_values("dim_performance")
+                    ax.plot(
+                        sorted_pts["dim_performance"],
+                        sorted_pts["dim_explainability"],
+                        sorted_pts["dim_resources"],
+                        color="#27ae60",
+                        linestyle="--",
+                        linewidth=1.4,
+                    )
+                ax.set_xlabel("Performance (dim_performance)")
+                ax.set_ylabel("Explainability (dim_explainability)")
+                ax.set_zlabel("Resources (dim_resources)")
+                ax.set_title(
+                    f"Resource constraint Pareto front (<= {threshold:.0f}%) - 3D points",
+                    fontsize=11,
+                    fontweight="bold",
+                )
+                ax.legend(loc="upper left", fontsize=8)
+                plt.tight_layout()
+                filename_3d = f"resource_pareto_threshold_{int(threshold)}_3d_points.png"
+                path_3d = os.path.join(out_dir, filename_3d)
+                plt.savefig(path_3d, dpi=150, bbox_inches="tight")
+                plt.close()
+                return path_3d
+
+            color_path = _plot_pareto_3d_colored()
+            points_path = _plot_pareto_3d_points()
+            files.extend([color_path, points_path])
+            self._log("info", "Resource Pareto 3D plots saved", threshold=threshold, files=[color_path, points_path])
+
         return files
 
     def _viz_pareto_list(self, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
