@@ -15,6 +15,9 @@ from scipy.stats import spearmanr
 # pymoo imports
 from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
 
+plt.rcParams["font.family"] = "DejaVu Sans"
+plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
+
 class DDoSDecisionAgent:
     """
     Full AI Decision Support System (MOO-MCDM-MCDA).
@@ -22,9 +25,10 @@ class DDoSDecisionAgent:
     Uses precise weights defined in configuration.
     """
     
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict, logger=None):
         self.config = config
         self.hierarchy = config['mcdm_hierarchy']
+        self.logger = logger
         
         # User profiles (weights: Performance, Explainability, Resources)
         self.profiles = {
@@ -45,6 +49,15 @@ class DDoSDecisionAgent:
             "CNN": "#C73E1D",
             "TabNet": "#3B1F2B"
         }
+
+    def _log(self, level: str, message: str, **kwargs):
+        if self.logger is not None:
+            log_fn = getattr(self.logger, level, None)
+            if log_fn:
+                log_fn("mcdm", message, **kwargs)
+                return
+        suffix = f" {kwargs}" if kwargs else ""
+        print(f"[{level.upper()}] {message}{suffix}")
 
     def _display_name(self, name: str) -> str:
         if name.startswith("fused_"):
@@ -368,6 +381,62 @@ class DDoSDecisionAgent:
         plt.close()
         return path
 
+    def _viz_resource_pareto_thresholds(
+        self,
+        df: pd.DataFrame,
+        thresholds: List[float],
+        out_dir: str,
+    ) -> List[str]:
+        os.makedirs(out_dir, exist_ok=True)
+        files = []
+        if "cpu_percent" not in df.columns or "ram_percent" not in df.columns:
+            self._log("warning", "Resource Pareto plots skipped: cpu_percent/ram_percent missing")
+            return files
+
+        resource_scores = ((df["cpu_percent"].fillna(100.0) + df["ram_percent"].fillna(100.0)) / 2.0)
+        df = df.copy()
+        df["resource_score"] = resource_scores
+
+        for threshold in thresholds:
+            df_f = df[df["resource_score"] <= threshold].copy()
+            if df_f.empty:
+                self._log("warning", "Resource Pareto plot skipped (no admissible)", threshold=threshold)
+                continue
+            M, algorithms = self._build_matrix(df_f)
+            pareto_idx, dominated_idx = self._identify_pareto_front(M)
+
+            fig, ax = plt.subplots(figsize=(9, 6))
+            # Scatter all points (performance vs explainability)
+            ax.scatter(df_f["dim_performance"], df_f["dim_explainability"], c="#bdc3c7", s=120, label="Dominated")
+            # Highlight Pareto front
+            pareto_points = df_f.iloc[pareto_idx]
+            ax.scatter(pareto_points["dim_performance"], pareto_points["dim_explainability"],
+                       c="#27ae60", s=180, label="Pareto front", edgecolors="black")
+
+            # Connect Pareto front in 2D
+            if len(pareto_points) >= 2:
+                sorted_pts = pareto_points.sort_values("dim_performance")
+                ax.plot(sorted_pts["dim_performance"], sorted_pts["dim_explainability"], color="#27ae60", linestyle="--", linewidth=1.5)
+
+            for _, row in pareto_points.iterrows():
+                ax.text(row["dim_performance"], row["dim_explainability"], self._display_name(row["model"]),
+                        fontsize=9, ha="left", va="bottom")
+
+            ax.set_title(f"Resource constraint Pareto front (<= {threshold:.0f}%)", fontsize=12, fontweight="bold")
+            ax.set_xlabel("Performance (dim_performance)")
+            ax.set_ylabel("Explainability (dim_explainability)")
+            ax.grid(alpha=0.3)
+            ax.legend(loc="lower right", fontsize=8)
+            plt.tight_layout()
+            filename = f"resource_pareto_threshold_{int(threshold)}.png"
+            path = os.path.join(out_dir, filename)
+            plt.savefig(path, dpi=150, bbox_inches="tight")
+            plt.close()
+            files.append(path)
+            self._log("info", "Resource Pareto plot saved", threshold=threshold, file=path)
+
+        return files
+
     def _viz_pareto_list(self, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
         pareto_list = [self._display_name(algorithms[i]) for i in pareto_idx]
         dominated_list = [self._display_name(algorithms[i]) for i in dominated_idx]
@@ -450,12 +519,12 @@ class DDoSDecisionAgent:
         if total == 0:
             total = 1
         if len(admissible) == 0:
-            interp = "Threshold tres strict: no admissible solution. Relax the constraint or adjust the weights."
+            interp = "Threshold too strict: no admissible solution. Relax the constraint or adjust the weights."
         elif len(admissible) == total:
-            interp = "Threshold permissif: all solutions are admissible. The constraint does not discriminate."
+            interp = "Threshold too permissive: all solutions are admissible. The constraint does not discriminate."
         else:
             interp = (
-                "Threshold intermediaire: la contrainte filtre une partie des solutions. "
+                "Intermediate threshold: the constraint filters a subset of solutions. "
                 "This illustrates the trade-off between performance, explainability, and resources."
             )
 
@@ -463,7 +532,7 @@ class DDoSDecisionAgent:
             from docx import Document
             doc = Document()
             doc.add_heading(title, level=1)
-            doc.add_paragraph(f"Threshold applique: {threshold:.1f}")
+            doc.add_paragraph(f"Threshold applied: {threshold:.1f}")
             doc.add_paragraph(f"Formula: {formula}")
             doc.add_paragraph(f"Admissible solutions: {len(admissible)}/{total}")
             doc.add_heading("Admissible solutions", level=2)
@@ -482,7 +551,7 @@ class DDoSDecisionAgent:
             md_path = docx_path.replace(".docx", ".md")
             with open(md_path, "w") as f:
                 f.write(f"# {title}\n\n")
-                f.write(f"- Threshold applique: {threshold:.1f}\n")
+                f.write(f"- Threshold applied: {threshold:.1f}\n")
                 f.write(f"- Formula: {formula}\n")
                 f.write(f"- Admissible solutions: {len(admissible)}/{total}\n\n")
                 f.write("## Admissible solutions\n")
@@ -516,9 +585,16 @@ class DDoSDecisionAgent:
         weights_summary = []
         for pillar in self.hierarchy["pillars"]:
             weights_summary.append(f"{pillar['name']}: {pillar['weight']:.2f}")
-        criteria_summary = "Weights des piliers: " + ", ".join(weights_summary)
+        criteria_summary = "Pillar weights: " + ", ".join(weights_summary)
 
         for threshold in thresholds:
+            self._log(
+                "info",
+                f"Threshold variation - {title_prefix}",
+                threshold=threshold,
+                direction=direction,
+                formula=formula,
+            )
             slug = title_prefix.lower().replace(" ", "_")
             filename = f"{slug}_threshold_{int(threshold)}.png"
             plot_path, admissible, rejected = self._viz_threshold_variation(
@@ -531,6 +607,13 @@ class DDoSDecisionAgent:
                 out_dir,
             )
             files.append(plot_path)
+            self._log(
+                "info",
+                f"Threshold results - {title_prefix}",
+                threshold=threshold,
+                admissible=len(admissible),
+                rejected=len(rejected),
+            )
             results.append({"threshold": threshold, "admissible": len(admissible)})
             docx_path = os.path.join(report_dir, f"{slug}_threshold_{int(threshold)}.docx")
             self._write_variation_docx(
@@ -543,7 +626,7 @@ class DDoSDecisionAgent:
                 criteria_summary,
             )
 
-        # Resume des admissibles par seuil
+        # Admissible summary by threshold
         if results:
             fig, ax = plt.subplots(figsize=(8, 4))
             xs = [r["threshold"] for r in results]
@@ -551,7 +634,7 @@ class DDoSDecisionAgent:
             ax.plot(xs, ys, marker='o')
             ax.set_title(f"Number of admissible solutions - {title_prefix}", fontsize=11, fontweight='bold')
             ax.set_xlabel("Threshold")
-            ax.set_ylabel("Nombre admissibles")
+            ax.set_ylabel("Admissible count")
             ax.grid(alpha=0.3)
             summary_path = os.path.join(out_dir, f"{title_prefix.lower().replace(' ', '_')}_resume.png")
             plt.tight_layout()
@@ -602,7 +685,7 @@ class DDoSDecisionAgent:
             D_plus = np.sqrt(((V - A_plus) ** 2).sum(axis=1))
             D_minus = np.sqrt(((V - A_minus) ** 2).sum(axis=1))
             CC = D_minus / (D_plus + D_minus + 1e-9)
-            results[f'Sans {criterion}'] = CC
+            results[f'Without {criterion}'] = CC
         fig, ax = plt.subplots(figsize=(12, 6))
         labels = self._display_list(algorithms)
         df = pd.DataFrame(results, index=labels)
@@ -634,7 +717,7 @@ class DDoSDecisionAgent:
             algos_reduced = [algorithms[j] for j in mask]
             cc = self._topsis_compute(M_reduced, weights)[-1]
             ranks = np.argsort(np.argsort(-cc)) + 1
-            results[f'Sans {removed_algo}'] = {algo: ranks[k] for k, algo in enumerate(algos_reduced)}
+            results[f'Without {removed_algo}'] = {algo: ranks[k] for k, algo in enumerate(algos_reduced)}
         fig, ax = plt.subplots(figsize=(12, 6))
         scenarios = list(results.keys())
         x = np.arange(len(algorithms))
@@ -647,8 +730,8 @@ class DDoSDecisionAgent:
             ax.bar(x + offset, values, width, label=scenario, color=colors[i], alpha=0.8)
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
-        ax.set_ylabel("Rang (1=meilleur)")
-        ax.set_title("Sensitivity algorithm removal", fontsize=12, fontweight='bold')
+        ax.set_ylabel("Rank (1=best)")
+        ax.set_title("Sensitivity to algorithm removal", fontsize=12, fontweight='bold')
         ax.legend(loc='upper right', fontsize=8)
         ax.invert_yaxis()
         ax.grid(axis='y', alpha=0.3)
@@ -687,11 +770,11 @@ class DDoSDecisionAgent:
         for i, profile in enumerate(profiles_list):
             offset = (i - 1.5) * width
             axes[0].bar(x + offset, results[profile]['f_res_values'], width, label=profile.replace('_', ' ').title(), color=colors[i], alpha=0.8)
-        axes[0].axhline(y=1.0, color='red', linestyle='--', linewidth=2, label='Threshold admissibilite')
+        axes[0].axhline(y=1.0, color='red', linestyle='--', linewidth=2, label='Admissibility threshold')
         axes[0].set_xticks(x)
         axes[0].set_xticklabels(labels, rotation=45, ha='right')
         axes[0].set_ylabel('f_res')
-        axes[0].set_title('f_res par profil', fontsize=12, fontweight='bold')
+        axes[0].set_title('f_res by profile', fontsize=12, fontweight='bold')
         axes[0].legend(loc='upper left', fontsize=8)
         admissible_counts = [results[p]['admissible_count'] for p in profiles_list]
         totals = [results[p]['total'] for p in profiles_list]
@@ -699,7 +782,7 @@ class DDoSDecisionAgent:
         axes[1].axhline(y=totals[0], color='gray', linestyle='--', alpha=0.5)
         for bar, count, total in zip(bars, admissible_counts, totals):
             axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, f'{count}/{total}', ha='center', fontsize=10, fontweight='bold')
-        axes[1].set_ylabel('Nombre admissibles')
+        axes[1].set_ylabel('Admissible count')
         axes[1].set_title('Admissibility by SME profile', fontsize=12, fontweight='bold')
         axes[1].set_xticklabels([p.replace('_', '\\n').title() for p in profiles_list], rotation=0)
         plt.tight_layout()
@@ -873,12 +956,14 @@ class DDoSDecisionAgent:
         self._viz_constraints_impact(df, algorithms, output_dir)
 
         # ---- Constraint variations (100 -> 30) ----
-        thresholds = list(range(100, 20, -10))
+        thresholds = list(range(10, 101, 10))
+        self._log("info", "Generating threshold variations", thresholds=thresholds)
         variations_root = os.path.join(output_dir, "variations")
 
         # Resources (CPU/RAM mean in %)
         if "cpu_percent" in df.columns and "ram_percent" in df.columns:
             resource_scores = ((df["cpu_percent"].fillna(100.0) + df["ram_percent"].fillna(100.0)) / 2.0)
+            self._log("info", "Resource constraint variation", formula="(CPU% + RAM%) / 2 <= Threshold")
             self._generate_threshold_variations(
                 df,
                 resource_scores,
@@ -889,10 +974,16 @@ class DDoSDecisionAgent:
                 out_dir=os.path.join(variations_root, "resource"),
                 report_dir=os.path.join("reports", "variations", "resource"),
             )
+            self._viz_resource_pareto_thresholds(
+                df,
+                thresholds,
+                out_dir=os.path.join(variations_root, "resource_pareto"),
+            )
 
         # Performance (normalized dimension, %)
         if "dim_performance" in df.columns:
             perf_scores = df["dim_performance"].fillna(0.0) * 100.0
+            self._log("info", "Performance threshold variation", formula="dim_performance >= Threshold")
             self._generate_threshold_variations(
                 df,
                 perf_scores,
@@ -907,6 +998,7 @@ class DDoSDecisionAgent:
         # Explainability (normalized dimension, %)
         if "dim_explainability" in df.columns:
             expl_scores = df["dim_explainability"].fillna(0.0) * 100.0
+            self._log("info", "Explainability threshold variation", formula="dim_explainability >= Threshold")
             self._generate_threshold_variations(
                 df,
                 expl_scores,

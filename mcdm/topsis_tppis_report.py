@@ -10,6 +10,8 @@ from scipy import stats
 
 from src.mcdm.metrics_utils import compute_f_perf, compute_f_expl, compute_f_res
 
+plt.rcParams["font.family"] = "DejaVu Sans"
+plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
 
 CRITERIA_COLUMNS = ["f_perf", "f_expl", "f_res"]
 CRITERIA_TYPES = {"f_perf": "benefit", "f_expl": "benefit", "f_res": "cost"}
@@ -24,7 +26,12 @@ def build_df_sources_from_run_report(run_report: Dict) -> pd.DataFrame:
             continue
         mcdm_inputs = metrics.get("mcdm_inputs", {})
         shap_std = mcdm_inputs.get("shap_std", 0.5)
-        n_params = int(mcdm_inputs.get("n_params", metrics.get("complexity", 1000)))
+        n_params_raw = mcdm_inputs.get("n_params") or metrics.get("complexity") or metrics.get("n_params")
+        try:
+            n_params = int(n_params_raw) if n_params_raw is not None else 1
+        except Exception:
+            n_params = 1
+        n_params = max(n_params, 1)
         mem_bytes = float(mcdm_inputs.get("memory_bytes", 0.0))
         cpu_percent = float(mcdm_inputs.get("cpu_percent", metrics.get("cpu_percent", 0.0)))
         gap = float(metrics.get("gap", 0.0))

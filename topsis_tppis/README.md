@@ -9,3 +9,4 @@ Generated plots:
 - /home/tor/ton_iot/ton_iot/topsis_tppis/06_ahp_weights_donut.png
 - /home/tor/ton_iot/ton_iot/topsis_tppis/07_topsis_closeness.png
 - /home/tor/ton_iot/ton_iot/topsis_tppis/08_top3_radar.png
+- /home/tor/ton_iot/ton_iot/topsis_tppis/09_pipeline_overview.png

@@ -147,18 +147,21 @@
 - graph/feature_distributions/transformed_outliers/before_after_total_packets.png
 
 ## Dtreeviz
-- No files.
+- graph/algorithms/dtreeviz/cic_dt_dtreeviz.svg
+- graph/algorithms/dtreeviz/cic_rf_dtreeviz.svg
+- graph/algorithms/dtreeviz/ton_dt_dtreeviz.svg
+- graph/algorithms/dtreeviz/ton_rf_dtreeviz.svg
 
 ## Derivative summary (sampling)
 ### Performance
-- CNN: derivative peak 0.0041 at 20%
-- DT: derivative peak 0.0009 at 60%
-- LR: derivative peak 0.0057 at 10%
-- RF: derivative peak 0.0034 at 10%
-- TabNet: derivative peak -0.0030 at 40%
+- CNN: derivative peak 0.0029 at 20%
+- DT: derivative peak 0.0011 at 10%
+- LR: derivative peak 0.0076 at 10%
+- RF: derivative peak -0.0015 at 10%
+- TabNet: derivative peak -0.0031 at 40%
 ### Explainability
-- CNN: derivative peak -0.0003 at 20%
-- DT: derivative peak 0.0012 at 10%
-- LR: derivative peak 0.0005 at 10%
-- RF: derivative peak -0.0002 at 10%
-- TabNet: derivative peak -0.0028 at 10%
+- CNN: derivative peak 0.0006 at 10%
+- DT: derivative peak 0.0007 at 10%
+- LR: derivative peak 0.0003 at 10%
+- RF: derivative peak -0.0003 at 10%
+- TabNet: derivative peak -0.0026 at 10%
