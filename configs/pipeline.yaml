@@ -11,8 +11,8 @@ io:
 sampling_policy:
   max_ram_percent: 70.0
   safe_frac_default: 0.3
-  min_rows: 1000
-  max_rows: 500000
+  min_rows: null
+  max_rows: null
 
 alignment:
   descriptor_sample_rows: 20000
@@ -45,7 +45,7 @@ fusion:
 version: "test-1.0.0"
 seed: 42
 test_mode: true
-sample_ratio: 0.05
+sample_ratio: 0.1
 validation_sample_size: 10000
 test_row_limit_per_file: 2000
 test_max_files_per_dataset: 3
