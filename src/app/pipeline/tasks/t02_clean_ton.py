@@ -108,15 +108,16 @@ class T02_CleanTON(Task):
 
             full_dist = _dist(df_full, "type")
             sample_dist = _dist(df, "type")
-            all_labels = sorted(set(full_dist.index).union(sample_dist.index))
-            full_vals = [full_dist.get(l, 0.0) for l in all_labels]
-            sample_vals = [sample_dist.get(l, 0.0) for l in all_labels]
+            all_labels = sorted(set(full_dist.index).union(sample_dist.index), key=lambda x: str(x))
+            label_names = [str(l) for l in all_labels]
+            full_vals = [float(full_dist.get(l, 0.0)) for l in all_labels]
+            sample_vals = [float(sample_dist.get(l, 0.0)) for l in all_labels]
 
             x = range(len(all_labels))
             plt.figure(figsize=(10, 5))
             plt.bar([i - 0.2 for i in x], full_vals, width=0.4, label="Full")
             plt.bar([i + 0.2 for i in x], sample_vals, width=0.4, label="Sample")
-            plt.xticks(list(x), all_labels, rotation=45, ha="right")
+            plt.xticks(list(x), label_names, rotation=45, ha="right")
             plt.ylabel("Proportion")
             plt.title("Stratification check (ToN-IoT)")
             plt.legend()
