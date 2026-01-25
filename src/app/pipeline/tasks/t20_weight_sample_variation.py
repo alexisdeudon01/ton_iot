@@ -82,6 +82,79 @@ class T20_WeightSampleVariation(Task):
         plt.savefig(output_path, dpi=150, bbox_inches="tight")
         plt.close()
 
+    def _weight_grid_evaluation(self, norm_matrix: pd.DataFrame, output_dir: str) -> str:
+        """Evaluate all weight combinations that sum to 1 (within tolerance)."""
+        os.makedirs(output_dir, exist_ok=True)
+        weight_ranges = np.round(np.arange(0.0, 1.01, 0.1), 2)
+        models = norm_matrix.index.tolist()
+        records = []
+
+        for w_perf in weight_ranges:
+            for w_expl in weight_ranges:
+                for w_res in weight_ranges:
+                    total = w_perf + w_expl + w_res
+                    if abs(total - 1.0) > 0.01:
+                        continue
+                    weights = np.array([w_perf, w_expl, w_res], dtype=float)
+                    cc = self._topsis_cc(norm_matrix, weights)
+                    winner_idx = int(np.argmax(cc))
+                    records.append({
+                        "w_perf": w_perf,
+                        "w_expl": w_expl,
+                        "w_res": w_res,
+                        "winner": models[winner_idx],
+                        "winner_cc": float(cc[winner_idx]),
+                    })
+
+        df_grid = pd.DataFrame(records)
+        grid_csv = os.path.join(output_dir, "weights_grid_results.csv")
+        df_grid.to_csv(grid_csv, index=False)
+
+        # Winner frequency bar chart
+        counts = df_grid["winner"].value_counts().sort_index()
+        plt.figure(figsize=(8, 5))
+        plt.bar(counts.index, counts.values, color="#3498db")
+        plt.title("Winner frequency across weight combinations")
+        plt.xlabel("Algorithm")
+        plt.ylabel("Count")
+        plt.tight_layout()
+        bar_path = os.path.join(output_dir, "weights_grid_winner_counts.png")
+        plt.savefig(bar_path, dpi=150, bbox_inches="tight")
+        plt.close()
+
+        # Heatmap of winner by (w_perf, w_expl) with w_res = 1 - sum
+        valid = df_grid.copy()
+        valid["w_res_calc"] = (1.0 - valid["w_perf"] - valid["w_expl"]).round(2)
+        valid = valid[valid["w_res_calc"] >= 0.0]
+        winner_map = {name: idx for idx, name in enumerate(sorted(models))}
+        valid["winner_idx"] = valid["winner"].map(winner_map)
+
+        pivot = valid.pivot_table(
+            index="w_perf",
+            columns="w_expl",
+            values="winner_idx",
+            aggfunc="first",
+        )
+        plt.figure(figsize=(9, 7))
+        cmap = plt.cm.get_cmap("tab10", len(winner_map))
+        plt.imshow(pivot.values, origin="lower", cmap=cmap, aspect="auto")
+        plt.xticks(range(len(pivot.columns)), [f"{v:.1f}" for v in pivot.columns])
+        plt.yticks(range(len(pivot.index)), [f"{v:.1f}" for v in pivot.index])
+        plt.xlabel("w_expl")
+        plt.ylabel("w_perf")
+        plt.title("Winner map (w_res = 1 - w_perf - w_expl)")
+
+        handles = [
+            plt.Line2D([0], [0], marker='s', linestyle='', color=cmap(i), label=name)
+            for name, i in winner_map.items()
+        ]
+        plt.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc="upper left", fontsize=8)
+        plt.tight_layout()
+        heatmap_path = os.path.join(output_dir, "weights_grid_winner_map.png")
+        plt.savefig(heatmap_path, dpi=150, bbox_inches="tight")
+        plt.close()
+
+        return grid_csv
     def _sampling_variation(self, output_dir: str) -> str:
         pred_cic_path = os.path.join("work", "data", "predictions_cic.parquet")
         pred_ton_path = os.path.join("work", "data", "predictions_ton.parquet")
@@ -177,10 +250,13 @@ class T20_WeightSampleVariation(Task):
         os.makedirs(sample_out_dir, exist_ok=True)
         sample_plot = self._sampling_variation(sample_out_dir)
 
-        context.logger.info("mcdm", "Weight and sampling variation complete", outputs=[perf_path, expl_path, res_path, sample_plot])
+        grid_out_dir = os.path.join("graph", "decision", "variations", "weights_grid")
+        grid_csv = self._weight_grid_evaluation(norm_matrix, grid_out_dir)
+
+        context.logger.info("mcdm", "Weight and sampling variation complete", outputs=[perf_path, expl_path, res_path, sample_plot, grid_csv])
         return TaskResult(
             task_name=self.name,
             status="ok",
             duration_s=time.time() - start_ts,
-            outputs=[perf_path, expl_path, res_path, sample_plot],
+            outputs=[perf_path, expl_path, res_path, sample_plot, grid_csv],
         )
