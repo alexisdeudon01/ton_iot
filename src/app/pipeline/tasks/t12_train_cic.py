@@ -63,7 +63,7 @@ class T12_TrainCIC(Task):
         ct = joblib.load(prep_art.preprocess_path)
         X_train_transformed = ct.transform(X_train)
         
-        # Utilisation de la liste des algorithmes configurés
+        # Use the configured algorithm list
         algo_configs = {a.key: a.params for a in cfg.algorithms}
         outputs = []
         per_algo_perf = {}
@@ -74,7 +74,7 @@ class T12_TrainCIC(Task):
             output_path = os.path.join(cfg.paths.work_dir, "models", f"cic_{model_type}.model")
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-            # Récupération des paramètres par défaut depuis la config
+            # Load default parameters from config
             kwargs = algo_configs.get(model_type, {}).copy()
             
             if model_type in ["LR", "DT", "RF"]:

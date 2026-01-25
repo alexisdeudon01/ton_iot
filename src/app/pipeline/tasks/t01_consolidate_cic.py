@@ -96,7 +96,7 @@ class T01_ConsolidateCIC(Task):
         if not dfs:
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="No valid CIC CSV files loaded")
 
-        # Concaténation EAGER diagonale
+        # Eager diagonal concatenation
         df_full = pl.concat(dfs, how="diagonal")
 
         df_full = df_full.filter(pl.col("Label").is_not_null())
@@ -128,7 +128,7 @@ class T01_ConsolidateCIC(Task):
             if confirm != 'y':
                 return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="User validation refused for CIC")
         except EOFError:
-            pass # Mode non-interactif
+            pass  # Non-interactive mode
 
         # --- STRATIFIED SAMPLING ---
         sampling_ratio = cfg.sample_ratio
