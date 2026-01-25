@@ -428,57 +428,57 @@
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_30.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_30.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_30.png",
+                    "name": "resource_constraint_threshold_70.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_70.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_70.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_80.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_80.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_80.png",
+                    "name": "resource_constraint_threshold_80.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_80.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_80.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_resume.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_resume.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_resume.png",
+                    "name": "resource_constraint_threshold_90.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_90.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_90.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_60.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_60.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_60.png",
+                    "name": "resource_constraint_threshold_60.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_60.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_60.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_50.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_50.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_50.png",
+                    "name": "resource_constraint_threshold_40.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_40.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_40.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_40.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_40.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_40.png",
+                    "name": "resource_constraint_threshold_100.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_100.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_100.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_70.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_70.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_70.png",
+                    "name": "resource_constraint_resume.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_resume.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_resume.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_100.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_100.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_100.png",
+                    "name": "resource_constraint_threshold_50.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_50.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_50.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_90.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_90.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/contrainte_ressource_seuil_90.png",
+                    "name": "resource_constraint_threshold_30.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_30.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/resource/resource_constraint_threshold_30.png",
                     "type": "decision_plot"
                 },
                 {
@@ -506,81 +506,81 @@
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_50.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_50.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_50.png",
+                    "name": "explainability_threshold_50.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_50.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_50.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_70.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_70.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_70.png",
+                    "name": "explainability_threshold_90.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_90.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_90.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_resume.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_resume.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_resume.png",
+                    "name": "explainability_threshold_40.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_40.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_40.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_100.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_100.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_100.png",
+                    "name": "explainability_threshold_80.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_80.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_80.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_80.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_80.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_80.png",
+                    "name": "explainability_threshold_70.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_70.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_70.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_30.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_30.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_30.png",
+                    "name": "explainability_resume.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_resume.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_resume.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_40.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_40.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_40.png",
+                    "name": "explainability_threshold_30.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_30.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_30.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_60.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_60.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_60.png",
+                    "name": "explainability_threshold_60.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_60.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_60.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "explicabilite_seuil_90.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_90.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explicabilite_seuil_90.png",
+                    "name": "explainability_threshold_100.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_100.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/explainability/explainability_threshold_100.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_60.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_60.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_60.png",
+                    "name": "performance_threshold_60.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_60.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_60.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_80.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_80.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_80.png",
+                    "name": "performance_threshold_70.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_70.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_70.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_30.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_30.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_30.png",
+                    "name": "performance_threshold_100.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_100.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_100.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_90.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_90.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_90.png",
+                    "name": "performance_threshold_90.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_90.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_90.png",
                     "type": "decision_plot"
                 },
                 {
@@ -590,315 +590,171 @@
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_70.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_70.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_70.png",
+                    "name": "performance_threshold_80.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_80.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_80.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_40.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_40.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_40.png",
+                    "name": "performance_threshold_40.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_40.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_40.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_50.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_50.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_50.png",
+                    "name": "performance_threshold_30.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_30.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_30.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "performance_seuil_100.png",
-                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_100.png",
-                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_seuil_100.png",
+                    "name": "performance_threshold_50.png",
+                    "path": "/home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_50.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/graph/decision/variations/performance/performance_threshold_50.png",
                     "type": "decision_plot"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_80.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_80.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_80.docx",
+                    "name": "resource_constraint_threshold_60.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_60.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_60.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_50.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_50.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_50.md",
+                    "name": "resource_constraint_threshold_50.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_50.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_50.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_90.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_90.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_90.docx",
+                    "name": "resource_constraint_threshold_30.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_30.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_30.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_40.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_40.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_40.docx",
+                    "name": "resource_constraint_threshold_100.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_100.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_100.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_60.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_60.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_60.docx",
+                    "name": "resource_constraint_threshold_80.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_80.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_80.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_60.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_60.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_60.md",
+                    "name": "resource_constraint_threshold_90.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_90.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_90.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_100.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_100.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_100.docx",
+                    "name": "resource_constraint_threshold_70.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_70.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_70.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_40.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_40.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_40.md",
+                    "name": "resource_constraint_threshold_40.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_40.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/resource_constraint_threshold_40.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_50.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_50.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_50.docx",
+                    "name": "explainability_threshold_50.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_50.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_50.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_90.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_90.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_90.md",
+                    "name": "explainability_threshold_60.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_60.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_60.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_80.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_80.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_80.md",
+                    "name": "explainability_threshold_80.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_80.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_80.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_100.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_100.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_100.md",
+                    "name": "explainability_threshold_40.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_40.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_40.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_70.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_70.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_70.docx",
+                    "name": "explainability_threshold_70.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_70.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_70.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_70.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_70.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_70.md",
+                    "name": "explainability_threshold_30.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_30.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_30.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_30.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_30.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_30.docx",
+                    "name": "explainability_threshold_90.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_90.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_90.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "contrainte_ressource_seuil_30.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_30.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/resource/contrainte_ressource_seuil_30.md",
+                    "name": "explainability_threshold_100.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_100.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explainability_threshold_100.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_70.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_70.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_70.md",
+                    "name": "performance_threshold_70.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_70.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_70.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_60.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_60.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_60.md",
+                    "name": "performance_threshold_50.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_50.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_50.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_40.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_40.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_40.md",
+                    "name": "performance_threshold_60.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_60.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_60.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_50.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_50.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_50.docx",
+                    "name": "performance_threshold_90.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_90.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_90.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_90.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_90.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_90.md",
+                    "name": "performance_threshold_40.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_40.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_40.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_30.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_30.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_30.docx",
+                    "name": "performance_threshold_100.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_100.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_100.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_100.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_100.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_100.md",
+                    "name": "performance_threshold_30.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_30.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_30.docx",
                     "type": "variation_report"
                 },
                 {
-                    "name": "explicabilite_seuil_90.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_90.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_90.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_30.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_30.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_30.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_50.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_50.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_50.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_80.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_80.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_80.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_100.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_100.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_100.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_40.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_40.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_40.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_60.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_60.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_60.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_70.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_70.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_70.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "explicabilite_seuil_80.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_80.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/explainability/explicabilite_seuil_80.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_80.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_80.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_80.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_70.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_70.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_70.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_80.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_80.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_80.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_100.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_100.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_100.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_60.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_60.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_60.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_90.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_90.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_90.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_40.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_40.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_40.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_30.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_30.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_30.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_60.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_60.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_60.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_40.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_40.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_40.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_70.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_70.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_70.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_50.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_50.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_50.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_90.docx",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_90.docx",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_90.docx",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_30.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_30.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_30.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_50.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_50.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_50.md",
-                    "type": "variation_report"
-                },
-                {
-                    "name": "performance_seuil_100.md",
-                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_100.md",
-                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_seuil_100.md",
+                    "name": "performance_threshold_80.docx",
+                    "path": "/home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_80.docx",
+                    "url": "file:///home/tor/ton_iot/ton_iot/reports/variations/performance/performance_threshold_80.docx",
                     "type": "variation_report"
                 },
                 {
@@ -906,6 +762,60 @@
                     "path": "/home/tor/ton_iot/ton_iot/reports/analysis_graphs_report.md",
                     "url": "file:///home/tor/ton_iot/ton_iot/reports/analysis_graphs_report.md",
                     "type": "graphs_report"
+                },
+                {
+                    "name": "01_ks_validation.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/01_ks_validation.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/01_ks_validation.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "02_feature_importance.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/02_feature_importance.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/02_feature_importance.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "03_data_split_pie.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/03_data_split_pie.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/03_data_split_pie.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "04_raw_matrix_heatmap.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/04_raw_matrix_heatmap.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/04_raw_matrix_heatmap.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "05_normalized_matrix_heatmap.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/05_normalized_matrix_heatmap.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/05_normalized_matrix_heatmap.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "06_ahp_weights_donut.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/06_ahp_weights_donut.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/06_ahp_weights_donut.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "07_topsis_closeness.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/07_topsis_closeness.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/07_topsis_closeness.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "08_top3_radar.png",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/08_top3_radar.png",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/08_top3_radar.png",
+                    "type": "topsis_report"
+                },
+                {
+                    "name": "README.md",
+                    "path": "/home/tor/ton_iot/ton_iot/topsis_tppis/README.md",
+                    "url": "file:///home/tor/ton_iot/ton_iot/topsis_tppis/README.md",
+                    "type": "topsis_report"
                 }
             ],
             "final_report_markdown": {
@@ -931,46 +841,46 @@
         },
         "n_eval_rows": 46,
         "y_true_balance": {
-            "0": 13,
-            "1": 33
+            "1": 33,
+            "0": 13
         },
         "y_pred_balance": {
-            "1": 34,
-            "0": 12
+            "0": 16,
+            "1": 30
         },
         "confusion_matrix": [
             [
-                11,
-                2
+                12,
+                1
             ],
             [
-                1,
-                32
+                4,
+                29
             ]
         ],
-        "accuracy": 0.9347826086956522,
-        "precision": 0.9411764705882353,
-        "recall": 0.9696969696969697,
-        "f1": 0.9552238805970149,
-        "roc_auc": 0.951048951048951,
+        "accuracy": 0.8913043478260869,
+        "precision": 0.9666666666666667,
+        "recall": 0.8787878787878788,
+        "f1": 0.9206349206349206,
+        "roc_auc": 0.9766899766899767,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 4.440820735433827,
-        "cpu_percent": 337.3,
-        "ram_percent": 0.00042498035991633235,
+        "latency": 0.946423281794009,
+        "cpu_percent": 525.7,
+        "ram_percent": 0.0004203251179487693,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 67829.0,
-            "cpu_percent": 337.3
+            "memory_bytes": 67086.0,
+            "cpu_percent": 525.7
         },
         "mcdm_scores": {
-            "f_perf": 0.8632084333576872,
+            "f_perf": 0.8272283272283273,
             "f_expl": 0.5705912247729522,
-            "f_res": 2.1081896867752077
+            "f_res": 3.285688978195191
         }
     },
     "cic_DT": {
@@ -990,46 +900,46 @@
         },
         "n_eval_rows": 46,
         "y_true_balance": {
-            "1": 33,
-            "0": 13
-        },
-        "y_pred_balance": {
             "0": 13,
             "1": 33
         },
+        "y_pred_balance": {
+            "0": 16,
+            "1": 30
+        },
         "confusion_matrix": [
             [
-                13,
-                0
+                11,
+                2
             ],
             [
-                0,
-                33
+                5,
+                28
             ]
         ],
-        "accuracy": 1.0,
-        "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
-        "roc_auc": 1.0,
+        "accuracy": 0.8478260869565217,
+        "precision": 0.9333333333333333,
+        "recall": 0.8484848484848485,
+        "f1": 0.8888888888888888,
+        "roc_auc": 0.844988344988345,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 3.6888794541139363,
-        "latency": 0.14235662377398947,
-        "cpu_percent": 443.7,
+        "complexity": 3.4011973816621555,
+        "latency": 0.07941411889117697,
+        "cpu_percent": 513.7,
         "ram_percent": 0.00027848121094518896,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 39,
+            "n_params": 29,
             "shap_std": 0.5,
             "memory_bytes": 44447.0,
-            "cpu_percent": 443.7
+            "cpu_percent": 513.7
         },
         "mcdm_scores": {
-            "f_perf": 0.8999999999999999,
-            "f_expl": 0.5542170061363634,
-            "f_res": 2.7731673879623413
+            "f_perf": 0.779098679098679,
+            "f_expl": 0.5588028207590412,
+            "f_res": 3.2106673879623417
         }
     },
     "cic_RF": {
@@ -1049,108 +959,49 @@
         },
         "n_eval_rows": 46,
         "y_true_balance": {
-            "1": 33,
-            "0": 13
+            "0": 13,
+            "1": 33
         },
         "y_pred_balance": {
-            "0": 12,
-            "1": 34
+            "0": 17,
+            "1": 29
         },
         "confusion_matrix": [
             [
-                11,
-                2
+                13,
+                0
             ],
             [
-                1,
-                32
+                4,
+                29
             ]
         ],
-        "accuracy": 0.9347826086956522,
-        "precision": 0.9411764705882353,
-        "recall": 0.9696969696969697,
-        "f1": 0.9552238805970149,
-        "roc_auc": 0.9708624708624709,
+        "accuracy": 0.9130434782608695,
+        "precision": 1.0,
+        "recall": 0.8787878787878788,
+        "f1": 0.9354838709677419,
+        "roc_auc": 0.9883449883449884,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.43372200355424,
-        "latency": 2.790715383446735,
-        "cpu_percent": 311.1,
-        "ram_percent": 0.00038556430713310326,
+        "complexity": 5.389071729816501,
+        "latency": 2.33081112737241,
+        "cpu_percent": 474.3,
+        "ram_percent": 0.0003941793242332367,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 228,
+            "n_params": 218,
             "shap_std": 0.5,
-            "memory_bytes": 61538.0,
-            "cpu_percent": 311.1
+            "memory_bytes": 62913.0,
+            "cpu_percent": 474.3
         },
         "mcdm_scores": {
-            "f_perf": 0.8671711373203911,
-            "f_expl": 0.13680718297130007,
-            "f_res": 1.9444336872100831
+            "f_perf": 0.8354989096924581,
+            "f_expl": 0.13711214287489362,
+            "f_res": 2.964434998512268
         }
     },
     "cic_CNN": {
-        "methodology_context": {
-            "fusion_strategy": "Late Fusion (Averaging probabilities)",
-            "sample_description": "Stratified sampling (ratio=0.05)",
-            "k_folds": {
-                "enabled": false,
-                "description": "Fixed stratified split used instead of cross-validation for performance"
-            },
-            "data_splitting": {
-                "training": "70%",
-                "validation": "15%",
-                "testing": "15%",
-                "method": "Stratified Shuffle Split"
-            }
-        },
-        "n_eval_rows": 46,
-        "y_true_balance": {
-            "1": 33,
-            "0": 13
-        },
-        "y_pred_balance": {
-            "0": 23,
-            "1": 23
-        },
-        "confusion_matrix": [
-            [
-                6,
-                7
-            ],
-            [
-                17,
-                16
-            ]
-        ],
-        "accuracy": 0.4782608695652174,
-        "precision": 0.6956521739130435,
-        "recall": 0.48484848484848486,
-        "f1": 0.5714285714285714,
-        "roc_auc": 0.5221445221445221,
-        "faithfulness": 0.0,
-        "stability": 0.5,
-        "complexity": 6.466144724237619,
-        "latency": 116.02059654567553,
-        "cpu_percent": 97.1,
-        "ram_percent": 0.3370749872601503,
-        "mcdm_inputs": {
-            "s_intrinsic": 0.0,
-            "shap_available": false,
-            "n_params": 642,
-            "shap_std": 0.5,
-            "memory_bytes": 53798861.0,
-            "cpu_percent": 97.1
-        },
-        "mcdm_scores": {
-            "f_perf": 0.47845487845487844,
-            "f_expl": 0.13093033152356187,
-            "f_res": 0.6581815919876098
-        }
-    },
-    "cic_TabNet": {
         "methodology_context": {
             "fusion_strategy": "Late Fusion (Averaging probabilities)",
             "sample_description": "Stratified sampling (ratio=0.05)",
@@ -1171,41 +1022,101 @@
             "1": 33
         },
         "y_pred_balance": {
-            "1": 46
+            "1": 40,
+            "0": 6
         },
         "confusion_matrix": [
             [
-                0,
-                13
+                5,
+                8
             ],
             [
-                0,
-                33
+                1,
+                32
             ]
         ],
-        "accuracy": 0.717391304347826,
-        "precision": 0.717391304347826,
-        "recall": 1.0,
-        "f1": 0.8354430379746836,
-        "roc_auc": 0.289044289044289,
+        "accuracy": 0.8043478260869565,
+        "precision": 0.8,
+        "recall": 0.9696969696969697,
+        "f1": 0.8767123287671232,
+        "roc_auc": 0.7296037296037297,
+        "faithfulness": 0.0,
+        "stability": 0.5,
+        "complexity": 6.466144724237619,
+        "latency": 112.66316538271697,
+        "cpu_percent": 97.1,
+        "ram_percent": 0.3371165085098395,
+        "mcdm_inputs": {
+            "s_intrinsic": 0.0,
+            "shap_available": false,
+            "n_params": 642,
+            "shap_std": 0.5,
+            "memory_bytes": 53805488.0,
+            "cpu_percent": 97.1
+        },
+        "mcdm_scores": {
+            "f_perf": 0.7875147683366861,
+            "f_expl": 0.13093033152356187,
+            "f_res": 0.6581879119873046
+        }
+    },
+    "cic_TabNet": {
+        "methodology_context": {
+            "fusion_strategy": "Late Fusion (Averaging probabilities)",
+            "sample_description": "Stratified sampling (ratio=0.05)",
+            "k_folds": {
+                "enabled": false,
+                "description": "Fixed stratified split used instead of cross-validation for performance"
+            },
+            "data_splitting": {
+                "training": "70%",
+                "validation": "15%",
+                "testing": "15%",
+                "method": "Stratified Shuffle Split"
+            }
+        },
+        "n_eval_rows": 46,
+        "y_true_balance": {
+            "1": 33,
+            "0": 13
+        },
+        "y_pred_balance": {
+            "1": 39,
+            "0": 7
+        },
+        "confusion_matrix": [
+            [
+                5,
+                8
+            ],
+            [
+                2,
+                31
+            ]
+        ],
+        "accuracy": 0.782608695652174,
+        "precision": 0.7948717948717948,
+        "recall": 0.9393939393939394,
+        "f1": 0.8611111111111112,
+        "roc_auc": 0.5827505827505828,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 9.35959297677745,
-        "cpu_percent": 248.4,
-        "ram_percent": 0.003476883061340289,
+        "latency": 6.270579669786536,
+        "cpu_percent": 266.8,
+        "ram_percent": 0.003486970463181173,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 554928.0,
-            "cpu_percent": 248.4
+            "memory_bytes": 556538.0,
+            "cpu_percent": 266.8
         },
         "mcdm_scores": {
-            "f_perf": 0.6919860729987313,
+            "f_perf": 0.7428127428127429,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.5530292205810547
+            "f_res": 1.668030755996704
         }
     },
     "ton_LR": {
@@ -1225,8 +1136,8 @@
         },
         "n_eval_rows": 525,
         "y_true_balance": {
-            "1": 150,
-            "0": 375
+            "0": 375,
+            "1": 150
         },
         "y_pred_balance": {
             "1": 144,
@@ -1250,21 +1161,21 @@
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.2657377152215867,
-        "cpu_percent": 551.1,
-        "ram_percent": 0.00256527641187256,
+        "latency": 0.399936040242513,
+        "cpu_percent": 513.7,
+        "ram_percent": 0.0025562228120836923,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 409431.0,
-            "cpu_percent": 551.1
+            "memory_bytes": 407986.0,
+            "cpu_percent": 513.7
         },
         "mcdm_scores": {
             "f_perf": 0.8517477369614512,
             "f_expl": 0.5705912247729522,
-            "f_res": 3.4447654638290404
+            "f_res": 3.2110140857696536
         }
     },
     "ton_DT": {
@@ -1284,8 +1195,8 @@
         },
         "n_eval_rows": 525,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "1": 150,
+            "0": 375
         },
         "y_pred_balance": {
             "1": 150,
@@ -1309,8 +1220,8 @@
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 4.248495242049359,
-        "latency": 0.016273771013532366,
-        "cpu_percent": 570.8,
+        "latency": 0.031154269263857885,
+        "cpu_percent": 483.2,
         "ram_percent": 0.0016360700656526308,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
@@ -1318,12 +1229,12 @@
             "n_params": 69,
             "shap_std": 0.5,
             "memory_bytes": 261125.0,
-            "cpu_percent": 570.8
+            "cpu_percent": 483.2
         },
         "mcdm_scores": {
             "f_perf": 0.8799182222222223,
             "f_expl": 0.5470754911104774,
-            "f_res": 3.5677490282058715
+            "f_res": 3.0202490282058716
         }
     },
     "ton_RF": {
@@ -1347,8 +1258,8 @@
             "0": 375
         },
         "y_pred_balance": {
-            "0": 378,
-            "1": 147
+            "0": 380,
+            "1": 145
         },
         "confusion_matrix": [
             [
@@ -1356,33 +1267,33 @@
                 2
             ],
             [
-                5,
-                145
+                7,
+                143
             ]
         ],
-        "accuracy": 0.9866666666666667,
-        "precision": 0.9863945578231292,
-        "recall": 0.9666666666666667,
-        "f1": 0.9764309764309764,
-        "roc_auc": 0.99744,
+        "accuracy": 0.9828571428571429,
+        "precision": 0.9862068965517241,
+        "recall": 0.9533333333333334,
+        "f1": 0.9694915254237289,
+        "roc_auc": 0.9973688888888889,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.8888779583328805,
-        "latency": 0.3248605274018787,
-        "cpu_percent": 251.7,
-        "ram_percent": 0.002411440401065594,
+        "complexity": 5.921578419643816,
+        "latency": 0.4383518582298642,
+        "cpu_percent": 151.9,
+        "ram_percent": 0.0024117599398816715,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 360,
+            "n_params": 372,
             "shap_std": 0.5,
-            "memory_bytes": 384878.0,
-            "cpu_percent": 251.7
+            "memory_bytes": 384929.0,
+            "cpu_percent": 151.9
         },
         "mcdm_scores": {
-            "f_perf": 0.8800603905723906,
-            "f_expl": 0.13396232718951087,
-            "f_res": 1.5734920482635497
+            "f_perf": 0.8732703879472693,
+            "f_expl": 0.13377477858547554,
+            "f_res": 0.94974209690094
         }
     },
     "ton_CNN": {
@@ -1402,8 +1313,8 @@
         },
         "n_eval_rows": 525,
         "y_true_balance": {
-            "0": 375,
-            "1": 150
+            "1": 150,
+            "0": 375
         },
         "y_pred_balance": {
             "0": 525
@@ -1426,21 +1337,21 @@
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 0.46530133201962426,
-        "cpu_percent": 376.3,
-        "ram_percent": 0.001463775989116942,
+        "latency": 0.6551451910109747,
+        "cpu_percent": 348.7,
+        "ram_percent": 0.0014653486213294026,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 233626.0,
-            "cpu_percent": 376.3
+            "memory_bytes": 233877.0,
+            "cpu_percent": 348.7
         },
         "mcdm_scores": {
             "f_perf": 0.18465066666666669,
             "f_expl": 0.13093033152356187,
-            "f_res": 2.352097803115845
+            "f_res": 2.179598042488098
         }
     },
     "ton_TabNet": {
@@ -1460,12 +1371,12 @@
         },
         "n_eval_rows": 525,
         "y_true_balance": {
-            "1": 150,
-            "0": 375
+            "0": 375,
+            "1": 150
         },
         "y_pred_balance": {
-            "1": 232,
-            "0": 293
+            "0": 293,
+            "1": 232
         },
         "confusion_matrix": [
             [
@@ -1485,21 +1396,21 @@
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 2.2693234398251487,
-        "cpu_percent": 274.4,
-        "ram_percent": 0.014503779145228143,
+        "latency": 2.4057665325346447,
+        "cpu_percent": 274.7,
+        "ram_percent": 0.014490377311353827,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 2314876.0,
-            "cpu_percent": 274.4
+            "memory_bytes": 2312737.0,
+            "cpu_percent": 274.7
         },
         "mcdm_scores": {
             "f_perf": 0.6855828830715532,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.717207637786865
+            "f_res": 1.7190805978775023
         }
     },
     "fused_global": {
@@ -1523,24 +1434,24 @@
             "1": 183
         },
         "y_pred_balance": {
-            "1": 120,
-            "0": 451
+            "0": 443,
+            "1": 128
         },
         "confusion_matrix": [
             [
-                382,
-                6
+                381,
+                7
             ],
             [
-                69,
-                114
+                62,
+                121
             ]
         ],
-        "accuracy": 0.8686514886164624,
-        "precision": 0.95,
-        "recall": 0.6229508196721312,
-        "f1": 0.7524752475247525,
-        "roc_auc": 0.9282153118134188
+        "accuracy": 0.8791593695271454,
+        "precision": 0.9453125,
+        "recall": 0.6612021857923497,
+        "f1": 0.7781350482315113,
+        "roc_auc": 0.9651850599966199
     },
     "fused_LR": {
         "methodology_context": {
@@ -1559,47 +1470,47 @@
         },
         "n_eval_rows": 571,
         "y_true_balance": {
-            "0": 388,
-            "1": 183
+            "1": 183,
+            "0": 388
         },
         "y_pred_balance": {
-            "1": 248,
-            "0": 323
+            "1": 204,
+            "0": 367
         },
         "confusion_matrix": [
             [
-                255,
-                133
+                299,
+                89
             ],
             [
                 68,
                 115
             ]
         ],
-        "accuracy": 0.647985989492119,
-        "precision": 0.4637096774193548,
+        "accuracy": 0.7250437828371279,
+        "precision": 0.5637254901960784,
         "recall": 0.6284153005464481,
-        "f1": 0.5336426914153132,
-        "roc_auc": 0.7764632978423751,
-        "gap": 0.00964564930449785,
+        "f1": 0.5943152454780362,
+        "roc_auc": 0.7961804968734155,
+        "gap": 0.024943310657596474,
         "faithfulness": 1.0,
         "stability": 0.5,
         "complexity": 2.833213344056216,
-        "latency": 0.35775438499116646,
-        "cpu_percent": 337.3,
-        "ram_percent": 0.00042498035991633235,
+        "latency": 0.07624425737745082,
+        "cpu_percent": 525.7,
+        "ram_percent": 0.0004203251179487693,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
             "n_params": 16,
             "shap_std": 0.5,
-            "memory_bytes": 67829.0,
-            "cpu_percent": 337.3
+            "memory_bytes": 67086.0,
+            "cpu_percent": 525.7
         },
         "mcdm_scores": {
-            "f_perf": 0.556309761368085,
+            "f_perf": 0.5829924566640723,
             "f_expl": 0.5705912247729522,
-            "f_res": 2.1081896867752077
+            "f_res": 3.285688978195191
         }
     },
     "fused_DT": {
@@ -1623,43 +1534,43 @@
             "0": 388
         },
         "y_pred_balance": {
-            "1": 377,
-            "0": 194
+            "1": 331,
+            "0": 240
         },
         "confusion_matrix": [
             [
-                194,
-                194
+                235,
+                153
             ],
             [
-                0,
-                183
+                5,
+                178
             ]
         ],
-        "accuracy": 0.660245183887916,
-        "precision": 0.4854111405835544,
-        "recall": 1.0,
-        "f1": 0.6535714285714286,
-        "roc_auc": 0.8964635795166469,
-        "gap": 0.026666666666666616,
+        "accuracy": 0.723292469352014,
+        "precision": 0.5377643504531722,
+        "recall": 0.9726775956284153,
+        "f1": 0.6926070038910506,
+        "roc_auc": 0.8253056165849811,
+        "gap": 0.08444444444444454,
         "faithfulness": 1.0,
         "stability": 0.5,
-        "complexity": 3.6888794541139363,
-        "latency": 0.01146830944589057,
-        "cpu_percent": 443.7,
+        "complexity": 3.4011973816621555,
+        "latency": 0.006397634796837374,
+        "cpu_percent": 513.7,
         "ram_percent": 0.00027848121094518896,
         "mcdm_inputs": {
             "s_intrinsic": 1.0,
             "shap_available": false,
-            "n_params": 39,
+            "n_params": 29,
             "shap_std": 0.5,
             "memory_bytes": 44447.0,
-            "cpu_percent": 443.7
+            "cpu_percent": 513.7
         },
         "mcdm_scores": {
-            "f_perf": 0.7380546206652341,
-            "f_expl": 0.5542170061363634,
-            "f_res": 2.7731673879623413
+            "f_perf": 0.7254627591174967,
+            "f_expl": 0.5588028207590412,
+            "f_res": 3.2106673879623417
         }
     },
     "fused_RF": {
@@ -1683,43 +1594,43 @@
             "1": 183
         },
         "y_pred_balance": {
-            "0": 367,
-            "1": 204
+            "1": 161,
+            "0": 410
         },
         "confusion_matrix": [
             [
-                337,
-                51
+                382,
+                6
             ],
             [
-                30,
-                153
+                28,
+                155
             ]
         ],
-        "accuracy": 0.8581436077057794,
-        "precision": 0.75,
-        "recall": 0.8360655737704918,
-        "f1": 0.7906976744186046,
-        "roc_auc": 0.9340600529547631,
-        "gap": 0.02120709583396152,
+        "accuracy": 0.9404553415061296,
+        "precision": 0.9627329192546584,
+        "recall": 0.8469945355191257,
+        "f1": 0.9011627906976745,
+        "roc_auc": 0.9736634555799674,
+        "gap": 0.03400765445598697,
         "faithfulness": 0.0,
         "stability": 0.5,
-        "complexity": 5.43372200355424,
-        "latency": 0.22482120427066515,
-        "cpu_percent": 311.1,
-        "ram_percent": 0.00038556430713310326,
+        "complexity": 5.389071729816501,
+        "latency": 0.18777112409655142,
+        "cpu_percent": 474.3,
+        "ram_percent": 0.0003941793242332367,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
-            "n_params": 228,
+            "n_params": 218,
             "shap_std": 0.5,
-            "memory_bytes": 61538.0,
-            "cpu_percent": 311.1
+            "memory_bytes": 62913.0,
+            "cpu_percent": 474.3
         },
         "mcdm_scores": {
-            "f_perf": 0.7517900429061458,
-            "f_expl": 0.13680718297130007,
-            "f_res": 1.9444336872100831
+            "f_perf": 0.8058954026052023,
+            "f_expl": 0.13711214287489362,
+            "f_res": 2.964434998512268
         }
     },
     "fused_CNN": {
@@ -1759,26 +1670,26 @@
         "precision": 0.0,
         "recall": 0.0,
         "f1": 0.0,
-        "roc_auc": 0.7672384654385669,
-        "gap": 0.5714285714285714,
+        "roc_auc": 0.778336431750324,
+        "gap": 0.8767123287671232,
         "faithfulness": 0.0,
         "stability": 0.5,
         "complexity": 6.466144724237619,
-        "latency": 9.346668022944089,
+        "latency": 9.076191957276674,
         "cpu_percent": 97.1,
-        "ram_percent": 0.3370749872601503,
+        "ram_percent": 0.3371165085098395,
         "mcdm_inputs": {
             "s_intrinsic": 0.0,
             "shap_available": false,
             "n_params": 642,
             "shap_std": 0.5,
-            "memory_bytes": 53798861.0,
+            "memory_bytes": 53805488.0,
             "cpu_percent": 97.1
         },
         "mcdm_scores": {
-            "f_perf": 0.09630483594485625,
+            "f_perf": 0.06799605347335247,
             "f_expl": 0.13093033152356187,
-            "f_res": 0.6581815919876098
+            "f_res": 0.6581879119873046
         }
     },
     "fused_TabNet": {
@@ -1798,47 +1709,47 @@
         },
         "n_eval_rows": 571,
         "y_true_balance": {
-            "1": 183,
-            "0": 388
+            "0": 388,
+            "1": 183
         },
         "y_pred_balance": {
-            "1": 263,
-            "0": 308
+            "0": 285,
+            "1": 286
         },
         "confusion_matrix": [
             [
-                269,
-                119
+                249,
+                139
             ],
             [
-                39,
-                144
+                36,
+                147
             ]
         ],
-        "accuracy": 0.723292469352014,
-        "precision": 0.5475285171102662,
-        "recall": 0.7868852459016393,
-        "f1": 0.6457399103139013,
-        "roc_auc": 0.677440707565771,
-        "gap": 0.14957916362913382,
+        "accuracy": 0.6935201401050788,
+        "precision": 0.513986013986014,
+        "recall": 0.8032786885245902,
+        "f1": 0.6268656716417911,
+        "roc_auc": 0.6737648583178413,
+        "gap": 0.17524723676556142,
         "faithfulness": 0.5,
         "stability": 0.5,
         "complexity": 8.80071662871916,
-        "latency": 0.7540127441887262,
-        "cpu_percent": 248.4,
-        "ram_percent": 0.003476883061340289,
+        "latency": 0.5051605338181798,
+        "cpu_percent": 266.8,
+        "ram_percent": 0.003486970463181173,
         "mcdm_inputs": {
             "s_intrinsic": 0.5,
             "shap_available": false,
             "n_params": 6638,
             "shap_std": 0.5,
-            "memory_bytes": 554928.0,
-            "cpu_percent": 248.4
+            "memory_bytes": 556538.0,
+            "cpu_percent": 266.8
         },
         "mcdm_scores": {
-            "f_perf": 0.6148917630462931,
+            "f_perf": 0.6089581232011056,
             "f_expl": 0.32272542208066846,
-            "f_res": 1.5530292205810547
+            "f_res": 1.668030755996704
         }
     }
 }

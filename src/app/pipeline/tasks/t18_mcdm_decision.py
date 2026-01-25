@@ -17,8 +17,8 @@ from mcdm.decision_agent import DDoSDecisionAgent
 @TaskRegistry.register("T18_MCDM_Decision")
 class T18_MCDM_Decision(Task):
     """
-    Tâche finale du pipeline : Exécute l'analyse MCDM/MOO pour désigner le meilleur algorithme.
-    Met à jour le rapport JSON avec les sorties décisionnelles et les liens vers les graphiques.
+    Final pipeline task: runs MCDM/MOO analysis to select the best algorithm.
+    Updates the JSON report with decision outputs and links to charts.
     """
     def run(self, context: DAGContext) -> TaskResult:
         start_ts = time.time()
@@ -26,15 +26,15 @@ class T18_MCDM_Decision(Task):
         output_dir = "reports"
         os.makedirs(output_dir, exist_ok=True)
         
-        # 1. Charger les résultats de l'évaluation (T17)
+        # 1. Load evaluation results (T17)
         report_path = os.path.join("reports", "run_report.json")
         if not os.path.exists(report_path):
-            return TaskResult(task_name=self.name, status="failed", duration_s=time.time()-start_ts, error="Rapport d'évaluation introuvable.")
+            return TaskResult(task_name=self.name, status="failed", duration_s=time.time()-start_ts, error="Evaluation report not found.")
             
         with open(report_path, "r") as f:
             all_metrics = json.load(f)
             
-        # 2. Préparer la matrice de décision
+        # 2. Build decision matrix
         rows = []
         for model_name, metrics in all_metrics.items():
             if model_name == "_metadata": continue
@@ -62,15 +62,15 @@ class T18_MCDM_Decision(Task):
             
         df_results = pd.DataFrame(rows)
         
-        # 3. Initialiser l'Agent de Décision
+        # 3. Initialize decision agent
         with open("config/pipeline.yaml", "r") as f:
             mcdm_config = yaml.safe_load(f)
         agent = DDoSDecisionAgent(mcdm_config)
         
-        # 4. Exécuter l'analyse
+        # 4. Run analysis
         ranked_df = agent.rank_models(df_results)
         
-        # 5. Générer le rapport et les graphiques
+        # 5. Generate report and charts
         report = agent.generate_final_report(ranked_df)
         report_md_path = os.path.join(output_dir, "final_justification_report.md")
         with open(report_md_path, "w") as f:
@@ -86,9 +86,9 @@ class T18_MCDM_Decision(Task):
         sampling_summary = self._generate_sampling_variation(all_metrics)
         report_links = self._write_graphs_report(sampling_summary)
 
-        # 6. Mise à jour du rapport JSON avec les sorties MCDM et liens vers les graphiques complets
+        # 6. Update JSON report with MCDM outputs and chart links
         if "_metadata" in all_metrics:
-            # Ajout des fichiers de décision
+            # Add decision files
             decision_files = []
             for root, _, files in os.walk(plots_dir):
                 for f in files:
@@ -137,7 +137,7 @@ class T18_MCDM_Decision(Task):
             with open(report_path, "w") as f:
                 json.dump(all_metrics, f, indent=4)
         
-        context.logger.info("mcdm", f"Analyse MCDM terminée. Rapport : {report_md_path}")
+        context.logger.info("mcdm", f"MCDM analysis completed. Report: {report_md_path}")
         
         return TaskResult(
             task_name=self.name, 
@@ -150,7 +150,10 @@ class T18_MCDM_Decision(Task):
     def _generate_dtreeviz(self, context: DAGContext, output_dir: str) -> list:
         os.makedirs(output_dir, exist_ok=True)
         try:
-            from dtreeviz.trees import dtreeviz
+            try:
+                from dtreeviz import model as dtreeviz_model
+            except Exception:
+                from dtreeviz.trees import dtreeviz as dtreeviz_model
         except Exception as exc:
             context.logger.warning("mcdm", f"dtreeviz not available: {exc}")
             return []
@@ -225,7 +228,7 @@ class T18_MCDM_Decision(Task):
 
             class_names = [str(c) for c in sorted(y.unique())]
             try:
-                viz = dtreeviz(
+                viz = dtreeviz_model(
                     tree_model,
                     X,
                     y.values,
@@ -354,7 +357,7 @@ class T18_MCDM_Decision(Task):
         files.append(perf_plot)
 
         expl_plot = os.path.join(expl_dir, "explainability_sampling_curve.png")
-        _plot_lines(results_expl, "Explicabilite vs Sampling", "f_expl", expl_plot)
+        _plot_lines(results_expl, "Explainability vs Sampling", "f_expl", expl_plot)
         files.append(expl_plot)
 
         perf_derivative_peaks = {}
@@ -379,11 +382,11 @@ class T18_MCDM_Decision(Task):
             plt.close()
 
         perf_deriv_plot = os.path.join(perf_dir, "performance_sampling_derivative.png")
-        _plot_derivative(results_perf, "Derivee performance vs Sampling", "d(f_perf)/d(sampling)", perf_deriv_plot, perf_derivative_peaks)
+        _plot_derivative(results_perf, "Performance derivative vs Sampling", "d(f_perf)/d(sampling)", perf_deriv_plot, perf_derivative_peaks)
         files.append(perf_deriv_plot)
 
         expl_deriv_plot = os.path.join(expl_dir, "explainability_sampling_derivative.png")
-        _plot_derivative(results_expl, "Derivee explicabilite vs Sampling", "d(f_expl)/d(sampling)", expl_deriv_plot, expl_derivative_peaks)
+        _plot_derivative(results_expl, "Explainability derivative vs Sampling", "d(f_expl)/d(sampling)", expl_deriv_plot, expl_derivative_peaks)
         files.append(expl_deriv_plot)
 
         return {
@@ -408,37 +411,37 @@ class T18_MCDM_Decision(Task):
             return sorted(collected)
 
         sections = [
-            ("Graphiques de decision", "graph/decision", [".png"]),
-            ("Variations (seuils)", "graph/decision/variations", [".png"]),
-            ("Distributions features", "graph/feature_distributions", [".png", ".md"]),
+            ("Decision charts", "graph/decision", [".png"]),
+            ("Threshold variations", "graph/decision/variations", [".png"]),
+            ("Feature distributions", "graph/feature_distributions", [".png", ".md"]),
             ("Dtreeviz", "graph/algorithms/dtreeviz", [".svg", ".png"]),
         ]
 
-        lines = ["# Rapport des graphiques", ""]
+        lines = ["# Charts report", ""]
         for title, root, exts in sections:
             files = _collect_files(root, exts)
             lines.append(f"## {title}")
             if not files:
-                lines.append("- Aucun fichier.")
+                lines.append("- No files.")
                 lines.append("")
                 continue
             for f in files:
                 lines.append(f"- {f}")
             lines.append("")
 
-        lines.append("## Synthese des derives (sampling)")
+        lines.append("## Derivative summary (sampling)")
         if sampling_summary.get("perf_derivative_peaks"):
             lines.append("### Performance")
             for model, info in sampling_summary["perf_derivative_peaks"].items():
-                lines.append(f"- {model}: pic de derivee {info['peak']:.4f} a {info['at']}%")
+                lines.append(f"- {model}: derivative peak {info['peak']:.4f} at {info['at']}%")
         else:
-            lines.append("- Pas de donnees de derivee performance.")
+            lines.append("- No performance derivative data.")
         if sampling_summary.get("expl_derivative_peaks"):
-            lines.append("### Explicabilite")
+            lines.append("### Explainability")
             for model, info in sampling_summary["expl_derivative_peaks"].items():
-                lines.append(f"- {model}: pic de derivee {info['peak']:.4f} a {info['at']}%")
+                lines.append(f"- {model}: derivative peak {info['peak']:.4f} at {info['at']}%")
         else:
-            lines.append("- Pas de donnees de derivee explicabilite.")
+            lines.append("- No explainability derivative data.")
         lines.append("")
 
         with open(report_path, "w") as f:

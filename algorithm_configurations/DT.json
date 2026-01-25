@@ -25,46 +25,46 @@
             },
             "n_eval_rows": 46,
             "y_true_balance": {
-                "1": 33,
-                "0": 13
-            },
-            "y_pred_balance": {
                 "0": 13,
                 "1": 33
             },
+            "y_pred_balance": {
+                "0": 16,
+                "1": 30
+            },
             "confusion_matrix": [
                 [
-                    13,
-                    0
+                    11,
+                    2
                 ],
                 [
-                    0,
-                    33
+                    5,
+                    28
                 ]
             ],
-            "accuracy": 1.0,
-            "precision": 1.0,
-            "recall": 1.0,
-            "f1": 1.0,
-            "roc_auc": 1.0,
+            "accuracy": 0.8478260869565217,
+            "precision": 0.9333333333333333,
+            "recall": 0.8484848484848485,
+            "f1": 0.8888888888888888,
+            "roc_auc": 0.844988344988345,
             "faithfulness": 1.0,
             "stability": 0.5,
-            "complexity": 3.6888794541139363,
-            "latency": 0.14235662377398947,
-            "cpu_percent": 443.7,
+            "complexity": 3.4011973816621555,
+            "latency": 0.07941411889117697,
+            "cpu_percent": 513.7,
             "ram_percent": 0.00027848121094518896,
             "mcdm_inputs": {
                 "s_intrinsic": 1.0,
                 "shap_available": false,
-                "n_params": 39,
+                "n_params": 29,
                 "shap_std": 0.5,
                 "memory_bytes": 44447.0,
-                "cpu_percent": 443.7
+                "cpu_percent": 513.7
             },
             "mcdm_scores": {
-                "f_perf": 0.8999999999999999,
-                "f_expl": 0.5542170061363634,
-                "f_res": 2.7731673879623413
+                "f_perf": 0.779098679098679,
+                "f_expl": 0.5588028207590412,
+                "f_res": 3.2106673879623417
             }
         },
         "ton": {
@@ -84,8 +84,8 @@
             },
             "n_eval_rows": 525,
             "y_true_balance": {
-                "0": 375,
-                "1": 150
+                "1": 150,
+                "0": 375
             },
             "y_pred_balance": {
                 "1": 150,
@@ -109,8 +109,8 @@
             "faithfulness": 1.0,
             "stability": 0.5,
             "complexity": 4.248495242049359,
-            "latency": 0.016273771013532366,
-            "cpu_percent": 570.8,
+            "latency": 0.031154269263857885,
+            "cpu_percent": 483.2,
             "ram_percent": 0.0016360700656526308,
             "mcdm_inputs": {
                 "s_intrinsic": 1.0,
@@ -118,12 +118,12 @@
                 "n_params": 69,
                 "shap_std": 0.5,
                 "memory_bytes": 261125.0,
-                "cpu_percent": 570.8
+                "cpu_percent": 483.2
             },
             "mcdm_scores": {
                 "f_perf": 0.8799182222222223,
                 "f_expl": 0.5470754911104774,
-                "f_res": 3.5677490282058715
+                "f_res": 3.0202490282058716
             }
         },
         "fused": {
@@ -147,58 +147,58 @@
                 "0": 388
             },
             "y_pred_balance": {
-                "1": 377,
-                "0": 194
+                "1": 331,
+                "0": 240
             },
             "confusion_matrix": [
                 [
-                    194,
-                    194
+                    235,
+                    153
                 ],
                 [
-                    0,
-                    183
+                    5,
+                    178
                 ]
             ],
-            "accuracy": 0.660245183887916,
-            "precision": 0.4854111405835544,
-            "recall": 1.0,
-            "f1": 0.6535714285714286,
-            "roc_auc": 0.8964635795166469,
-            "gap": 0.026666666666666616,
+            "accuracy": 0.723292469352014,
+            "precision": 0.5377643504531722,
+            "recall": 0.9726775956284153,
+            "f1": 0.6926070038910506,
+            "roc_auc": 0.8253056165849811,
+            "gap": 0.08444444444444454,
             "faithfulness": 1.0,
             "stability": 0.5,
-            "complexity": 3.6888794541139363,
-            "latency": 0.01146830944589057,
-            "cpu_percent": 443.7,
+            "complexity": 3.4011973816621555,
+            "latency": 0.006397634796837374,
+            "cpu_percent": 513.7,
             "ram_percent": 0.00027848121094518896,
             "mcdm_inputs": {
                 "s_intrinsic": 1.0,
                 "shap_available": false,
-                "n_params": 39,
+                "n_params": 29,
                 "shap_std": 0.5,
                 "memory_bytes": 44447.0,
-                "cpu_percent": 443.7
+                "cpu_percent": 513.7
             },
             "mcdm_scores": {
-                "f_perf": 0.7380546206652341,
-                "f_expl": 0.5542170061363634,
-                "f_res": 2.7731673879623413
+                "f_perf": 0.7254627591174967,
+                "f_expl": 0.5588028207590412,
+                "f_res": 3.2106673879623417
             }
         }
     },
     "mcdm_inputs": {
         "s_intrinsic": 1.0,
         "shap_available": false,
-        "n_params": 39,
+        "n_params": 29,
         "shap_std": 0.5,
         "memory_bytes": 44447.0,
-        "cpu_percent": 443.7
+        "cpu_percent": 513.7
     },
     "mcdm_scores": {
-        "f_perf": 0.7380546206652341,
-        "f_expl": 0.5542170061363634,
-        "f_res": 2.7731673879623413
+        "f_perf": 0.7254627591174967,
+        "f_expl": 0.5588028207590412,
+        "f_res": 3.2106673879623417
     },
     "explainability": {
         "shap_available": false,

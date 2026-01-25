@@ -40,7 +40,7 @@ class T02_CleanTON(Task):
 
         context.logger.info("loading", f"Reading TON dataset from {ton_path}")
         if not os.path.exists(ton_path):
-            context.logger.error("loading", f"ERREUR : Fichier ToN-IoT introuvable : {ton_path}. Interruption.")
+            context.logger.error("loading", f"ERROR: ToN-IoT file not found: {ton_path}. Aborting.")
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error=f"File not found: {ton_path}")
 
         lf = pl.scan_csv(ton_path, infer_schema_length=100)
@@ -57,34 +57,34 @@ class T02_CleanTON(Task):
         
         df_full = lf.collect()
 
-        # --- VALIDATION INTERACTIVE ---
+        # --- INTERACTIVE VALIDATION ---
         validation_size = getattr(cfg, "validation_sample_size", 10000)
         df_val = self._stratified_sample(df_full, "type", validation_size, cfg.seed)
 
-        print(f"\n--- VALIDATION DES DONNÉES ToN-IoT ---")
-        print(f"Fichier source : {ton_path}")
-        print(f"Nombre de colonnes (features) : {df_full.width}")
-        print(f"Nombre de lignes (échantillon/total) : {df_val.height} / {df_full.height}")
+        print("\n--- ToN-IoT DATA VALIDATION ---")
+        print(f"Source file: {ton_path}")
+        print(f"Number of columns (features): {df_full.width}")
+        print(f"Number of rows (sample/total): {df_val.height} / {df_full.height}")
 
         if "type" in df_val.columns:
             counts = df_val["type"].value_counts().to_dicts()
-            print("Répartition proposée dans l'échantillon (type) :")
+            print("Proposed label distribution (type):")
             for r in counts:
-                print(f"  - {r['type']} : {r['count']} lignes")
+                print(f"  - {r['type']} : {r['count']} rows")
 
-        print(f"\nListe des features : {df_full.columns[:20]} ... (+{max(0, len(df_full.columns)-20)})")
+        print(f"\nFeature list: {df_full.columns[:20]} ... (+{max(0, len(df_full.columns)-20)})")
 
-        print("\nExemple de donnée au hasard :")
+        print("\nRandom sample row:")
         print(df_val.sample(1).to_pandas().iloc[0].to_dict())
 
         try:
-            confirm = input("\n?> Confirmez-vous l'utilisation de ces données ToN-IoT ? (o/n) : ").lower()
-            if confirm != 'o':
-                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="Validation utilisateur refusée pour ToN-IoT")
+            confirm = input("\n?> Confirm use of these ToN-IoT data? (y/n): ").lower()
+            if confirm != 'y':
+                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="User validation refused for ToN-IoT")
         except EOFError:
-            pass # Mode non-interactif
+            pass  # Non-interactive mode
 
-        # --- SAMPLING STRATIFIÉ (50%) ---
+        # --- STRATIFIED SAMPLING ---
         sampling_ratio = cfg.sample_ratio
         context.logger.info("sampling", f"Performing stratified sampling at {sampling_ratio*100}%")
         
@@ -94,6 +94,39 @@ class T02_CleanTON(Task):
         
         reason = f"stratified_sampling_{int(sampling_ratio*100)}"
         context.logger.info("sampling", f"Sampling complete: {df_full.height} -> {df.height} rows")
+
+        # Stratification validation plot
+        try:
+            import pandas as pd
+            import matplotlib.pyplot as plt
+            strat_dir = os.path.join("graph", "stratification")
+            os.makedirs(strat_dir, exist_ok=True)
+
+            def _dist(frame: pl.DataFrame, col: str) -> pd.Series:
+                counts = frame.select(col).to_pandas()[col].value_counts(normalize=True)
+                return counts.sort_index()
+
+            full_dist = _dist(df_full, "type")
+            sample_dist = _dist(df, "type")
+            all_labels = sorted(set(full_dist.index).union(sample_dist.index))
+            full_vals = [full_dist.get(l, 0.0) for l in all_labels]
+            sample_vals = [sample_dist.get(l, 0.0) for l in all_labels]
+
+            x = range(len(all_labels))
+            plt.figure(figsize=(10, 5))
+            plt.bar([i - 0.2 for i in x], full_vals, width=0.4, label="Full")
+            plt.bar([i + 0.2 for i in x], sample_vals, width=0.4, label="Sample")
+            plt.xticks(list(x), all_labels, rotation=45, ha="right")
+            plt.ylabel("Proportion")
+            plt.title("Stratification check (ToN-IoT)")
+            plt.legend()
+            plt.tight_layout()
+            out_path = os.path.join(strat_dir, "ton_stratification.png")
+            plt.savefig(out_path, dpi=150, bbox_inches="tight")
+            plt.close()
+            context.logger.info("sampling", f"Stratification chart saved: {out_path}")
+        except Exception as e:
+            context.logger.warning("sampling", f"Stratification chart failed: {e}")
         
         # Robust balance extraction for Polars
         y_counts = df.group_by("y").count().to_dicts()
