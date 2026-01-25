@@ -10,12 +10,13 @@ class PathsConfig(BaseModel):
 class IOConfig(BaseModel):
     parquet_compression: str = "zstd"
     row_group_size: int = 50000
+    csv_infer_schema_length: Optional[int] = None
 
 class SamplingPolicy(BaseModel):
     max_ram_percent: float = 70.0
     safe_frac_default: float = 0.3
-    min_rows: int = 1000
-    max_rows: int = 500000
+    min_rows: Optional[int] = None
+    max_rows: Optional[int] = None
 
 class AlignmentConfig(BaseModel):
     descriptor_sample_rows: int = 20000
@@ -71,7 +72,7 @@ class PipelineConfig(BaseModel):
     version: str = "1.0.0"
     seed: int = 42
     test_mode: bool = True
-    sample_ratio: float = 0.5
+    sample_ratio: float = 0.1
     validation_sample_size: int = 10000
     test_row_limit_per_file: int = 2000
     test_max_files_per_dataset: int = 3

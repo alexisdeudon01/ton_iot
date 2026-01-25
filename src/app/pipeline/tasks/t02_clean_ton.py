@@ -43,7 +43,10 @@ class T02_CleanTON(Task):
             context.logger.error("loading", f"ERROR: ToN-IoT file not found: {ton_path}. Aborting.")
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error=f"File not found: {ton_path}")
 
-        lf = pl.scan_csv(ton_path, infer_schema_length=100)
+        scan_kwargs = {}
+        if cfg.io.csv_infer_schema_length is not None:
+            scan_kwargs["infer_schema_length"] = cfg.io.csv_infer_schema_length
+        lf = pl.scan_csv(ton_path, **scan_kwargs)
 
         # Keep only type in {"normal", "ddos"}
         lf = lf.filter(pl.col("type").is_in(["normal", "ddos"]))
@@ -60,6 +63,25 @@ class T02_CleanTON(Task):
         # --- INTERACTIVE VALIDATION ---
         validation_size = getattr(cfg, "validation_sample_size", 10000)
         df_val = self._stratified_sample(df_full, "type", validation_size, cfg.seed)
+        val_path = os.path.join(cfg.paths.work_dir, "data", "ton_validation.parquet")
+        os.makedirs(os.path.dirname(val_path), exist_ok=True)
+        context.table_io.write_parquet(df_val, val_path)
+        val_artifact = TableArtifact(
+            artifact_id="ton_validation",
+            name="TON Validation Sample",
+            path=val_path,
+            format="parquet",
+            n_rows=df_val.height,
+            n_cols=df_val.width,
+            columns=df_val.columns,
+            dtypes={col: str(dtype) for col, dtype in zip(df_val.columns, df_val.dtypes)},
+            version="1.0.0",
+            source_step=self.name,
+            fingerprint=str(hash(val_path)),
+            stats={"note": "Stratified validation sample (pre-sampling)"},
+        )
+        context.artifact_store.save_table(val_artifact)
+        context.logger.info("sampling", f"Validation sample saved: {val_path}")
 
         print("\n--- ToN-IoT DATA VALIDATION ---")
         print(f"Source file: {ton_path}")
@@ -108,15 +130,16 @@ class T02_CleanTON(Task):
 
             full_dist = _dist(df_full, "type")
             sample_dist = _dist(df, "type")
-            all_labels = sorted(set(full_dist.index).union(sample_dist.index))
-            full_vals = [full_dist.get(l, 0.0) for l in all_labels]
-            sample_vals = [sample_dist.get(l, 0.0) for l in all_labels]
+            all_labels = sorted(set(full_dist.index).union(sample_dist.index), key=lambda x: str(x))
+            label_names = [str(l) for l in all_labels]
+            full_vals = [float(full_dist.get(l, 0.0)) for l in all_labels]
+            sample_vals = [float(sample_dist.get(l, 0.0)) for l in all_labels]
 
             x = range(len(all_labels))
             plt.figure(figsize=(10, 5))
             plt.bar([i - 0.2 for i in x], full_vals, width=0.4, label="Full")
             plt.bar([i + 0.2 for i in x], sample_vals, width=0.4, label="Sample")
-            plt.xticks(list(x), all_labels, rotation=45, ha="right")
+            plt.xticks(list(x), label_names, rotation=45, ha="right")
             plt.ylabel("Proportion")
             plt.title("Stratification check (ToN-IoT)")
             plt.legend()
