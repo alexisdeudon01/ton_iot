@@ -264,6 +264,10 @@ class T18_MCDM_Decision(Task):
                 out_name = f"{dataset.lower()}_{algo.lower()}_dtreeviz.svg"
                 out_path = os.path.join(output_dir, out_name)
                 render = viz.view()
+                try:
+                    render.scale(1.2)
+                except Exception:
+                    pass
                 if hasattr(render, "save"):
                     render.save(out_path)
                 elif hasattr(render, "save_svg"):
@@ -586,6 +590,7 @@ class T18_MCDM_Decision(Task):
             ("Threshold variations", "graph/decision/variations", [".png"]),
             ("Feature distributions", "graph/feature_distributions", [".png", ".md"]),
             ("Dtreeviz", "graph/algorithms/dtreeviz", [".svg", ".png"]),
+            ("Neural model summaries", "graph/algorithms/nnviz", [".png"]),
         ]
 
         lines = ["# Charts report", ""]
