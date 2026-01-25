@@ -206,14 +206,14 @@
 
 ## Derivative summary (sampling)
 ### Performance
-- CNN: derivative peak -0.0043 at 10%
-- DT: derivative peak 0.0022 at 10%
-- LR: derivative peak -0.0019 at 40%
-- RF: derivative peak -0.0011 at 40%
-- TabNet: derivative peak 0.0031 at 20%
+- CNN: derivative peak -0.0041 at 10%
+- DT: derivative peak 0.0011 at 20%
+- LR: derivative peak 0.0026 at 20%
+- RF: derivative peak 0.0014 at 20%
+- TabNet: derivative peak 0.0030 at 20%
 ### Explainability
 - CNN: derivative peak 0.0018 at 10%
 - DT: derivative peak 0.0006 at 10%
-- LR: derivative peak 0.0008 at 10%
-- RF: derivative peak 0.0005 at 10%
+- LR: derivative peak 0.0006 at 10%
+- RF: derivative peak 0.0006 at 10%
 - TabNet: derivative peak -0.0020 at 10%

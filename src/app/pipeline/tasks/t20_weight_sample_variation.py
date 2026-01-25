@@ -1,4 +1,6 @@
 import os
+import matplotlib
+matplotlib.use("Agg")
 import json
 import time
 import numpy as np
