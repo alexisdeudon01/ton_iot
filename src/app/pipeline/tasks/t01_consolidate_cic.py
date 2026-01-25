@@ -104,6 +104,25 @@ class T01_ConsolidateCIC(Task):
         # --- INTERACTIVE VALIDATION ---
         validation_size = getattr(cfg, "validation_sample_size", 10000)
         df_val = self._stratified_sample(df_full, "Label", validation_size, cfg.seed)
+        val_path = os.path.join(cfg.paths.work_dir, "data", "cic_validation.parquet")
+        os.makedirs(os.path.dirname(val_path), exist_ok=True)
+        context.table_io.write_parquet(df_val, val_path)
+        val_artifact = TableArtifact(
+            artifact_id="cic_validation",
+            name="CIC Validation Sample",
+            path=val_path,
+            format="parquet",
+            n_rows=df_val.height,
+            n_cols=df_val.width,
+            columns=df_val.columns,
+            dtypes={col: str(dtype) for col, dtype in zip(df_val.columns, df_val.dtypes)},
+            version="1.0.0",
+            source_step=self.name,
+            fingerprint=str(hash(val_path)),
+            stats={"note": "Stratified validation sample (pre-sampling)"},
+        )
+        context.artifact_store.save_table(val_artifact)
+        context.logger.info("sampling", f"Validation sample saved: {val_path}")
 
         print("\n--- CIC-DDoS2019 DATA VALIDATION ---")
         print(f"Files found: {len(csv_files)}")

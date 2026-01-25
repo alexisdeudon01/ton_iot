@@ -609,7 +609,7 @@ class T18_MCDM_Decision(Task):
                         f"{model}: peak {info.get('peak', 0):.4f} at {info.get('at', 0)}%",
                         style="List Bullet",
                     )
-            doc.add_paragraph("Threshold variation range: 100 to 30 (step 10) for resources, performance, and explainability.")
+            doc.add_paragraph("Threshold variation range: 10 to 100 (step 10) for resources, performance, and explainability.")
 
             for title, files in sections:
                 if not files:
@@ -640,7 +640,7 @@ class T18_MCDM_Decision(Task):
                 lines.append("### Explainability derivative peaks")
                 for model, info in sampling_summary["expl_derivative_peaks"].items():
                     lines.append(f"- {model}: peak {info.get('peak', 0):.4f} at {info.get('at', 0)}%")
-            lines.append("- Threshold variation range: 100 to 30 (step 10) for resources, performance, and explainability.")
+            lines.append("- Threshold variation range: 10 to 100 (step 10) for resources, performance, and explainability.")
             for title, files in sections:
                 if not files:
                     continue

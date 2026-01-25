@@ -29,6 +29,7 @@ import src.app.pipeline.tasks.t06_project_cic
 import src.app.pipeline.tasks.t07_project_ton
 import src.app.pipeline.tasks.t08_build_preprocess_cic
 import src.app.pipeline.tasks.t09_build_preprocess_ton
+import src.app.pipeline.tasks.t10_sampling_validation
 import src.app.pipeline.tasks.t12_train_cic
 import src.app.pipeline.tasks.t13_train_ton
 import src.app.pipeline.tasks.t14_predict_cic
@@ -37,6 +38,7 @@ import src.app.pipeline.tasks.t16_late_fusion
 import src.app.pipeline.tasks.t17_evaluate
 import src.app.pipeline.tasks.t18_mcdm_decision
 import src.app.pipeline.tasks.t19_topsis_report
+import src.app.pipeline.tasks.t20_weight_sample_variation
 
 from src.app.pipeline.registry import TaskRegistry
 
@@ -53,6 +55,7 @@ def build_pipeline_graph() -> DAGGraph:
         ("T04_ProfileTON", "Statistical analysis and profiling for ToN-IoT data"),
         ("T05_AlignFeatures", "FEATURE SELECTION: compute intersection of shared columns"),
         ("T05_FeatureDistribution", "VISUALIZATION: post-preprocessing distributions (15 universal features)"),
+        ("T10_SamplingValidation", "VALIDATION: KS test between validation and sampled data"),
         ("T06_ProjectCIC", "Project CIC dataset to the shared feature space"),
         ("T07_ProjectTON", "Project ToN-IoT dataset to the shared feature space"),
         ("T08_BuildPreprocessCIC", "PREPROCESSING: build RobustScaler for CIC (.joblib)"),
@@ -64,7 +67,8 @@ def build_pipeline_graph() -> DAGGraph:
         ("T16_LateFusion", "FUSION: combine results via Late Fusion (averaging)"),
         ("T17_Evaluate", "EVALUATION: compute performance metrics (F1, Precision, Recall)"),
         ("T18_MCDM_Decision", "DECISION: final ranking via MOO-MCDM-MCDA (TOPSIS/Pareto)"),
-        ("T19_TopsisReport", "MCDA: Automated AHP/TOPSIS visual report (topsis_tppis)")
+        ("T19_TopsisReport", "MCDA: Automated AHP/TOPSIS visual report (topsis_tppis)"),
+        ("T20_WeightSampleVariation", "MCDA: weight and sampling size sensitivity analysis")
     ]
 
     for code, desc in tasks_info:
@@ -78,6 +82,7 @@ def build_pipeline_graph() -> DAGGraph:
     t03 = TaskRegistry.get_task_cls("T03_ProfileCIC")("T03_ProfileCIC", inputs=["cic_consolidated"])
     t04 = TaskRegistry.get_task_cls("T04_ProfileTON")("T04_ProfileTON", inputs=["ton_clean"])
     t05 = TaskRegistry.get_task_cls("T05_AlignFeatures")("T05_AlignFeatures", inputs=["cic_consolidated", "ton_clean"])
+    t10 = TaskRegistry.get_task_cls("T10_SamplingValidation")("T10_SamplingValidation", inputs=["cic_consolidated", "ton_clean", "cic_validation", "ton_validation"])
     t05_dist = TaskRegistry.get_task_cls("T05_FeatureDistribution")(
         "T05_FeatureDistribution",
         inputs=["cic_projected", "ton_projected", "preprocess_cic", "preprocess_ton", "alignment_spec"],
@@ -94,6 +99,7 @@ def build_pipeline_graph() -> DAGGraph:
     t17 = TaskRegistry.get_task_cls("T17_Evaluate")("T17_Evaluate", inputs=["predictions_fused"])
     t18 = TaskRegistry.get_task_cls("T18_MCDM_Decision")("T18_MCDM_Decision", inputs=["run_report"])
     t19 = TaskRegistry.get_task_cls("T19_TopsisReport")("T19_TopsisReport", inputs=["run_report", "cic_projected", "ton_projected"])
+    t20 = TaskRegistry.get_task_cls("T20_WeightSampleVariation")("T20_WeightSampleVariation", inputs=["run_report"])
 
     graph.add_task(t00)
     graph.add_task(t01, depends_on=["T00_InitRun"])
@@ -101,6 +107,7 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t03, depends_on=["T01_ConsolidateCIC"])
     graph.add_task(t04, depends_on=["T02_CleanTON"])
     graph.add_task(t05, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
+    graph.add_task(t10, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
     graph.add_task(t05_dist, depends_on=["T08_BuildPreprocessCIC", "T09_BuildPreprocessTON"])
     graph.add_task(t06, depends_on=["T05_AlignFeatures"])
     graph.add_task(t07, depends_on=["T05_AlignFeatures"])
@@ -114,6 +121,7 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t17, depends_on=["T16_LateFusion"])
     graph.add_task(t18, depends_on=["T17_Evaluate"])
     graph.add_task(t19, depends_on=["T17_Evaluate", "T06_ProjectCIC", "T07_ProjectTON"])
+    graph.add_task(t20, depends_on=["T17_Evaluate"])
     
     return graph
 
