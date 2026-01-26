@@ -1,39 +1,42 @@
-import polars as pl
-from typing import List, Tuple
+from typing import Dict, List, Tuple
+
+import pandas as pd
+
 from preprocessing.imputer import DataImputer
 from preprocessing.scaler import DataScaler
 from preprocessing.encoder import DataEncoder
-from config.schema import PreprocessConfig
+
 
 class PreprocessBuilder:
     """
     Constructeur de pipeline de prétraitement modulaire.
     """
-    def __init__(self, config: PreprocessConfig):
-        self.config = config
+    def __init__(self, config: Dict | None = None):
+        cfg = config or {}
+        self.use_cats = bool(cfg.get("use_cats", False))
         self.scaler = DataScaler()
 
-    def execute(self, df: pl.DataFrame) -> Tuple[pl.DataFrame, List[str]]:
+    def execute(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         """
         Exécute la séquence complète de prétraitement.
         Retourne le DataFrame transformé et l'ordre exact des features (feature_order).
         """
-        # Identification des types de colonnes
         exclude = ["y", "source_file", "sample_id", "Label", "type"]
-        numeric_cols = [c for c, t in zip(df.columns, df.dtypes) if t.is_numeric() and c not in exclude]
-        cat_cols = [c for c, t in zip(df.columns, df.dtypes) if t == pl.String and c not in exclude]
 
-        # 1. Imputation (Médiane)
+        numeric_cols = [
+            c for c in df.columns
+            if c not in exclude and pd.api.types.is_numeric_dtype(df[c])
+        ]
+        cat_cols = [
+            c for c in df.columns
+            if c not in exclude and pd.api.types.is_string_dtype(df[c])
+        ]
+
         df = DataImputer.impute_median(df, numeric_cols)
-
-        # 2. Scaling (Robust)
         df = self.scaler.fit_transform(df, numeric_cols)
 
-        # 3. Encoding (OneHot si activé)
-        if self.config.use_cats and cat_cols:
+        if self.use_cats and cat_cols:
             df = DataEncoder.one_hot_encode(df, cat_cols)
 
-        # Définition de l'ordre final des features (important pour la reproductibilité)
         feature_order = [c for c in df.columns if c not in exclude]
-        
         return df, feature_order

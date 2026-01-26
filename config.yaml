@@ -1,0 +1,35 @@
+# SME Thresholds
+sme_thresholds:
+  tau_memory: 500 # MB
+  tau_cpu: 80     # %
+
+# Objective function weights
+weights:
+  f_expl:
+    alpha: 0.7 # Intrinsic interpretability
+    beta: 0.3  # Post-hoc explainability
+  f_res:
+    gamma1: 0.5 # Memory weight
+    gamma2: 0.5 # CPU weight
+
+# AHP balanced profile
+ahp_weights:
+  w_perf: 0.33
+  w_expl: 0.33
+  w_res: 0.33
+
+# Validation parameters
+validation:
+  n_folds: 5
+  test_size: 0.15
+  random_state: 42
+
+# Datasets
+datasets:
+  cic_ddos2019: "data/raw/CIC-DDoS2019/"
+  ton_iot: "data/raw/TON_IoT/"
+
+# Sampling
+sampling:
+  fraction: 0.05
+  seed: 42

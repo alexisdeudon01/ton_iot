@@ -146,11 +146,8 @@ def setup_output_directories():
     for rd in root_dirs:
         os.makedirs(rd, exist_ok=True)
 
-    # User interaction
-    try:
-        ans_archive = input("?> Archive old results and logs into _old? (y/n): ").lower()
-    except EOFError:
-        ans_archive = 'n'
+    # Auto-skip interactive prompts
+    ans_archive = "n"
 
     if ans_archive == 'y':
         for sd in sub_dirs:
@@ -167,10 +164,7 @@ def setup_output_directories():
                         shutil.move(os.path.join(path, f), os.path.join(archive_sub, f))
                     print(f"  [OK] Files from {path} moved to {archive_sub}")
 
-    try:
-        ans_clean = input("?> Remove existing graphs? (y/n): ").lower()
-    except EOFError:
-        ans_clean = 'n'
+    ans_clean = "n"
 
     if ans_clean == 'y':
         # Target known graph directories

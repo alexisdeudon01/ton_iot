@@ -29,11 +29,11 @@ def main():
     analyzer = FeatureAnalyzer()
 
     # Load small samples for analysis
-    print("📁 Chargement des datasets (échantillon 1% pour analyse)...")
+    print("📁 Chargement des datasets (échantillon 5% pour analyse)...")
     print()
 
     try:
-        df_ton = loader.load_ton_iot(sample_ratio=0.01)
+        df_ton = loader.load_ton_iot(sample_ratio=0.05)
         print(f"✅ TON_IoT chargé: {df_ton.shape[0]:,} lignes, {df_ton.shape[1]} colonnes")
         print(f"   Colonnes: {', '.join(df_ton.columns[:10].tolist())}...")
         print()
@@ -42,7 +42,7 @@ def main():
         return
 
     try:
-        df_cic = loader.load_cic_ddos2019(sample_ratio=0.01)
+        df_cic = loader.load_cic_ddos2019(sample_ratio=0.05)
         print(f"✅ CIC-DDoS2019 chargé: {df_cic.shape[0]:,} lignes, {df_cic.shape[1]} colonnes")
         print(f"   Colonnes: {', '.join(df_cic.columns[:10].tolist())}...")
         print()

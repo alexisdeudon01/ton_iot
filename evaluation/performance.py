@@ -1,4 +1,3 @@
-import polars as pl
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, confusion_matrix
 import numpy as np
 from typing import Dict

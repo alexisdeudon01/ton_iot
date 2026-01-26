@@ -142,12 +142,8 @@ class T01_ConsolidateCIC(Task):
         print("\nRandom sample row:")
         print(df_val.sample(1).to_pandas().iloc[0].to_dict())
         
-        try:
-            confirm = input("\n?> Confirm use of these CIC data? (y/n): ").lower()
-            if confirm != 'y':
-                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="User validation refused for CIC")
-        except EOFError:
-            pass  # Non-interactive mode
+        # Auto-accept dataset validation (no interactive prompts)
+        confirm = "y"
 
         # --- STRATIFIED SAMPLING ---
         sampling_ratio = cfg.sample_ratio

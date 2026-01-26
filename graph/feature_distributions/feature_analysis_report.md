@@ -11,7 +11,6 @@ None
 - total_fwd_packets
 - total_bwd_packets
 - total_fwd_bytes
-- total_bwd_bytes
 - total_packets
 - total_bytes
 - bytes_per_packet

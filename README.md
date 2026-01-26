@@ -1,20 +1,69 @@
-# Llama 4 Maverick - DDoS Pipeline
+# Détection DDoS pour PME
 
-Projet Python modulaire pour la détection de DDoS sur les datasets CICDDoS2019 et TON_IoT.
+Framework reproductible pour charger, prétraiter, entraîner et évaluer des modèles de détection DDoS sur CIC‑DDoS2019 et TON_IoT, puis appliquer l’analyse multicritères (AHP‑TOPSIS) et générer les graphiques du mémoire.
 
-## Architecture
-- **Clean Architecture**: Séparation stricte entre contrats, ports (interfaces) et infrastructure.
-- **Task DAG**: Pipeline orchestré via un graphe de dépendances.
-- **Event Bus**: Communication asynchrone entre le pipeline et l'UI.
-- **Tkinter GUI**: Interface temps réel pour le monitoring.
+## Prérequis
+- Python 3.8+ (recommandé 3.10)
+- Docker + NVIDIA Container Toolkit (pour GPU)
 
-## Algorithmes
-- LR, DT, RF, CNN, TabNet.
-
-## Documentation des Dimensions
-Pour plus de détails sur les critères de calcul des dimensions (alignement, profilage, métriques), consultez :
-[DIMENSIONS_CALCULATION.md](Outputs/md/DIMENSIONS_CALCULATION.md)
-
-## Utilisation
+## Installation (local)
 ```bash
-python -m src.app.ui.main
+pip install -r requirements.txt
+```
+
+## Configuration des datasets
+Les datasets doivent être placés dans :
+```
+data/raw/CIC-DDoS2019/
+data/raw/TON_IoT/
+```
+
+Si les datasets ne sont pas présents, le programme indiquera qu’ils sont disponibles sur Google Drive.
+Lien Google Drive (dataset utilisé) :
+- https://drive.google.com/file/d/1CAdK9IgIr74RvtR60OdJBuiXKy37egWg/view?usp=sharing
+
+Le fichier `config.yaml` fixe l’échantillonnage à 5% (`sampling.fraction: 0.05`) pour alléger l’exécution.
+
+## Exécution (local)
+```bash
+python main.py --config config.yaml
+```
+Options :
+- `--skip-training`
+- `--only-viz`
+
+## Exécution (Docker)
+```bash
+docker-compose build
+docker-compose run --rm ddos-framework python main.py --config config.yaml
+docker-compose run --rm ddos-framework python main.py --config config.yaml --only-viz
+docker-compose run --rm ddos-framework bash
+```
+
+## Structure des résultats
+- `results/metrics.csv`
+- `results/decision_matrix.csv`
+- `results/topsis_ranking.csv`
+- `graphs/` (figures générées)
+
+## Structure du projet
+```
+project/
+├── README.md
+├── requirements.txt
+├── config.yaml
+├── main.py
+├── Dockerfile
+├── docker-compose.yml
+├── data/
+│   ├── raw/
+│   └── processed/
+├── src/
+│   ├── __init__.py
+│   ├── preprocessing/
+│   ├── models/
+│   ├── mcdm/
+│   └── visualization/
+├── graphs/
+└── results/
+```

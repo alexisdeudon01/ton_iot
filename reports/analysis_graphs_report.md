@@ -60,6 +60,12 @@
 - graph/decision/variations/sampling/explainability/explainability_sampling_derivative.png
 - graph/decision/variations/sampling/performance/performance_sampling_curve.png
 - graph/decision/variations/sampling/performance/performance_sampling_derivative.png
+- graph/decision/variations/sampling_user/sampling_size_variation.png
+- graph/decision/variations/weights/weights_explainability.png
+- graph/decision/variations/weights/weights_performance.png
+- graph/decision/variations/weights/weights_resources.png
+- graph/decision/variations/weights_grid/weights_grid_winner_counts.png
+- graph/decision/variations/weights_grid/weights_grid_winner_map.png
 - graph/decision/viz_01_matrix_M.png
 - graph/decision/viz_02_3d_tradeoffs.png
 - graph/decision/viz_03_normalization.png
@@ -134,6 +140,12 @@
 - graph/decision/variations/sampling/explainability/explainability_sampling_derivative.png
 - graph/decision/variations/sampling/performance/performance_sampling_curve.png
 - graph/decision/variations/sampling/performance/performance_sampling_derivative.png
+- graph/decision/variations/sampling_user/sampling_size_variation.png
+- graph/decision/variations/weights/weights_explainability.png
+- graph/decision/variations/weights/weights_performance.png
+- graph/decision/variations/weights/weights_resources.png
+- graph/decision/variations/weights_grid/weights_grid_winner_counts.png
+- graph/decision/variations/weights_grid/weights_grid_winner_map.png
 
 ## Feature distributions
 - graph/feature_distributions/cic/dist_avg_packet_size.png
@@ -206,14 +218,14 @@
 
 ## Derivative summary (sampling)
 ### Performance
-- CNN: derivative peak -0.0041 at 10%
-- DT: derivative peak 0.0011 at 20%
-- LR: derivative peak 0.0026 at 20%
-- RF: derivative peak 0.0014 at 20%
-- TabNet: derivative peak 0.0030 at 20%
+- CNN: derivative peak 0.0046 at 20%
+- DT: derivative peak 0.0026 at 10%
+- LR: derivative peak 0.0058 at 10%
+- RF: derivative peak 0.0017 at 30%
+- TabNet: derivative peak -0.0029 at 40%
 ### Explainability
-- CNN: derivative peak 0.0018 at 10%
-- DT: derivative peak 0.0006 at 10%
-- LR: derivative peak 0.0006 at 10%
-- RF: derivative peak 0.0006 at 10%
-- TabNet: derivative peak -0.0020 at 10%
+- CNN: derivative peak -0.0023 at 10%
+- DT: derivative peak 0.0009 at 10%
+- LR: derivative peak 0.0003 at 10%
+- RF: derivative peak 0.0001 at 60%
+- TabNet: derivative peak -0.0025 at 10%

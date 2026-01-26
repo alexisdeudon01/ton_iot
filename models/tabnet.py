@@ -1,8 +1,11 @@
-from pytorch_tabnet.tab_model import TabNetClassifier
-from models.base import AbstractModel
-import numpy as np
-from typing import List
 import os
+from typing import List
+
+import numpy as np
+import torch
+from pytorch_tabnet.tab_model import TabNetClassifier
+
+from models.base import AbstractModel
 
 class TabNetModel(AbstractModel):
     """
@@ -10,6 +13,7 @@ class TabNetModel(AbstractModel):
     """
     def __init__(self, feature_order: List[str]):
         super().__init__("TabNet", feature_order)
+        device_name = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = TabNetClassifier(
             n_d=8, n_a=8, n_steps=3,
             gamma=1.3, n_independent=2, n_shared=2,
@@ -19,7 +23,9 @@ class TabNetModel(AbstractModel):
             scheduler_params=dict(mode="min", patience=5, min_lr=1e-5, factor=0.9),
             scheduler_fn=None,
             mask_type='sparsemax',
-            verbose=0
+            verbose=0,
+            seed=42,
+            device_name=device_name
         )
 
     def fit(self, X: np.ndarray, y: np.ndarray):

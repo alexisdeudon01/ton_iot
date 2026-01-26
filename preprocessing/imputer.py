@@ -1,18 +1,17 @@
-import polars as pl
 from typing import List
+
+import pandas as pd
 
 class DataImputer:
     """
     Imputation des valeurs manquantes par la médiane pour les colonnes numériques.
     """
     @staticmethod
-    def impute_median(df: pl.DataFrame, columns: List[str]) -> pl.DataFrame:
+    def impute_median(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
         for col in columns:
             if col in df.columns:
                 median_val = df[col].median()
-                if median_val is not None:
-                    df = df.with_columns(pl.col(col).fill_null(median_val))
-                else:
-                    # Fallback si toute la colonne est nulle
-                    df = df.with_columns(pl.col(col).fill_null(0.0))
+                if pd.isna(median_val):
+                    median_val = 0.0
+                df[col] = df[col].fillna(median_val)
         return df
