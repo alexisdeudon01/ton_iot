@@ -5,7 +5,7 @@ import sys
 import shutil
 from datetime import datetime
 
-# Ajout du répertoire racine au PYTHONPATH pour éviter l'erreur ModuleNotFoundError
+# Add project root to PYTHONPATH to avoid ModuleNotFoundError
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../")))
 
 from src.core.contracts.config import PipelineConfig
@@ -29,6 +29,7 @@ import src.app.pipeline.tasks.t06_project_cic
 import src.app.pipeline.tasks.t07_project_ton
 import src.app.pipeline.tasks.t08_build_preprocess_cic
 import src.app.pipeline.tasks.t09_build_preprocess_ton
+import src.app.pipeline.tasks.t10_sampling_validation
 import src.app.pipeline.tasks.t12_train_cic
 import src.app.pipeline.tasks.t13_train_ton
 import src.app.pipeline.tasks.t14_predict_cic
@@ -36,33 +37,38 @@ import src.app.pipeline.tasks.t15_predict_ton
 import src.app.pipeline.tasks.t16_late_fusion
 import src.app.pipeline.tasks.t17_evaluate
 import src.app.pipeline.tasks.t18_mcdm_decision
+import src.app.pipeline.tasks.t19_topsis_report
+import src.app.pipeline.tasks.t20_weight_sample_variation
 
 from src.app.pipeline.registry import TaskRegistry
 
 def build_pipeline_graph() -> DAGGraph:
     print("\n" + "="*80)
-    print("CONSTRUCTION DU GRAPH D'EXÉCUTION DU PIPELINE")
+    print("BUILDING PIPELINE EXECUTION GRAPH")
     print("="*80)
     
     tasks_info = [
-        ("T00_InitRun", "Initialisation de l'environnement et des dossiers de travail"),
-        ("T01_ConsolidateCIC", "Lecture et consolidation du dataset CIC-DDoS2019 (CSV -> Parquet)"),
-        ("T02_CleanTON", "Nettoyage et formatage du dataset ToN-IoT"),
-        ("T03_ProfileCIC", "Analyse statistique et profilage des données CIC"),
-        ("T04_ProfileTON", "Analyse statistique et profilage des données ToN-IoT"),
-        ("T05_AlignFeatures", "SÉLECTION DES FEATURES : Calcul de l'intersection des colonnes communes"),
-        ("T05_FeatureDistribution", "VISUALISATION : Distributions post-preprocessing (15 features universelles)"),
-        ("T06_ProjectCIC", "Projection du dataset CIC sur l'espace de caractéristiques commun"),
-        ("T07_ProjectTON", "Projection du dataset ToN-IoT sur l'espace de caractéristiques commun"),
-        ("T08_BuildPreprocessCIC", "PREPROCESSING : Construction du RobustScaler pour CIC (.joblib)"),
-        ("T09_BuildPreprocessTON", "PREPROCESSING : Construction du RobustScaler pour ToN-IoT (.joblib)"),
-        ("T12_TrainCIC", "ENTRAÎNEMENT : Apprentissage des 5 modèles sur les données CIC"),
-        ("T13_TrainTON", "ENTRAÎNEMENT : Apprentissage des 5 modèles sur les données ToN-IoT"),
-        ("T14_PredictCIC", "INFÉRENCE : Génération des prédictions sur le jeu de test CIC"),
-        ("T15_PredictTON", "INFÉRENCE : Génération des prédictions sur le jeu de test ToN-IoT"),
-        ("T16_LateFusion", "FUSION : Combinaison des résultats via Late Fusion (Moyenne pondérée)"),
-        ("T17_Evaluate", "ÉVALUATION : Calcul des métriques de performance (F1, Précision, Rappel)"),
-        ("T18_MCDM_Decision", "DÉCISION : Classement final via MOO-MCDM-MCDA (TOPSIS/Pareto)")
+        ("T00_InitRun", "Initialize environment and working directories"),
+        ("T01_ConsolidateCIC", "Read and consolidate CIC-DDoS2019 dataset (CSV -> Parquet)"),
+        ("T02_CleanTON", "Clean and format ToN-IoT dataset"),
+        ("T03_ProfileCIC", "Statistical analysis and profiling for CIC data"),
+        ("T04_ProfileTON", "Statistical analysis and profiling for ToN-IoT data"),
+        ("T05_AlignFeatures", "FEATURE SELECTION: compute intersection of shared columns"),
+        ("T05_FeatureDistribution", "VISUALIZATION: post-preprocessing distributions (15 universal features)"),
+        ("T10_SamplingValidation", "VALIDATION: KS test between validation and sampled data"),
+        ("T06_ProjectCIC", "Project CIC dataset to the shared feature space"),
+        ("T07_ProjectTON", "Project ToN-IoT dataset to the shared feature space"),
+        ("T08_BuildPreprocessCIC", "PREPROCESSING: build RobustScaler for CIC (.joblib)"),
+        ("T09_BuildPreprocessTON", "PREPROCESSING: build RobustScaler for ToN-IoT (.joblib)"),
+        ("T12_TrainCIC", "TRAINING: train 5 models on CIC data"),
+        ("T13_TrainTON", "TRAINING: train 5 models on ToN-IoT data"),
+        ("T14_PredictCIC", "INFERENCE: generate predictions on CIC test set"),
+        ("T15_PredictTON", "INFERENCE: generate predictions on ToN-IoT test set"),
+        ("T16_LateFusion", "FUSION: combine results via Late Fusion (averaging)"),
+        ("T17_Evaluate", "EVALUATION: compute performance metrics (F1, Precision, Recall)"),
+        ("T18_MCDM_Decision", "DECISION: final ranking via MOO-MCDM-MCDA (TOPSIS/Pareto)"),
+        ("T19_TopsisReport", "MCDA: Automated AHP/TOPSIS visual report (topsis_tppis)"),
+        ("T20_WeightSampleVariation", "MCDA: weight and sampling size sensitivity analysis")
     ]
 
     for code, desc in tasks_info:
@@ -76,6 +82,7 @@ def build_pipeline_graph() -> DAGGraph:
     t03 = TaskRegistry.get_task_cls("T03_ProfileCIC")("T03_ProfileCIC", inputs=["cic_consolidated"])
     t04 = TaskRegistry.get_task_cls("T04_ProfileTON")("T04_ProfileTON", inputs=["ton_clean"])
     t05 = TaskRegistry.get_task_cls("T05_AlignFeatures")("T05_AlignFeatures", inputs=["cic_consolidated", "ton_clean"])
+    t10 = TaskRegistry.get_task_cls("T10_SamplingValidation")("T10_SamplingValidation", inputs=["cic_consolidated", "ton_clean", "cic_validation", "ton_validation"])
     t05_dist = TaskRegistry.get_task_cls("T05_FeatureDistribution")(
         "T05_FeatureDistribution",
         inputs=["cic_projected", "ton_projected", "preprocess_cic", "preprocess_ton", "alignment_spec"],
@@ -91,6 +98,8 @@ def build_pipeline_graph() -> DAGGraph:
     t16 = TaskRegistry.get_task_cls("T16_LateFusion")("T16_LateFusion", inputs=["predictions_cic", "predictions_ton"])
     t17 = TaskRegistry.get_task_cls("T17_Evaluate")("T17_Evaluate", inputs=["predictions_fused"])
     t18 = TaskRegistry.get_task_cls("T18_MCDM_Decision")("T18_MCDM_Decision", inputs=["run_report"])
+    t19 = TaskRegistry.get_task_cls("T19_TopsisReport")("T19_TopsisReport", inputs=["run_report", "cic_projected", "ton_projected"])
+    t20 = TaskRegistry.get_task_cls("T20_WeightSampleVariation")("T20_WeightSampleVariation", inputs=["run_report"])
 
     graph.add_task(t00)
     graph.add_task(t01, depends_on=["T00_InitRun"])
@@ -98,6 +107,7 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t03, depends_on=["T01_ConsolidateCIC"])
     graph.add_task(t04, depends_on=["T02_CleanTON"])
     graph.add_task(t05, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
+    graph.add_task(t10, depends_on=["T01_ConsolidateCIC", "T02_CleanTON"])
     graph.add_task(t05_dist, depends_on=["T08_BuildPreprocessCIC", "T09_BuildPreprocessTON"])
     graph.add_task(t06, depends_on=["T05_AlignFeatures"])
     graph.add_task(t07, depends_on=["T05_AlignFeatures"])
@@ -110,20 +120,22 @@ def build_pipeline_graph() -> DAGGraph:
     graph.add_task(t16, depends_on=["T14_PredictCIC", "T15_PredictTON"])
     graph.add_task(t17, depends_on=["T16_LateFusion"])
     graph.add_task(t18, depends_on=["T17_Evaluate"])
+    graph.add_task(t19, depends_on=["T17_Evaluate", "T06_ProjectCIC", "T07_ProjectTON"])
+    graph.add_task(t20, depends_on=["T17_Evaluate"])
     
     return graph
 
 def setup_output_directories():
     """
-    Crée les répertoires racine pour graphs, reports et configurations d'algorithmes.
-    Demande à l'utilisateur s'il souhaite archiver les anciens résultats.
+    Create root directories for graphs, reports, and algorithm configurations.
+    Ask the user whether to archive old results.
     """
     base_dir = "output"
     sub_dirs = ["output", "log"]
     root_dirs = ["graph", "algorithm_configurations", "reports", "other"]
     
     print("\n" + "="*80)
-    print("GESTION DES RÉPERTOIRES DE SORTIE")
+    print("OUTPUT DIRECTORY MANAGEMENT")
     print("="*80)
 
     for sd in sub_dirs:
@@ -134,13 +146,13 @@ def setup_output_directories():
     for rd in root_dirs:
         os.makedirs(rd, exist_ok=True)
 
-    # Interaction utilisateur
+    # User interaction
     try:
-        ans_archive = input("?> Souhaitez-vous archiver les anciens résultats et logs dans _old ? (o/n) : ").lower()
+        ans_archive = input("?> Archive old results and logs into _old? (y/n): ").lower()
     except EOFError:
         ans_archive = 'n'
 
-    if ans_archive == 'o':
+    if ans_archive == 'y':
         for sd in sub_dirs:
             path = os.path.join(base_dir, sd)
             old_path = os.path.join(path, "_old")
@@ -153,36 +165,36 @@ def setup_output_directories():
                     os.makedirs(archive_sub, exist_ok=True)
                     for f in files:
                         shutil.move(os.path.join(path, f), os.path.join(archive_sub, f))
-                    print(f"  [OK] Fichiers de {path} déplacés vers {archive_sub}")
+                    print(f"  [OK] Files from {path} moved to {archive_sub}")
 
     try:
-        ans_clean = input("?> Souhaitez-vous effacer les graphiques existants ? (o/n) : ").lower()
+        ans_clean = input("?> Remove existing graphs? (y/n): ").lower()
     except EOFError:
         ans_clean = 'n'
 
-    if ans_clean == 'o':
-        # On cible les dossiers de graphiques connus (nouvelle arborescence)
+    if ans_clean == 'y':
+        # Target known graph directories
         graph_dirs = ["graph"]
         for gd in graph_dirs:
             if os.path.exists(gd):
                 shutil.rmtree(gd)
             os.makedirs(gd, exist_ok=True)
-            print(f"  [OK] Graphiques dans {gd} effacés.")
+            print(f"  [OK] Graphs in {gd} removed.")
 
-    # Mettre a jour un index des repertoires dans reports/
+    # Update directory index under reports/
     report_index = os.path.join("reports", "directories.md")
     with open(report_index, "w") as f:
-        f.write("# Repertoires de sortie\n\n")
-        f.write("- graph/ : graphiques (distributions + MCDM)\n")
-        f.write("- graph/decision/variations/ : variations par seuil (ressource, performance, explicabilite)\n")
-        f.write("- graph/algorithms/dtreeviz/ : visualisations arbres (dtreeviz)\n")
-        f.write("- algorithm_configurations/ : JSON des algorithmes\n")
-        f.write("- reports/ : rapports (run_report, final_report)\n")
-        f.write("- reports/variations/ : rapports DOCX par seuil\n")
-        f.write("- other/ : reserve pour elements oublies\n")
+        f.write("# Output directories\n\n")
+        f.write("- graph/ : graphs (distributions + MCDM)\n")
+        f.write("- graph/decision/variations/ : threshold variations (resource, performance, explainability)\n")
+        f.write("- graph/algorithms/dtreeviz/ : decision-tree visualizations (dtreeviz)\n")
+        f.write("- algorithm_configurations/ : algorithm JSON outputs\n")
+        f.write("- reports/ : reports (run_report, final_report)\n")
+        f.write("- reports/variations/ : DOCX reports by threshold\n")
+        f.write("- other/ : reserved for additional artifacts\n")
 
 def run_pipeline(config_path: str, event_bus: QueueEventBus = None, test_mode_override: bool = None):
-    # Initialisation des dossiers
+    # Directory setup
     setup_output_directories()
 
     with open(config_path, "r") as f:

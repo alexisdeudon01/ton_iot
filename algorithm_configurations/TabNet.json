@@ -11,7 +11,7 @@
         "cic": {
             "methodology_context": {
                 "fusion_strategy": "Late Fusion (Averaging probabilities)",
-                "sample_description": "Stratified sampling (ratio=0.05)",
+                "sample_description": "Stratified sampling (ratio=0.1)",
                 "k_folds": {
                     "enabled": false,
                     "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -23,53 +23,54 @@
                     "method": "Stratified Shuffle Split"
                 }
             },
-            "n_eval_rows": 46,
+            "n_eval_rows": 91,
             "y_true_balance": {
-                "0": 13,
-                "1": 33
+                "1": 66,
+                "0": 25
             },
             "y_pred_balance": {
-                "1": 46
+                "0": 8,
+                "1": 83
             },
             "confusion_matrix": [
                 [
-                    0,
-                    13
+                    8,
+                    17
                 ],
                 [
                     0,
-                    33
+                    66
                 ]
             ],
-            "accuracy": 0.717391304347826,
-            "precision": 0.717391304347826,
+            "accuracy": 0.8131868131868132,
+            "precision": 0.7951807228915663,
             "recall": 1.0,
-            "f1": 0.8354430379746836,
-            "roc_auc": 0.289044289044289,
+            "f1": 0.8859060402684564,
+            "roc_auc": 0.5624242424242424,
             "faithfulness": 0.5,
             "stability": 0.5,
             "complexity": 8.80071662871916,
-            "latency": 9.35959297677745,
-            "cpu_percent": 248.4,
-            "ram_percent": 0.003476883061340289,
+            "latency": 5.809270418607271,
+            "cpu_percent": 253.3,
+            "ram_percent": 0.004596121021121709,
             "mcdm_inputs": {
                 "s_intrinsic": 0.5,
                 "shap_available": false,
                 "n_params": 6638,
                 "shap_std": 0.5,
-                "memory_bytes": 554928.0,
-                "cpu_percent": 248.4
+                "memory_bytes": 733564.0,
+                "cpu_percent": 253.3
             },
             "mcdm_scores": {
-                "f_perf": 0.6919860729987313,
+                "f_perf": 0.7668472645922312,
                 "f_expl": 0.32272542208066846,
-                "f_res": 1.5530292205810547
+                "f_res": 1.5838245811462404
             }
         },
         "ton": {
             "methodology_context": {
                 "fusion_strategy": "Late Fusion (Averaging probabilities)",
-                "sample_description": "Stratified sampling (ratio=0.05)",
+                "sample_description": "Stratified sampling (ratio=0.1)",
                 "k_folds": {
                     "enabled": false,
                     "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -81,54 +82,54 @@
                     "method": "Stratified Shuffle Split"
                 }
             },
-            "n_eval_rows": 525,
+            "n_eval_rows": 1050,
             "y_true_balance": {
-                "1": 150,
-                "0": 375
+                "1": 300,
+                "0": 750
             },
             "y_pred_balance": {
-                "1": 232,
-                "0": 293
+                "0": 518,
+                "1": 532
             },
             "confusion_matrix": [
                 [
-                    274,
-                    101
+                    482,
+                    268
                 ],
                 [
-                    19,
-                    131
+                    36,
+                    264
                 ]
             ],
-            "accuracy": 0.7714285714285715,
-            "precision": 0.5646551724137931,
-            "recall": 0.8733333333333333,
-            "f1": 0.6858638743455497,
-            "roc_auc": 0.7461866666666667,
+            "accuracy": 0.7104761904761905,
+            "precision": 0.49624060150375937,
+            "recall": 0.88,
+            "f1": 0.6346153846153846,
+            "roc_auc": 0.7167111111111111,
             "faithfulness": 0.5,
             "stability": 0.5,
             "complexity": 8.80071662871916,
-            "latency": 2.2693234398251487,
-            "cpu_percent": 274.4,
-            "ram_percent": 0.014503779145228143,
+            "latency": 3.104423341296968,
+            "cpu_percent": 258.9,
+            "ram_percent": 0.02676345598154369,
             "mcdm_inputs": {
                 "s_intrinsic": 0.5,
                 "shap_available": false,
                 "n_params": 6638,
                 "shap_std": 0.5,
-                "memory_bytes": 2314876.0,
-                "cpu_percent": 274.4
+                "memory_bytes": 4271582.0,
+                "cpu_percent": 258.9
             },
             "mcdm_scores": {
-                "f_perf": 0.6855828830715532,
+                "f_perf": 0.6611883760683761,
                 "f_expl": 0.32272542208066846,
-                "f_res": 1.717207637786865
+                "f_res": 1.622198698043823
             }
         },
         "fused": {
             "methodology_context": {
                 "fusion_strategy": "Late Fusion (Averaging probabilities)",
-                "sample_description": "Stratified sampling (ratio=0.05)",
+                "sample_description": "Stratified sampling (ratio=0.1)",
                 "k_folds": {
                     "enabled": false,
                     "description": "Fixed stratified split used instead of cross-validation for performance"
@@ -140,49 +141,49 @@
                     "method": "Stratified Shuffle Split"
                 }
             },
-            "n_eval_rows": 571,
+            "n_eval_rows": 1141,
             "y_true_balance": {
-                "1": 183,
-                "0": 388
+                "0": 775,
+                "1": 366
             },
             "y_pred_balance": {
-                "1": 263,
-                "0": 308
+                "1": 610,
+                "0": 531
             },
             "confusion_matrix": [
                 [
-                    269,
-                    119
+                    470,
+                    305
                 ],
                 [
-                    39,
-                    144
+                    61,
+                    305
                 ]
             ],
-            "accuracy": 0.723292469352014,
-            "precision": 0.5475285171102662,
-            "recall": 0.7868852459016393,
-            "f1": 0.6457399103139013,
-            "roc_auc": 0.677440707565771,
-            "gap": 0.14957916362913382,
+            "accuracy": 0.6792287467134093,
+            "precision": 0.5,
+            "recall": 0.8333333333333334,
+            "f1": 0.625,
+            "roc_auc": 0.7614806980433634,
+            "gap": 0.25129065565307185,
             "faithfulness": 0.5,
             "stability": 0.5,
             "complexity": 8.80071662871916,
-            "latency": 0.7540127441887262,
-            "cpu_percent": 248.4,
-            "ram_percent": 0.003476883061340289,
+            "latency": 0.46331604565579465,
+            "cpu_percent": 253.3,
+            "ram_percent": 0.004596121021121709,
             "mcdm_inputs": {
                 "s_intrinsic": 0.5,
                 "shap_available": false,
                 "n_params": 6638,
                 "shap_std": 0.5,
-                "memory_bytes": 554928.0,
-                "cpu_percent": 248.4
+                "memory_bytes": 733564.0,
+                "cpu_percent": 253.3
             },
             "mcdm_scores": {
-                "f_perf": 0.6148917630462931,
+                "f_perf": 0.6271670740433656,
                 "f_expl": 0.32272542208066846,
-                "f_res": 1.5530292205810547
+                "f_res": 1.5838245811462404
             }
         }
     },
@@ -191,13 +192,13 @@
         "shap_available": false,
         "n_params": 6638,
         "shap_std": 0.5,
-        "memory_bytes": 554928.0,
-        "cpu_percent": 248.4
+        "memory_bytes": 733564.0,
+        "cpu_percent": 253.3
     },
     "mcdm_scores": {
-        "f_perf": 0.6148917630462931,
+        "f_perf": 0.6271670740433656,
         "f_expl": 0.32272542208066846,
-        "f_res": 1.5530292205810547
+        "f_res": 1.5838245811462404
     },
     "explainability": {
         "shap_available": false,

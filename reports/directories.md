@@ -1,9 +1,9 @@
-# Repertoires de sortie
+# Output directories
 
-- graph/ : graphiques (distributions + MCDM)
-- graph/decision/variations/ : variations par seuil (ressource, performance, explicabilite)
-- graph/algorithms/dtreeviz/ : visualisations arbres (dtreeviz)
-- algorithm_configurations/ : JSON des algorithmes
-- reports/ : rapports (run_report, final_report)
-- reports/variations/ : rapports DOCX par seuil
-- other/ : reserve pour elements oublies
+- graph/ : graphs (distributions + MCDM)
+- graph/decision/variations/ : threshold variations (resource, performance, explainability)
+- graph/algorithms/dtreeviz/ : decision-tree visualizations (dtreeviz)
+- algorithm_configurations/ : algorithm JSON outputs
+- reports/ : reports (run_report, final_report)
+- reports/variations/ : DOCX reports by threshold
+- other/ : reserved for additional artifacts

@@ -8,7 +8,7 @@ from typing import Dict, Callable
 
 class MCDMDashboard(tk.Frame):
     """
-    Dashboard Tkinter pour visualiser le Front de Pareto et les scores TOPSIS.
+    Tkinter dashboard to visualize the Pareto front and TOPSIS scores.
     """
     def __init__(self, parent, config: Dict, run_callback: Callable):
         super().__init__(parent)
@@ -17,24 +17,24 @@ class MCDMDashboard(tk.Frame):
         self._setup_ui()
 
     def _setup_ui(self):
-        # Panneau de contrôle (Gauche)
-        control_frame = ttk.LabelFrame(self, text="Paramètres PME", padding=10)
+        # Control panel (left)
+        control_frame = ttk.LabelFrame(self, text="SME Settings", padding=10)
         control_frame.pack(side=tk.LEFT, fill=tk.Y, padx=10, pady=10)
 
-        ttk.Label(control_frame, text="Volume de données (%)").pack(anchor=tk.W)
+        ttk.Label(control_frame, text="Data volume (%)").pack(anchor=tk.W)
         self.data_slider = ttk.Scale(control_frame, from_=1, to=100, orient=tk.HORIZONTAL)
         self.data_slider.set(10)
         self.data_slider.pack(fill=tk.X, pady=5)
 
-        ttk.Label(control_frame, text="Échantillonnage (lignes)").pack(anchor=tk.W)
+        ttk.Label(control_frame, text="Sampling (rows)").pack(anchor=tk.W)
         self.sample_entry = ttk.Entry(control_frame)
         self.sample_entry.insert(0, "5000")
         self.sample_entry.pack(fill=tk.X, pady=5)
 
-        self.run_btn = ttk.Button(control_frame, text="Lancer l'Analyse", command=self._on_run)
+        self.run_btn = ttk.Button(control_frame, text="Run analysis", command=self._on_run)
         self.run_btn.pack(fill=tk.X, pady=20)
 
-        # Zone d'affichage des graphiques (Droite)
+        # Chart area (right)
         self.viz_frame = ttk.Frame(self)
         self.viz_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
@@ -48,34 +48,34 @@ class MCDMDashboard(tk.Frame):
             n_samples = int(self.sample_entry.get())
             self.run_callback(frac, n_samples)
         except ValueError:
-            messagebox.showerror("Erreur", "Veuillez entrer des valeurs valides.")
+            messagebox.showerror("Error", "Please enter valid values.")
 
     def update_plots(self, all_results: pd.DataFrame, pareto_results: pd.DataFrame, topsis_results: pd.DataFrame):
         self.ax_pareto.clear()
         self.ax_topsis.clear()
 
-        # 1. Graphique Pareto [Précision vs Ressources]
-        # On utilise CPU comme proxy pour les ressources
-        self.ax_pareto.scatter(all_results['cpu_percent'], all_results['f1'], color='gray', alpha=0.5, label='Modèles dominés')
-        self.ax_pareto.scatter(pareto_results['cpu_percent'], pareto_results['f1'], color='blue', s=100, label='Front de Pareto')
+        # 1. Pareto chart [Precision vs Resources]
+        # Use CPU as a resource proxy
+        self.ax_pareto.scatter(all_results['cpu_percent'], all_results['f1'], color='gray', alpha=0.5, label='Dominated models')
+        self.ax_pareto.scatter(pareto_results['cpu_percent'], pareto_results['f1'], color='blue', s=100, label='Pareto front')
         
-        # Zone Optimale PME
+        # SME optimal zone
         thresholds = self.config['thresholds_pme']
-        self.ax_pareto.axvspan(0, thresholds['max_cpu_percent'], color='green', alpha=0.1, label='Zone Optimale PME')
-        self.ax_pareto.axhline(y=thresholds['min_f1_score'], color='red', linestyle='--', label='Min F1 PME')
+        self.ax_pareto.axvspan(0, thresholds['max_cpu_percent'], color='green', alpha=0.1, label='SME optimal zone')
+        self.ax_pareto.axhline(y=thresholds['min_f1_score'], color='red', linestyle='--', label='SME min F1')
 
         self.ax_pareto.set_xlabel("Usage CPU (%)")
         self.ax_pareto.set_ylabel("F1-Score")
-        self.ax_pareto.set_title("Frontière de Pareto (Efficience)")
+        self.ax_pareto.set_title("Pareto frontier (efficiency)")
         self.ax_pareto.legend(fontsize='small')
 
-        # 2. Bar chart TOPSIS
+        # 2. TOPSIS bar chart
         if not topsis_results.empty:
             models = topsis_results['model_name']
             scores = topsis_results['topsis_score']
             bars = self.ax_topsis.bar(models, scores, color='skyblue')
-            self.ax_topsis.set_title("Classement Final TOPSIS")
-            self.ax_topsis.set_ylabel("Score de Proximité Relative (Ci)")
+            self.ax_topsis.set_title("Final TOPSIS ranking")
+            self.ax_topsis.set_ylabel("Relative closeness score (Ci)")
             plt.setp(self.ax_topsis.get_xticklabels(), rotation=45, ha="right")
             
             # Highlight best

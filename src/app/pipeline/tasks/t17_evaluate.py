@@ -32,7 +32,7 @@ class T17_Evaluate(Task):
         
         context.logger.info("validating", "Evaluating only on split='test'")
         
-        # 1. Préparation des métadonnées globales de la méthodologie
+        # 1. Prepare global methodology metadata
         report_metadata = {
             "methodology": {
                 "fusion_strategy": "Late Fusion (Averaging probabilities)",
@@ -88,7 +88,7 @@ class T17_Evaluate(Task):
                 return {str(r[col_name]): int(r["count"]) for r in counts}
 
             res = {
-                "methodology_context": report_metadata["methodology"], # Inclusion du contexte par algo
+                "methodology_context": report_metadata["methodology"],  # Include methodology context per algorithm
                 "n_eval_rows": n_eval_rows,
                 "y_true_balance": get_balance_dict(test_df, "y_true"),
                 "y_pred_balance": get_balance_dict(test_df.with_columns(pl.lit(y_pred).alias("p")), "p"),
@@ -181,7 +181,7 @@ class T17_Evaluate(Task):
                         fused_by_algo_metrics[algo] = augment_with_resource_metrics(m, algo, "cic")
                         all_metrics[f"fused_{algo}"] = fused_by_algo_metrics[algo]
         
-        # 4. Liste des graphiques de distribution générés
+        # 4. List generated distribution plots
         dist_dir = os.path.join("graph", "feature_distributions")
         if os.path.exists(dist_dir):
             dist_files = []

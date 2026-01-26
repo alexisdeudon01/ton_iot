@@ -15,23 +15,22 @@ from scipy.stats import spearmanr
 # pymoo imports
 from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
 
+plt.rcParams["font.family"] = "DejaVu Sans"
+plt.rcParams["font.sans-serif"] = ["DejaVu Sans"]
+
 class DDoSDecisionAgent:
     """
-    Système d'Aide à la Décision (SAD) IA complet (MOO-MCDM-MCDA).
-    Optimise le choix d'algorithmes selon Performance, Explicabilité et Ressources.
-    Utilise des poids précis définis en configuration.
+    Full AI Decision Support System (MOO-MCDM-MCDA).
+    Optimizes algorithm selection based on Performance, Explainability, and Resources.
+    Uses precise weights defined in configuration.
     """
     
-    def __init__(self, config: Dict):
+    def __init__(self, config: Dict, logger=None):
         self.config = config
         self.hierarchy = config['mcdm_hierarchy']
+        self.logger = logger
         
-        # Profils Utilisateurs (Poids : Performance, Explicabilité, Ressources)
-        self.profiles = {
-            "A": np.array([0.70, 0.15, 0.15]), # Focus Performance
-            "B": np.array([0.15, 0.70, 0.15])  # Focus Explicabilité
-        }
-        # Profils AHP pour sensibilite (3 dimensions)
+        # AHP profiles for sensitivity (3 dimensions)
         self.ahp_profiles = {
             "Balanced": np.array([0.33, 0.33, 0.34]),
             "Compliance-First": np.array([0.25, 0.50, 0.25]),
@@ -46,6 +45,15 @@ class DDoSDecisionAgent:
             "TabNet": "#3B1F2B"
         }
 
+    def _log(self, level: str, message: str, **kwargs):
+        if self.logger is not None:
+            log_fn = getattr(self.logger, level, None)
+            if log_fn:
+                log_fn("mcdm", message, **kwargs)
+                return
+        suffix = f" {kwargs}" if kwargs else ""
+        print(f"[{level.upper()}] {message}{suffix}")
+
     def _display_name(self, name: str) -> str:
         if name.startswith("fused_"):
             return name.replace("fused_", "")
@@ -55,7 +63,7 @@ class DDoSDecisionAgent:
         return [self._display_name(a) for a in algorithms]
 
     def get_system_load_penalty(self) -> float:
-        """Vérifie la charge actuelle du système local."""
+        """Check current local system load."""
         cpu_load = psutil.cpu_percent(interval=0.1)
         ram_load = psutil.virtual_memory().percent
         if cpu_load > 70 or ram_load > 70:
@@ -64,7 +72,7 @@ class DDoSDecisionAgent:
 
     def get_global_weights(self, profile_weights: np.ndarray = None) -> Dict[str, float]:
         """
-        Calcule les poids globaux précis.
+        Compute precise global weights.
         W_global = W_pillar * W_local_criterion
         """
         global_weights = {}
@@ -72,7 +80,7 @@ class DDoSDecisionAgent:
         
         for i, pillar in enumerate(pillars):
             pillar_key = pillar['key']
-            # Utilise les poids du profil si fournis, sinon ceux de la hiérarchie
+            # Use profile weights if provided, otherwise hierarchy weights
             pillar_weight = profile_weights[i] if profile_weights is not None else pillar['weight']
             
             local_criteria = self.hierarchy['criteria'][pillar_key]
@@ -80,6 +88,15 @@ class DDoSDecisionAgent:
                 global_weights[crit['key']] = pillar_weight * crit['weight']
                 
         return global_weights
+
+    def get_pillar_weights(self) -> np.ndarray:
+        """Return pillar weights from config (Performance, Explainability, Resources)."""
+        pillars = self.hierarchy.get("pillars", [])
+        if len(pillars) >= 3:
+            weights = np.array([p.get("weight", 0.0) for p in pillars], dtype=float)
+            if weights.sum() > 0:
+                return weights / weights.sum()
+        return np.array([0.70, 0.15, 0.15], dtype=float)
 
     # --- OUTILS TOPSIS + VISUALISATIONS ---
 
@@ -133,8 +150,8 @@ class DDoSDecisionAgent:
         df = pd.DataFrame(M, index=labels, columns=["f_perf", "f_expl", "f_res"])
         sns.heatmap(df, annot=True, fmt=".3f", cmap="YlGnBu", linewidths=0.5, ax=ax, vmin=0, vmax=1)
         ax.set_title(title, fontsize=12, fontweight='bold')
-        ax.set_xlabel("Criteres")
-        ax.set_ylabel("Algorithmes")
+        ax.set_xlabel("Criteria")
+        ax.set_ylabel("Algorithms")
         plt.tight_layout()
         path = os.path.join(out_dir, filename)
         plt.savefig(path, dpi=150, bbox_inches='tight')
@@ -149,8 +166,8 @@ class DDoSDecisionAgent:
             ax.scatter(M[i, 0], M[i, 1], M[i, 2], c=self.colors.get(algo_key, 'steelblue'), s=200, alpha=0.8, edgecolors='black')
             ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {self._display_name(algo)}', fontsize=10, fontweight='bold')
         ax.set_xlabel('Performance (f_perf)')
-        ax.set_ylabel('Explicabilite (f_expl)')
-        ax.set_zlabel('Ressources (f_res)')
+        ax.set_ylabel('Explainability (f_expl)')
+        ax.set_zlabel('Resources (f_res)')
         ax.set_title(title, fontsize=12, fontweight='bold')
         plt.tight_layout()
         path = os.path.join(out_dir, filename)
@@ -163,10 +180,10 @@ class DDoSDecisionAgent:
         labels = self._display_list(algorithms)
         df_M = pd.DataFrame(M, index=labels, columns=["f_perf", "f_expl", "f_res"])
         sns.heatmap(df_M, annot=True, fmt=".3f", cmap="Blues", ax=axes[0], vmin=0, vmax=1, linewidths=0.5)
-        axes[0].set_title("M (brute)", fontsize=11, fontweight='bold')
+        axes[0].set_title("M (raw)", fontsize=11, fontweight='bold')
         df_norm = pd.DataFrame(M_norm, index=labels, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
         sns.heatmap(df_norm, annot=True, fmt=".3f", cmap="Greens", ax=axes[1], vmin=0, vmax=1, linewidths=0.5)
-        axes[1].set_title("M normalisee", fontsize=11, fontweight='bold')
+        axes[1].set_title("Normalized M", fontsize=11, fontweight='bold')
         plt.tight_layout()
         path = os.path.join(out_dir, filename)
         plt.savefig(path, dpi=150, bbox_inches='tight')
@@ -178,11 +195,11 @@ class DDoSDecisionAgent:
         labels = self._display_list(algorithms)
         df_norm = pd.DataFrame(M_norm, index=labels, columns=["f_perf_hat", "f_expl_hat", "f_res_hat"])
         sns.heatmap(df_norm, annot=True, fmt=".3f", cmap="Blues", ax=axes[0], vmin=0, vmax=1, linewidths=0.5)
-        axes[0].set_title("M normalisee", fontsize=11, fontweight='bold')
+        axes[0].set_title("Normalized M", fontsize=11, fontweight='bold')
         colors_w = ['steelblue', 'forestgreen', 'coral']
         bars = axes[1].bar(["w_perf", "w_expl", "w_res"], weights, color=colors_w)
         axes[1].set_ylim(0, 0.6)
-        axes[1].set_title(f"Poids AHP ({profile_name})", fontsize=11, fontweight='bold')
+        axes[1].set_title(f"Weights AHP ({profile_name})", fontsize=11, fontweight='bold')
         for bar, val in zip(bars, weights):
             axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.02, f'{val:.2f}', ha='center', fontsize=10)
         df_V = pd.DataFrame(V, index=labels, columns=["v_perf", "v_expl", "v_res"])
@@ -206,9 +223,9 @@ class DDoSDecisionAgent:
                 ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.01, f'{val:.2f}', ha='center', fontsize=8)
         ax.set_xticks(x)
         ax.set_xticklabels(["w_perf", "w_expl", "w_res"])
-        ax.set_ylabel("Poids")
-        ax.set_title("Comparaison des profils AHP", fontsize=12, fontweight='bold')
-        ax.legend(title="Profil")
+        ax.set_ylabel("Weights")
+        ax.set_title("AHP profile comparison", fontsize=12, fontweight='bold')
+        ax.legend(title="Profile")
         ax.set_ylim(0, 0.65)
         ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
@@ -229,7 +246,7 @@ class DDoSDecisionAgent:
         ax.set_xlabel('v_perf')
         ax.set_ylabel('v_expl')
         ax.set_zlabel('v_res')
-        ax.set_title('Solutions ideale et anti-ideale', fontsize=12, fontweight='bold')
+        ax.set_title('Ideal and anti-ideal solutions', fontsize=12, fontweight='bold')
         ax.legend(loc='upper left')
         plt.tight_layout()
         path = os.path.join(out_dir, filename)
@@ -246,7 +263,7 @@ class DDoSDecisionAgent:
         ax.set_xticks(x)
         ax.set_xticklabels(self._display_list(algorithms))
         ax.set_ylabel("Distance")
-        ax.set_title("Distances TOPSIS", fontsize=12, fontweight='bold')
+        ax.set_title("TOPSIS distances", fontsize=12, fontweight='bold')
         ax.legend()
         for bar in list(bars1) + list(bars2):
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.005, f'{bar.get_height():.3f}', ha='center', fontsize=8)
@@ -265,7 +282,7 @@ class DDoSDecisionAgent:
         bars = ax.barh(sorted_labels, sorted_cc, color=colors, edgecolor='black')
         ax.set_xlim(0, 1)
         ax.set_xlabel("CC")
-        ax.set_title(f"Classement TOPSIS - {profile_name}", fontsize=12, fontweight='bold')
+        ax.set_title(f"TOPSIS ranking - {profile_name}", fontsize=12, fontweight='bold')
         for i, (bar, cc) in enumerate(zip(bars, sorted_cc)):
             ax.text(cc + 0.02, bar.get_y() + bar.get_height()/2, f'#{i+1} CC={cc:.3f}', va='center', fontsize=9)
         plt.tight_layout()
@@ -275,7 +292,7 @@ class DDoSDecisionAgent:
         return path
 
     def _viz_radar(self, M: np.ndarray, algorithms: List[str], filename: str, out_dir: str) -> str:
-        categories = ['Performance', 'Explicabilite', 'Ressources(inv)']
+        categories = ['Performance', 'Explainability', 'Resources(inv)']
         N = len(categories)
         angles = [n / float(N) * 2 * np.pi for n in range(N)]
         angles += angles[:1]
@@ -290,7 +307,7 @@ class DDoSDecisionAgent:
         ax.set_xticks(angles[:-1])
         ax.set_xticklabels(categories, fontsize=11)
         ax.set_ylim(0, 1)
-        ax.set_title("Radar comparatif", fontsize=12, fontweight='bold', pad=20)
+        ax.set_title("Comparative radar", fontsize=12, fontweight='bold', pad=20)
         ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1))
         plt.tight_layout()
         path = os.path.join(out_dir, filename)
@@ -305,7 +322,7 @@ class DDoSDecisionAgent:
             ax.annotate(f'{self._display_name(algo)}\\nCC={CC[i]:.3f}', (M[i, 0], M[i, 1]), textcoords="offset points", xytext=(10, 10), fontsize=10)
         ax.set_xlabel('f_perf')
         ax.set_ylabel('f_expl')
-        ax.set_title('Performance vs Explicabilite', fontsize=12, fontweight='bold')
+        ax.set_title('Performance vs Explainability', fontsize=12, fontweight='bold')
         cbar = plt.colorbar(scatter)
         cbar.set_label('f_res', fontsize=10)
         ax.grid(True, alpha=0.3)
@@ -326,12 +343,12 @@ class DDoSDecisionAgent:
             ax.scatter(M[i, 0], M[i, 1], M[i, 2], c=self.colors.get(algo_key, 'green'), s=400, alpha=0.9, edgecolors='black', linewidths=2, marker='*')
             ax.text(M[i, 0], M[i, 1], M[i, 2], f'  {self._display_name(algorithms[i])} *', fontsize=11, fontweight='bold')
         ax.set_xlabel('Performance')
-        ax.set_ylabel('Explicabilite')
-        ax.set_zlabel('Ressources')
-        ax.set_title('Front de Pareto', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Explainability')
+        ax.set_zlabel('Resources')
+        ax.set_title('Pareto front', fontsize=12, fontweight='bold')
         legend_elements = [
             Patch(facecolor='green', label=f'Pareto-optimal ({len(pareto_idx)})'),
-            Patch(facecolor='gray', label=f'Domine ({len(dominated_idx)})')
+            Patch(facecolor='gray', label=f'Dominated ({len(dominated_idx)})')
         ]
         ax.legend(handles=legend_elements, loc='upper left')
         plt.tight_layout()
@@ -343,9 +360,9 @@ class DDoSDecisionAgent:
     def _viz_pareto_2d(self, M: np.ndarray, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
         fig, axes = plt.subplots(1, 3, figsize=(16, 5))
         projections = [
-            (0, 1, 'Performance', 'Explicabilite'),
-            (0, 2, 'Performance', 'Ressources(inv)'),
-            (1, 2, 'Explicabilite', 'Ressources(inv)')
+            (0, 1, 'Performance', 'Explainability'),
+            (0, 2, 'Performance', 'Resources(inv)'),
+            (1, 2, 'Explainability', 'Resources(inv)')
         ]
         for ax, (xi, yi, xlabel, ylabel) in zip(axes, projections):
             for i in dominated_idx:
@@ -361,22 +378,186 @@ class DDoSDecisionAgent:
             ax.set_ylabel(ylabel, fontsize=10)
             ax.set_title(f'{xlabel} vs {ylabel}', fontsize=11, fontweight='bold')
             ax.grid(True, alpha=0.3)
-        plt.suptitle('Projections 2D Pareto', fontsize=14, fontweight='bold')
+        plt.suptitle('2D Pareto projections', fontsize=14, fontweight='bold')
         plt.tight_layout()
         path = os.path.join(out_dir, filename)
         plt.savefig(path, dpi=150, bbox_inches='tight')
         plt.close()
         return path
 
+    def _viz_resource_pareto_thresholds(
+        self,
+        df: pd.DataFrame,
+        thresholds: List[float],
+        out_dir: str,
+    ) -> List[str]:
+        os.makedirs(out_dir, exist_ok=True)
+        files = []
+        if "cpu_percent" not in df.columns or "ram_percent" not in df.columns:
+            self._log("warning", "Resource Pareto plots skipped: cpu_percent/ram_percent missing")
+            return files
+
+        resource_scores = ((df["cpu_percent"].fillna(100.0) + df["ram_percent"].fillna(100.0)) / 2.0)
+        df = df.copy()
+        df["resource_score"] = resource_scores
+
+        for threshold in thresholds:
+            df_f = df[df["resource_score"] <= threshold].copy()
+            if df_f.empty:
+                self._log("warning", "Resource Pareto plot skipped (no admissible)", threshold=threshold)
+                continue
+            M, algorithms = self._build_matrix(df_f)
+            pareto_idx, dominated_idx = self._identify_pareto_front(M)
+
+            fig, ax = plt.subplots(figsize=(9, 6))
+            # Scatter all points (performance vs explainability)
+            ax.scatter(df_f["dim_performance"], df_f["dim_explainability"], c="#bdc3c7", s=120, label="Dominated")
+            # Highlight Pareto front
+            pareto_points = df_f.iloc[pareto_idx]
+            ax.scatter(pareto_points["dim_performance"], pareto_points["dim_explainability"],
+                       c="#27ae60", s=180, label="Pareto front", edgecolors="black")
+
+            # Connect Pareto front in 2D
+            if len(pareto_points) >= 2:
+                sorted_pts = pareto_points.sort_values("dim_performance")
+                ax.plot(sorted_pts["dim_performance"], sorted_pts["dim_explainability"], color="#27ae60", linestyle="--", linewidth=1.5)
+
+            for _, row in pareto_points.iterrows():
+                ax.text(row["dim_performance"], row["dim_explainability"], self._display_name(row["model"]),
+                        fontsize=9, ha="left", va="bottom")
+
+            ax.set_title(f"Resource constraint Pareto front (<= {threshold:.0f}%)", fontsize=12, fontweight="bold")
+            ax.set_xlabel("Performance (dim_performance)")
+            ax.set_ylabel("Explainability (dim_explainability)")
+            ax.grid(alpha=0.3)
+            ax.legend(loc="lower right", fontsize=8)
+            plt.tight_layout()
+            filename = f"resource_pareto_threshold_{int(threshold)}.png"
+            path = os.path.join(out_dir, filename)
+            plt.savefig(path, dpi=150, bbox_inches="tight")
+            plt.close()
+            files.append(path)
+            self._log("info", "Resource Pareto plot saved", threshold=threshold, file=path)
+
+            if not pareto_idx:
+                continue
+
+            def _plot_pareto_3d_colored() -> str:
+                fig = plt.figure(figsize=(10, 8))
+                ax = fig.add_subplot(111, projection="3d")
+                scatter = ax.scatter(
+                    df_f["dim_performance"],
+                    df_f["dim_explainability"],
+                    df_f["dim_resources"],
+                    c=df_f["dim_resources"],
+                    cmap="viridis",
+                    s=120,
+                    alpha=0.85,
+                )
+                pareto_points = df_f.iloc[pareto_idx]
+                ax.scatter(
+                    pareto_points["dim_performance"],
+                    pareto_points["dim_explainability"],
+                    pareto_points["dim_resources"],
+                    c="none",
+                    edgecolors="black",
+                    s=200,
+                    linewidths=1.8,
+                    label="Pareto front",
+                )
+                if len(pareto_points) >= 2:
+                    sorted_pts = pareto_points.sort_values("dim_performance")
+                    ax.plot(
+                        sorted_pts["dim_performance"],
+                        sorted_pts["dim_explainability"],
+                        sorted_pts["dim_resources"],
+                        color="black",
+                        linestyle="--",
+                        linewidth=1.2,
+                    )
+                ax.set_xlabel("Performance (dim_performance)")
+                ax.set_ylabel("Explainability (dim_explainability)")
+                ax.set_zlabel("Resources (dim_resources)")
+                ax.set_title(
+                    f"Resource constraint Pareto front (<= {threshold:.0f}%) - colored 3D",
+                    fontsize=11,
+                    fontweight="bold",
+                )
+                fig.colorbar(scatter, ax=ax, shrink=0.6, pad=0.1, label="dim_resources")
+                ax.legend(loc="upper left", fontsize=8)
+                plt.tight_layout()
+                filename_3d = f"resource_pareto_threshold_{int(threshold)}_3d_color.png"
+                path_3d = os.path.join(out_dir, filename_3d)
+                plt.savefig(path_3d, dpi=150, bbox_inches="tight")
+                plt.close()
+                return path_3d
+
+            def _plot_pareto_3d_points() -> str:
+                fig = plt.figure(figsize=(10, 8))
+                ax = fig.add_subplot(111, projection="3d")
+                ax.scatter(
+                    df_f["dim_performance"],
+                    df_f["dim_explainability"],
+                    df_f["dim_resources"],
+                    c="#95a5a6",
+                    s=90,
+                    alpha=0.5,
+                    label="Dominated",
+                )
+                pareto_points = df_f.iloc[pareto_idx]
+                ax.scatter(
+                    pareto_points["dim_performance"],
+                    pareto_points["dim_explainability"],
+                    pareto_points["dim_resources"],
+                    c="#27ae60",
+                    s=220,
+                    marker="*",
+                    edgecolors="black",
+                    linewidths=1.5,
+                    label="Pareto front",
+                )
+                if len(pareto_points) >= 2:
+                    sorted_pts = pareto_points.sort_values("dim_performance")
+                    ax.plot(
+                        sorted_pts["dim_performance"],
+                        sorted_pts["dim_explainability"],
+                        sorted_pts["dim_resources"],
+                        color="#27ae60",
+                        linestyle="--",
+                        linewidth=1.4,
+                    )
+                ax.set_xlabel("Performance (dim_performance)")
+                ax.set_ylabel("Explainability (dim_explainability)")
+                ax.set_zlabel("Resources (dim_resources)")
+                ax.set_title(
+                    f"Resource constraint Pareto front (<= {threshold:.0f}%) - 3D points",
+                    fontsize=11,
+                    fontweight="bold",
+                )
+                ax.legend(loc="upper left", fontsize=8)
+                plt.tight_layout()
+                filename_3d = f"resource_pareto_threshold_{int(threshold)}_3d_points.png"
+                path_3d = os.path.join(out_dir, filename_3d)
+                plt.savefig(path_3d, dpi=150, bbox_inches="tight")
+                plt.close()
+                return path_3d
+
+            color_path = _plot_pareto_3d_colored()
+            points_path = _plot_pareto_3d_points()
+            files.extend([color_path, points_path])
+            self._log("info", "Resource Pareto 3D plots saved", threshold=threshold, files=[color_path, points_path])
+
+        return files
+
     def _viz_pareto_list(self, algorithms: List[str], pareto_idx: List[int], dominated_idx: List[int], filename: str, out_dir: str) -> str:
         pareto_list = [self._display_name(algorithms[i]) for i in pareto_idx]
         dominated_list = [self._display_name(algorithms[i]) for i in dominated_idx]
         fig, ax = plt.subplots(figsize=(10, 6))
         ax.axis('off')
-        ax.set_title('Liste des solutions Pareto', fontsize=12, fontweight='bold')
+        ax.set_title('Pareto solutions list', fontsize=12, fontweight='bold')
 
-        left_text = "Non-dominees (Pareto):\\n" + "\\n".join(pareto_list) if pareto_list else "Non-dominees (Pareto):\\nAucune"
-        right_text = "Dominees:\\n" + "\\n".join(dominated_list) if dominated_list else "Dominees:\\nAucune"
+        left_text = "Non-dominated (Pareto):\\n" + "\\n".join(pareto_list) if pareto_list else "Non-dominated (Pareto):\\nNone"
+        right_text = "Dominated:\\n" + "\\n".join(dominated_list) if dominated_list else "Dominated:\\nNone"
 
         ax.text(0.02, 0.95, left_text, va='top', ha='left', fontsize=10, family='monospace')
         ax.text(0.52, 0.95, right_text, va='top', ha='left', fontsize=10, family='monospace')
@@ -412,8 +593,8 @@ class DDoSDecisionAgent:
         fig, axes = plt.subplots(1, 2, figsize=(13, 6))
         axes[0].axis('off')
         axes[0].set_title("Solutions", fontsize=11, fontweight='bold')
-        left_text = "Admissibles:\\n" + "\\n".join(admissible) if admissible else "Admissibles:\\nAucune"
-        right_text = "Rejetees:\\n" + "\\n".join(rejected) if rejected else "Rejetees:\\nAucune"
+        left_text = "Admissible:\\n" + "\\n".join(admissible) if admissible else "Admissible:\\nNone"
+        right_text = "Rejected:\\n" + "\\n".join(rejected) if rejected else "Rejected:\\nNone"
         axes[0].text(0.02, 0.95, left_text, va='top', ha='left', fontsize=9, family='monospace')
         axes[0].text(0.52, 0.95, right_text, va='top', ha='left', fontsize=9, family='monospace')
 
@@ -421,14 +602,14 @@ class DDoSDecisionAgent:
         values = [score for _, score in items_sorted]
         colors = ["#2ecc71" if algo in admissible else "#bdc3c7" for algo in labels]
         axes[1].barh(labels, values, color=colors, alpha=0.9)
-        axes[1].axvline(threshold, color='red', linestyle='--', linewidth=1.5, label=f"Seuil {threshold:.1f}")
+        axes[1].axvline(threshold, color='red', linestyle='--', linewidth=1.5, label=f"Threshold {threshold:.1f}")
         axes[1].set_xlabel("Score")
         axes[1].set_title(title, fontsize=11, fontweight='bold')
         axes[1].legend(loc="lower right", fontsize=8)
         axes[1].grid(axis='x', alpha=0.3)
 
-        fig.suptitle(f"{title} - Seuil {threshold:.1f}", fontsize=12, fontweight='bold')
-        fig.text(0.5, 0.02, f"Formule: {formula}", ha='center', fontsize=9, style='italic')
+        fig.suptitle(f"{title} - Threshold {threshold:.1f}", fontsize=12, fontweight='bold')
+        fig.text(0.5, 0.02, f"Formula: {formula}", ha='center', fontsize=9, style='italic')
         plt.tight_layout()
         os.makedirs(out_dir, exist_ok=True)
         path = os.path.join(out_dir, filename)
@@ -450,31 +631,31 @@ class DDoSDecisionAgent:
         if total == 0:
             total = 1
         if len(admissible) == 0:
-            interp = "Seuil tres strict: aucune solution admissible. Relacher la contrainte ou ajuster les poids."
+            interp = "Threshold too strict: no admissible solution. Relax the constraint or adjust the weights."
         elif len(admissible) == total:
-            interp = "Seuil permissif: toutes les solutions sont admissibles. La contrainte ne discrimine pas."
+            interp = "Threshold too permissive: all solutions are admissible. The constraint does not discriminate."
         else:
             interp = (
-                "Seuil intermediaire: la contrainte filtre une partie des solutions. "
-                "Cela illustre le compromis entre performances, explicabilite et ressources."
+                "Intermediate threshold: the constraint filters a subset of solutions. "
+                "This illustrates the trade-off between performance, explainability, and resources."
             )
 
         try:
             from docx import Document
             doc = Document()
             doc.add_heading(title, level=1)
-            doc.add_paragraph(f"Seuil applique: {threshold:.1f}")
-            doc.add_paragraph(f"Formule: {formula}")
-            doc.add_paragraph(f"Solutions admissibles: {len(admissible)}/{total}")
-            doc.add_heading("Solutions admissibles", level=2)
+            doc.add_paragraph(f"Threshold applied: {threshold:.1f}")
+            doc.add_paragraph(f"Formula: {formula}")
+            doc.add_paragraph(f"Admissible solutions: {len(admissible)}/{total}")
+            doc.add_heading("Admissible solutions", level=2)
             for algo in admissible:
                 doc.add_paragraph(algo, style='List Bullet')
-            doc.add_heading("Solutions rejetees", level=2)
+            doc.add_heading("Rejected solutions", level=2)
             for algo in rejected:
                 doc.add_paragraph(algo, style='List Bullet')
             doc.add_heading("Interpretation", level=2)
             doc.add_paragraph(interp)
-            doc.add_heading("Lien avec criteres du prof", level=2)
+            doc.add_heading("Link to assessment criteria", level=2)
             doc.add_paragraph(criteria_summary)
             doc.save(docx_path)
             return docx_path
@@ -482,18 +663,18 @@ class DDoSDecisionAgent:
             md_path = docx_path.replace(".docx", ".md")
             with open(md_path, "w") as f:
                 f.write(f"# {title}\n\n")
-                f.write(f"- Seuil applique: {threshold:.1f}\n")
-                f.write(f"- Formule: {formula}\n")
-                f.write(f"- Solutions admissibles: {len(admissible)}/{total}\n\n")
-                f.write("## Solutions admissibles\n")
+                f.write(f"- Threshold applied: {threshold:.1f}\n")
+                f.write(f"- Formula: {formula}\n")
+                f.write(f"- Admissible solutions: {len(admissible)}/{total}\n\n")
+                f.write("## Admissible solutions\n")
                 for algo in admissible:
                     f.write(f"- {algo}\n")
-                f.write("\n## Solutions rejetees\n")
+                f.write("\n## Rejected solutions\n")
                 for algo in rejected:
                     f.write(f"- {algo}\n")
                 f.write("\n## Interpretation\n")
                 f.write(f"{interp}\n\n")
-                f.write("## Lien avec criteres du prof\n")
+                f.write("## Link to assessment criteria\n")
                 f.write(criteria_summary + "\n")
             return md_path
 
@@ -516,11 +697,18 @@ class DDoSDecisionAgent:
         weights_summary = []
         for pillar in self.hierarchy["pillars"]:
             weights_summary.append(f"{pillar['name']}: {pillar['weight']:.2f}")
-        criteria_summary = "Poids des piliers: " + ", ".join(weights_summary)
+        criteria_summary = "Pillar weights: " + ", ".join(weights_summary)
 
         for threshold in thresholds:
+            self._log(
+                "info",
+                f"Threshold variation - {title_prefix}",
+                threshold=threshold,
+                direction=direction,
+                formula=formula,
+            )
             slug = title_prefix.lower().replace(" ", "_")
-            filename = f"{slug}_seuil_{int(threshold)}.png"
+            filename = f"{slug}_threshold_{int(threshold)}.png"
             plot_path, admissible, rejected = self._viz_threshold_variation(
                 scores,
                 threshold,
@@ -531,11 +719,18 @@ class DDoSDecisionAgent:
                 out_dir,
             )
             files.append(plot_path)
+            self._log(
+                "info",
+                f"Threshold results - {title_prefix}",
+                threshold=threshold,
+                admissible=len(admissible),
+                rejected=len(rejected),
+            )
             results.append({"threshold": threshold, "admissible": len(admissible)})
-            docx_path = os.path.join(report_dir, f"{slug}_seuil_{int(threshold)}.docx")
+            docx_path = os.path.join(report_dir, f"{slug}_threshold_{int(threshold)}.docx")
             self._write_variation_docx(
                 docx_path,
-                f"{title_prefix} - Seuil {threshold:.1f}",
+                f"{title_prefix} - Threshold {threshold:.1f}",
                 threshold,
                 formula,
                 admissible,
@@ -543,15 +738,15 @@ class DDoSDecisionAgent:
                 criteria_summary,
             )
 
-        # Resume des admissibles par seuil
+        # Admissible summary by threshold
         if results:
             fig, ax = plt.subplots(figsize=(8, 4))
             xs = [r["threshold"] for r in results]
             ys = [r["admissible"] for r in results]
             ax.plot(xs, ys, marker='o')
-            ax.set_title(f"Nombre de solutions admissibles - {title_prefix}", fontsize=11, fontweight='bold')
-            ax.set_xlabel("Seuil")
-            ax.set_ylabel("Nombre admissibles")
+            ax.set_title(f"Number of admissible solutions - {title_prefix}", fontsize=11, fontweight='bold')
+            ax.set_xlabel("Threshold")
+            ax.set_ylabel("Admissible count")
             ax.grid(alpha=0.3)
             summary_path = os.path.join(out_dir, f"{title_prefix.lower().replace(' ', '_')}_resume.png")
             plt.tight_layout()
@@ -570,9 +765,9 @@ class DDoSDecisionAgent:
         df = pd.DataFrame(results, index=labels)
         df.plot(kind='bar', ax=ax, width=0.8, alpha=0.8)
         ax.set_ylabel("CC")
-        ax.set_xlabel("Algorithme")
-        ax.set_title("Sensibilite aux poids", fontsize=12, fontweight='bold')
-        ax.legend(title="Profil", loc='upper right')
+        ax.set_xlabel("Algorithm")
+        ax.set_title("Sensitivity to weights", fontsize=12, fontweight='bold')
+        ax.legend(title="Profile", loc='upper right')
         ax.set_xticklabels(labels, rotation=0)
         ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
@@ -602,7 +797,7 @@ class DDoSDecisionAgent:
             D_plus = np.sqrt(((V - A_plus) ** 2).sum(axis=1))
             D_minus = np.sqrt(((V - A_minus) ** 2).sum(axis=1))
             CC = D_minus / (D_plus + D_minus + 1e-9)
-            results[f'Sans {criterion}'] = CC
+            results[f'Without {criterion}'] = CC
         fig, ax = plt.subplots(figsize=(12, 6))
         labels = self._display_list(algorithms)
         df = pd.DataFrame(results, index=labels)
@@ -615,7 +810,7 @@ class DDoSDecisionAgent:
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
         ax.set_ylabel("CC")
-        ax.set_title("Sensibilite retrait criteres", fontsize=12, fontweight='bold')
+        ax.set_title("Sensitivity criteria removal", fontsize=12, fontweight='bold')
         ax.legend()
         ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
@@ -634,7 +829,7 @@ class DDoSDecisionAgent:
             algos_reduced = [algorithms[j] for j in mask]
             cc = self._topsis_compute(M_reduced, weights)[-1]
             ranks = np.argsort(np.argsort(-cc)) + 1
-            results[f'Sans {removed_algo}'] = {algo: ranks[k] for k, algo in enumerate(algos_reduced)}
+            results[f'Without {removed_algo}'] = {algo: ranks[k] for k, algo in enumerate(algos_reduced)}
         fig, ax = plt.subplots(figsize=(12, 6))
         scenarios = list(results.keys())
         x = np.arange(len(algorithms))
@@ -647,8 +842,8 @@ class DDoSDecisionAgent:
             ax.bar(x + offset, values, width, label=scenario, color=colors[i], alpha=0.8)
         ax.set_xticks(x)
         ax.set_xticklabels(labels)
-        ax.set_ylabel("Rang (1=meilleur)")
-        ax.set_title("Sensibilite retrait algorithmes", fontsize=12, fontweight='bold')
+        ax.set_ylabel("Rank (1=best)")
+        ax.set_title("Sensitivity to algorithm removal", fontsize=12, fontweight='bold')
         ax.legend(loc='upper right', fontsize=8)
         ax.invert_yaxis()
         ax.grid(axis='y', alpha=0.3)
@@ -687,11 +882,11 @@ class DDoSDecisionAgent:
         for i, profile in enumerate(profiles_list):
             offset = (i - 1.5) * width
             axes[0].bar(x + offset, results[profile]['f_res_values'], width, label=profile.replace('_', ' ').title(), color=colors[i], alpha=0.8)
-        axes[0].axhline(y=1.0, color='red', linestyle='--', linewidth=2, label='Seuil admissibilite')
+        axes[0].axhline(y=1.0, color='red', linestyle='--', linewidth=2, label='Admissibility threshold')
         axes[0].set_xticks(x)
         axes[0].set_xticklabels(labels, rotation=45, ha='right')
         axes[0].set_ylabel('f_res')
-        axes[0].set_title('f_res par profil', fontsize=12, fontweight='bold')
+        axes[0].set_title('f_res by profile', fontsize=12, fontweight='bold')
         axes[0].legend(loc='upper left', fontsize=8)
         admissible_counts = [results[p]['admissible_count'] for p in profiles_list]
         totals = [results[p]['total'] for p in profiles_list]
@@ -699,8 +894,8 @@ class DDoSDecisionAgent:
         axes[1].axhline(y=totals[0], color='gray', linestyle='--', alpha=0.5)
         for bar, count, total in zip(bars, admissible_counts, totals):
             axes[1].text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.1, f'{count}/{total}', ha='center', fontsize=10, fontweight='bold')
-        axes[1].set_ylabel('Nombre admissibles')
-        axes[1].set_title('Admissibilite par profil PME', fontsize=12, fontweight='bold')
+        axes[1].set_ylabel('Admissible count')
+        axes[1].set_title('Admissibility by SME profile', fontsize=12, fontweight='bold')
         axes[1].set_xticklabels([p.replace('_', '\\n').title() for p in profiles_list], rotation=0)
         plt.tight_layout()
         path = os.path.join(out_dir, "viz_constraints_impact.png")
@@ -708,11 +903,11 @@ class DDoSDecisionAgent:
         plt.close()
         return path
 
-    # --- BLOC 1 : MOO (Génération et Filtrage) ---
+    # --- BLOCK 1: MOO (Generation and Filtering) ---
     
     def run_moo_phase(self, results_df: pd.DataFrame) -> pd.DataFrame:
-        """Phase MOO : Agrégation et Front de Pareto."""
-        print("\n>>> DÉBUT DE LA PHASE MOO (Multi-Objective Optimization)")
+        """MOO phase: aggregation and Pareto front."""
+        print("\n>>> START OF MOO PHASE (Multi-Objective Optimization)")
         df = results_df.copy()
         penalty = self.get_system_load_penalty()
         
@@ -740,28 +935,29 @@ class DDoSDecisionAgent:
         df.loc[df.index[nds[0]], 'is_pareto_efficient'] = True
         return df
 
-    # --- BLOC 2 : MCDM (Modélisation du Choix) ---
+    # --- BLOCK 2: MCDM (Decision Modeling) ---
 
-    def run_mcdm_phase(self, df: pd.DataFrame, profile_name: str) -> pd.DataFrame:
-        """Phase MCDM : Classement via TOPSIS et WSM."""
-        print(f"\n>>> DÉBUT DE LA PHASE MCDM (Profil {profile_name})")
-        weights = self.profiles[profile_name]
+    def run_mcdm_phase(self, df: pd.DataFrame, weights: np.ndarray = None) -> pd.DataFrame:
+        """MCDM phase: ranking via TOPSIS and WSM."""
+        if weights is None:
+            weights = self.get_pillar_weights()
+        print("\n>>> START OF MCDM PHASE (Config weights)")
         objectives = ['dim_performance', 'dim_explainability', 'dim_resources']
         matrix = df[objectives].to_numpy()
         types = np.array([1, 1, 1])
         
-        df[f'score_topsis_{profile_name}'] = TOPSIS()(matrix, weights, types)
-        df[f'score_wsm_{profile_name}'] = (matrix * weights).sum(axis=1)
+        df['score_topsis'] = TOPSIS()(matrix, weights, types)
+        df['score_wsm'] = (matrix * weights).sum(axis=1)
         return df
 
-    # --- BLOC 3 : MCDA (Analyse et Justification) ---
+    # --- BLOCK 3: MCDA (Analysis and Justification) ---
 
-    def run_mcda_analysis(self, df: pd.DataFrame, profile_name: str) -> Dict:
-        """Phase MCDA : Analyse de sensibilité et corrélation."""
-        print(f"\n>>> DÉBUT DE LA PHASE MCDA (Profil {profile_name})")
-        original_weights = self.profiles[profile_name].copy()
-        idx_main = 0 if profile_name == "A" else 1
-        original_winner = df.sort_values(by=f'score_topsis_{profile_name}', ascending=False).iloc[0]['model']
+    def run_mcda_analysis(self, df: pd.DataFrame, weights: np.ndarray = None) -> Dict:
+        """MCDA phase: sensitivity analysis and correlation."""
+        print("\n>>> START OF MCDA PHASE (Config weights)")
+        original_weights = self.get_pillar_weights() if weights is None else weights.copy()
+        idx_main = int(np.argmax(original_weights))
+        original_winner = df.sort_values(by='score_topsis', ascending=False).iloc[0]['model']
         
         test_weights = original_weights.copy()
         test_weights[idx_main] *= 1.05
@@ -771,23 +967,22 @@ class DDoSDecisionAgent:
         new_scores = TOPSIS()(df[objectives].to_numpy(), test_weights, np.array([1, 1, 1]))
         new_winner = df.iloc[np.argmax(new_scores)]['model']
         
-        corr, _ = spearmanr(df[f'score_topsis_{profile_name}'], df[f'score_wsm_{profile_name}'])
+        corr, _ = spearmanr(df['score_topsis'], df['score_wsm'])
         return {"is_stable": original_winner == new_winner, "spearman_corr": corr, "winner": original_winner}
 
     def rank_models(self, results_df: pd.DataFrame) -> pd.DataFrame:
-        """Wrapper pour maintenir la compatibilité avec le pipeline."""
+        """Wrapper to keep pipeline compatibility."""
         df = self.run_moo_phase(results_df)
-        df = self.run_mcdm_phase(df, "A")
+        df = self.run_mcdm_phase(df)
         return df
 
     def visualize_sad(self, results_df: pd.DataFrame, output_dir: str):
-        """Génère toutes les visualisations MCDM/MOO."""
+        """Generates all MCDM/MOO visualizations."""
         os.makedirs(output_dir, exist_ok=True)
         plt.style.use('ggplot')
         
         df = self.run_moo_phase(results_df)
-        df = self.run_mcdm_phase(df, "A")
-        df = self.run_mcdm_phase(df, "B")
+        df = self.run_mcdm_phase(df)
         df = df.copy()
         df["model_label"] = df["model"].apply(self._display_name)
         
@@ -800,21 +995,21 @@ class DDoSDecisionAgent:
         norm_df = norm_df.copy()
         norm_df["model_label"] = norm_df["model"].apply(self._display_name)
         sns.heatmap(norm_df.set_index('model_label')[criteria_keys], annot=True, cmap='YlGnBu', fmt='.2f')
-        plt.title('Matrice de Décision Normalisée')
+        plt.title('Normalized decision matrix')
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'decision_matrix_heatmap.png'))
         plt.close()
 
-        # 2. Diagramme Unifié
+        # 2. Unified chart
         fig, axes = plt.subplots(1, 3, figsize=(18, 6))
         dims = ['dim_performance', 'dim_explainability', 'dim_resources']
-        titles = ['Performance', 'Explicabilité', 'Ressources']
+        titles = ['Performance', 'Explainability', 'Resources']
         colors = ['#3498db', '#e67e22', '#2ecc71']
         for i, dim in enumerate(dims):
             df_sorted = df.sort_values(by=dim, ascending=True)
             axes[i].barh(df_sorted['model_label'], df_sorted[dim], color=colors[i])
             axes[i].set_title(titles[i])
-        plt.suptitle('Comparaison Unifiée des Dimensions')
+        plt.suptitle('Unified dimension comparison')
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, 'unified_dimensions_comparison.png'))
         plt.close()
@@ -827,13 +1022,13 @@ class DDoSDecisionAgent:
             ax.scatter(row['dim_performance'], row['dim_explainability'], row['dim_resources'], c=color, s=100)
             ax.text(row['dim_performance'], row['dim_explainability'], row['dim_resources'], row['model_label'])
         ax.set_xlabel('Performance')
-        ax.set_ylabel('Explicabilité')
-        ax.set_zlabel('Ressources')
+        ax.set_ylabel('Explainability')
+        ax.set_zlabel('Resources')
         plt.savefig(os.path.join(output_dir, '3d_solution_space.png'))
         plt.close()
 
         # 4. Radar
-        winner_a = df.sort_values(by='score_topsis_A', ascending=False).iloc[0]
+        winner_a = df.sort_values(by='score_topsis', ascending=False).iloc[0]
         angles = np.linspace(0, 2*np.pi, len(dims), endpoint=False).tolist()
         angles += angles[:1]
         fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
@@ -842,20 +1037,20 @@ class DDoSDecisionAgent:
             values += values[:1]
             ax.plot(angles, values, label=row['model_label'], linewidth=4 if row['model'] == winner_a['model'] else 1)
         ax.set_xticks(angles[:-1])
-        ax.set_xticklabels(['Performance', 'Explicabilité', 'Ressources'])
+        ax.set_xticklabels(['Performance', 'Explainability', 'Resources'])
         plt.legend(loc='upper right', bbox_to_anchor=(0.1, 0.1))
         plt.savefig(os.path.join(output_dir, 'radar_comparison.png'))
         plt.close()
 
-        # ---- Visualisations TOPSIS avancées ----
+        # ---- Advanced TOPSIS visualizations ----
         M, algorithms = self._build_matrix(df)
         default_profile = "Balanced"
         weights = self.ahp_profiles.get(default_profile, np.array([0.33, 0.33, 0.34]))
         M_norm, V, A_plus, A_minus, D_plus, D_minus, CC = self._topsis_compute(M, weights)
         pareto_idx, dominated_idx = self._identify_pareto_front(M)
 
-        self._viz_matrix_heatmap(M, algorithms, "Etape 0 : Matrice M", "viz_01_matrix_M.png", output_dir)
-        self._viz_3d_tradeoffs(M, algorithms, "Espace 3D des compromis", "viz_02_3d_tradeoffs.png", output_dir)
+        self._viz_matrix_heatmap(M, algorithms, "Step 0: Decision matrix M", "viz_01_matrix_M.png", output_dir)
+        self._viz_3d_tradeoffs(M, algorithms, "3D trade-off space", "viz_02_3d_tradeoffs.png", output_dir)
         self._viz_normalization_comparison(M, M_norm, algorithms, "viz_03_normalization.png", output_dir)
         self._viz_weighting_transformation(M_norm, V, weights, default_profile, algorithms, "viz_04_weighting.png", output_dir)
         self._viz_profiles_comparison(self.ahp_profiles, "viz_05_profiles.png", output_dir)
@@ -872,48 +1067,57 @@ class DDoSDecisionAgent:
         self._viz_sensitivity_algorithms(M, algorithms, weights, output_dir)
         self._viz_constraints_impact(df, algorithms, output_dir)
 
-        # ---- Variations de contraintes (100 -> 30) ----
-        thresholds = list(range(100, 20, -10))
+        # ---- Constraint variations (100 -> 30) ----
+        thresholds = list(range(10, 101, 10))
+        self._log("info", "Generating threshold variations", thresholds=thresholds)
         variations_root = os.path.join(output_dir, "variations")
 
-        # Ressources (moyenne CPU/RAM en %)
+        # Resources (CPU/RAM mean in %)
         if "cpu_percent" in df.columns and "ram_percent" in df.columns:
             resource_scores = ((df["cpu_percent"].fillna(100.0) + df["ram_percent"].fillna(100.0)) / 2.0)
+            self._log("info", "Resource constraint variation", formula="(CPU% + RAM%) / 2 <= Threshold")
             self._generate_threshold_variations(
                 df,
                 resource_scores,
                 thresholds,
                 direction="lte",
-                title_prefix="Contrainte Ressource",
-                formula="(CPU% + RAM%) / 2 <= Seuil",
+                title_prefix="Resource constraint",
+                formula="(CPU% + RAM%) / 2 <= Threshold",
                 out_dir=os.path.join(variations_root, "resource"),
                 report_dir=os.path.join("reports", "variations", "resource"),
             )
+            self._viz_resource_pareto_thresholds(
+                df,
+                thresholds,
+                out_dir=os.path.join(variations_root, "resource_pareto"),
+            )
 
-        # Performance (dimension normalisee, en %)
+        # Performance (normalized dimension, %)
         if "dim_performance" in df.columns:
             perf_scores = df["dim_performance"].fillna(0.0) * 100.0
+            self._log("info", "Performance threshold variation", formula="dim_performance >= Threshold")
             self._generate_threshold_variations(
                 df,
                 perf_scores,
                 thresholds,
                 direction="gte",
                 title_prefix="Performance",
-                formula="dim_performance >= Seuil",
+                formula="dim_performance >= Threshold",
                 out_dir=os.path.join(variations_root, "performance"),
                 report_dir=os.path.join("reports", "variations", "performance"),
             )
 
-        # Explicabilite (dimension normalisee, en %)
+        # Explainability (normalized dimension, %)
         if "dim_explainability" in df.columns:
             expl_scores = df["dim_explainability"].fillna(0.0) * 100.0
+            self._log("info", "Explainability threshold variation", formula="dim_explainability >= Threshold")
             self._generate_threshold_variations(
                 df,
                 expl_scores,
                 thresholds,
                 direction="gte",
-                title_prefix="Explicabilite",
-                formula="dim_explainability >= Seuil",
+                title_prefix="Explainability",
+                formula="dim_explainability >= Threshold",
                 out_dir=os.path.join(variations_root, "explainability"),
                 report_dir=os.path.join("reports", "variations", "explainability"),
             )
@@ -934,11 +1138,10 @@ class DDoSDecisionAgent:
 
     def generate_final_report(self, results_df: pd.DataFrame) -> str:
         df = self.run_moo_phase(results_df)
-        report = ["# RAPPORT DU SYSTÈME D'AIDE À LA DÉCISION (SAD)"]
-        for p in ["A", "B"]:
-            df = self.run_mcdm_phase(df, p)
-            analysis = self.run_mcda_analysis(df, p)
-            report.append(f"\n## RÉSULTAT PROFIL {p}")
-            report.append(f"- **Gagnant** : **{analysis['winner']}**")
-            report.append(f"- **Consensus** : {analysis['spearman_corr']:.4f}")
+        report = ["# DECISION SUPPORT SYSTEM REPORT (DSS)"]
+        df = self.run_mcdm_phase(df)
+        analysis = self.run_mcda_analysis(df)
+        report.append("\n## RESULT (Config weights)")
+        report.append(f"- **Winner**: **{analysis['winner']}**")
+        report.append(f"- **Consensus**: {analysis['spearman_corr']:.4f}")
         return "\n".join(report)

@@ -1,9 +1,5 @@
-# RAPPORT DU SYSTÈME D'AIDE À LA DÉCISION (SAD)
+# DECISION SUPPORT SYSTEM REPORT (DSS)
 
-## RÉSULTAT PROFIL A
-- **Gagnant** : **fused_RF**
-- **Consensus** : 0.9000
-
-## RÉSULTAT PROFIL B
-- **Gagnant** : **fused_LR**
-- **Consensus** : 1.0000
+## RESULT (Config weights)
+- **Winner**: **fused_RF**
+- **Consensus**: 1.0000

@@ -42,7 +42,7 @@ class T01_ConsolidateCIC(Task):
         
         # List all CSV files
         if not os.path.exists(cic_dir):
-            return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error=f"Répertoire CIC introuvable : {cic_dir}")
+            return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error=f"CIC directory not found: {cic_dir}")
             
         csv_files = []
         for root, dirs, files in os.walk(cic_dir):
@@ -51,7 +51,7 @@ class T01_ConsolidateCIC(Task):
                     csv_files.append(os.path.join(root, f))
         
         if not csv_files:
-            context.logger.error("loading", "ERREUR : Aucun fichier CSV trouvé pour CIC-DDoS2019. Interruption.")
+            context.logger.error("loading", "ERROR: No CSV files found for CIC-DDoS2019. Aborting.")
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="No CIC CSV files found")
 
         if cfg.test_mode:
@@ -59,9 +59,9 @@ class T01_ConsolidateCIC(Task):
 
         dfs = []
         for f in csv_files:
-            # Lecture EAGER (immédiate) pour stabiliser le schéma de chaque fichier
+            # Eager read to stabilize schema per file
             try:
-                # Nettoyage des noms de colonnes (suppression des espaces)
+                # Clean column names (trim spaces)
                 df_temp = pl.read_csv(
                     f, 
                     infer_schema_length=1000, 
@@ -70,15 +70,15 @@ class T01_ConsolidateCIC(Task):
                     n_rows=cfg.test_row_limit_per_file if cfg.test_mode else None
                 )
                 
-                # Normalisation des noms de colonnes (trim spaces)
+                # Normalize column names
                 df_temp.columns = [c.strip() for c in df_temp.columns]
                 
-                # Unification agressive des types pour éviter les conflits Float64/String
-                # On définit les colonnes qui DOIVENT être des chaînes
+                # Aggressive type unification to avoid Float64/String conflicts
+                # Columns that must be strings
                 string_cols = {"Label", "Timestamp", "source_file", "Flow ID", "Source IP", "Destination IP"}
                 
-                # Toutes les autres colonnes sont forcées en Float64
-                # Si une valeur n'est pas convertible, elle devient null (ex: "Infinity")
+                # All other columns are forced to Float64
+                # Non-convertible values become null (e.g., \"Infinity\")
                 cast_exprs = []
                 for col in df_temp.columns:
                     if col in string_cols:
@@ -89,48 +89,67 @@ class T01_ConsolidateCIC(Task):
                 df_temp = df_temp.with_columns(cast_exprs)
                 df_temp = df_temp.with_columns(pl.lit(os.path.basename(f)).alias("source_file"))
                 dfs.append(df_temp)
-                context.logger.info("loading", f"  [OK] {os.path.basename(f)} chargé ({df_temp.height} lignes)")
+                context.logger.info("loading", f"  [OK] {os.path.basename(f)} loaded ({df_temp.height} rows)")
             except Exception as e:
-                context.logger.warning("loading", f"  [SKIP] Erreur sur {f}: {e}")
+                context.logger.warning("loading", f"  [SKIP] Error on {f}: {e}")
 
         if not dfs:
             return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="No valid CIC CSV files loaded")
 
-        # Concaténation EAGER diagonale
+        # Eager diagonal concatenation
         df_full = pl.concat(dfs, how="diagonal")
 
         df_full = df_full.filter(pl.col("Label").is_not_null())
 
-        # --- VALIDATION INTERACTIVE ---
+        # --- INTERACTIVE VALIDATION ---
         validation_size = getattr(cfg, "validation_sample_size", 10000)
         df_val = self._stratified_sample(df_full, "Label", validation_size, cfg.seed)
+        val_path = os.path.join(cfg.paths.work_dir, "data", "cic_validation.parquet")
+        os.makedirs(os.path.dirname(val_path), exist_ok=True)
+        context.table_io.write_parquet(df_val, val_path)
+        val_artifact = TableArtifact(
+            artifact_id="cic_validation",
+            name="CIC Validation Sample",
+            path=val_path,
+            format="parquet",
+            n_rows=df_val.height,
+            n_cols=df_val.width,
+            columns=df_val.columns,
+            dtypes={col: str(dtype) for col, dtype in zip(df_val.columns, df_val.dtypes)},
+            version="1.0.0",
+            source_step=self.name,
+            fingerprint=str(hash(val_path)),
+            stats={"note": "Stratified validation sample (pre-sampling)"},
+        )
+        context.artifact_store.save_table(val_artifact)
+        context.logger.info("sampling", f"Validation sample saved: {val_path}")
 
-        print(f"\n--- VALIDATION DES DONNÉES CIC-DDoS2019 ---")
-        print(f"Fichiers trouvés : {len(csv_files)}")
-        print(f"Nombre de colonnes (features) : {df_full.width}")
-        print(f"Nombre de lignes (échantillon/total) : {df_val.height} / {df_full.height}")
+        print("\n--- CIC-DDoS2019 DATA VALIDATION ---")
+        print(f"Files found: {len(csv_files)}")
+        print(f"Number of columns (features): {df_full.width}")
+        print(f"Number of rows (sample/total): {df_val.height} / {df_full.height}")
         
-        # Proposition DDoS / Pas DDoS
+        # Label distribution preview
         if "Label" in df_val.columns:
             counts = df_val["Label"].value_counts().to_dicts()
-            print("Répartition proposée (Labels) :")
+            print("Proposed label distribution:")
             for r in counts:
                 label = r.get("Label") or r.get("y")
-                print(f"  - {label} : {r['count']} lignes")
+                print(f"  - {label} : {r['count']} rows")
         
-        print(f"\nListe des features : {df_full.columns[:20]} ... (+{max(0, len(df_full.columns)-20)})")
+        print(f"\nFeature list: {df_full.columns[:20]} ... (+{max(0, len(df_full.columns)-20)})")
         
-        print("\nExemple de donnée au hasard :")
+        print("\nRandom sample row:")
         print(df_val.sample(1).to_pandas().iloc[0].to_dict())
         
         try:
-            confirm = input("\n?> Confirmez-vous l'utilisation de ces données CIC ? (o/n) : ").lower()
-            if confirm != 'o':
-                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="Validation utilisateur refusée pour CIC")
+            confirm = input("\n?> Confirm use of these CIC data? (y/n): ").lower()
+            if confirm != 'y':
+                return TaskResult(task_name=self.name, status="failed", duration_s=time.time() - start_ts, error="User validation refused for CIC")
         except EOFError:
-            pass # Mode non-interactif
+            pass  # Non-interactive mode
 
-        # --- SAMPLING STRATIFIÉ (50%) ---
+        # --- STRATIFIED SAMPLING ---
         sampling_ratio = cfg.sample_ratio
         context.logger.info("sampling", f"Performing stratified sampling at {sampling_ratio*100}%")
 
@@ -138,6 +157,40 @@ class T01_ConsolidateCIC(Task):
         df = self._stratified_sample(df_full, "Label", target_rows, cfg.seed)
 
         context.logger.info("sampling", f"Sampling complete: {df_full.height} -> {df.height} rows")
+
+        # Stratification validation plot
+        try:
+            import pandas as pd
+            import matplotlib.pyplot as plt
+            strat_dir = os.path.join("graph", "stratification")
+            os.makedirs(strat_dir, exist_ok=True)
+
+            def _dist(frame: pl.DataFrame, col: str) -> pd.Series:
+                counts = frame.select(col).to_pandas()[col].value_counts(normalize=True)
+                return counts.sort_index()
+
+            full_dist = _dist(df_full, "Label")
+            sample_dist = _dist(df, "Label")
+            all_labels = sorted(set(full_dist.index).union(sample_dist.index), key=lambda x: str(x))
+            label_names = [str(l) for l in all_labels]
+            full_vals = [float(full_dist.get(l, 0.0)) for l in all_labels]
+            sample_vals = [float(sample_dist.get(l, 0.0)) for l in all_labels]
+
+            x = range(len(all_labels))
+            plt.figure(figsize=(10, 5))
+            plt.bar([i - 0.2 for i in x], full_vals, width=0.4, label="Full")
+            plt.bar([i + 0.2 for i in x], sample_vals, width=0.4, label="Sample")
+            plt.xticks(list(x), label_names, rotation=45, ha="right")
+            plt.ylabel("Proportion")
+            plt.title("Stratification check (CIC)")
+            plt.legend()
+            plt.tight_layout()
+            out_path = os.path.join(strat_dir, "cic_stratification.png")
+            plt.savefig(out_path, dpi=150, bbox_inches="tight")
+            plt.close()
+            context.logger.info("sampling", f"Stratification chart saved: {out_path}")
+        except Exception as e:
+            context.logger.warning("sampling", f"Stratification chart failed: {e}")
         
         # Add global sample_id
         df = df.with_row_index("sample_id")

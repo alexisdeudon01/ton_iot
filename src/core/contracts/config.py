@@ -14,8 +14,8 @@ class IOConfig(BaseModel):
 class SamplingPolicy(BaseModel):
     max_ram_percent: float = 70.0
     safe_frac_default: float = 0.3
-    min_rows: int = 1000
-    max_rows: int = 500000
+    min_rows: Optional[int] = None
+    max_rows: Optional[int] = None
 
 class AlignmentConfig(BaseModel):
     descriptor_sample_rows: int = 20000
