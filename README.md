@@ -14,8 +14,14 @@ pip install -r requirements.txt
 ## Configuration des datasets
 Les datasets doivent être placés dans :
 ```
-data/raw/CIC-DDoS2019/
-data/raw/TON_IoT/
+data/raw/cic_ddos2019/
+data/raw/ton_iot/
+```
+
+Les échantillons (ZIP) se trouvent dans :
+```
+data/sample/cic_ddos2019_sample.csv
+data/sample/ton_iot_sample.csv
 ```
 
 Si les datasets ne sont pas présents, le programme indiquera qu’ils sont disponibles sur Google Drive.

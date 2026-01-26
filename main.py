@@ -1,6 +1,8 @@
 """
 Point d'entrée principal - Framework d'évaluation DDoS pour PME
 Usage: python main.py [--config config.yaml] [--skip-training] [--only-viz]
+
+Auteur: Alexis Deudon , cours Independt research porjct, reference module: COM00151M
 """
 from __future__ import annotations
 
@@ -102,6 +104,43 @@ def load_config(path: str | Path) -> Dict:
         return yaml.safe_load(fh)
 
 
+def _remove_venv_if_docker_ready(docker_status: Dict[str, object], root_dir: Path) -> None:
+    venv_dir = root_dir / ".venv"
+    if not docker_status.get("docker_ready"):
+        return
+    if _in_venv():
+        return
+    if venv_dir.exists():
+        import shutil
+
+        shutil.rmtree(venv_dir, ignore_errors=True)
+
+
+def _preflight_checks() -> Dict[str, object]:
+    if os.environ.get("DDOS_PREFLIGHT_DONE") == "1":
+        return {}
+
+    os.environ["DDOS_PREFLIGHT_DONE"] = "1"
+    root_dir = Path(__file__).resolve().parent
+
+    from scripts.check_docker import check_docker_environment
+    from scripts.project_audit import collect_cleanup_candidates, ensure_structure, purge_log_files
+
+    docker_status = check_docker_environment(print_report=True)
+    removed_logs = purge_log_files(root_dir)
+    created_dirs = ensure_structure()
+    candidates = collect_cleanup_candidates(root_dir)
+    if created_dirs:
+        print(f"[audit] Dossiers créés: {[str(p) for p in created_dirs]}")
+    if removed_logs:
+        print(f"[audit] Logs supprimés: {len(removed_logs)}")
+    if candidates.get("dirs") or candidates.get("files"):
+        print(f"[audit] Candidats suppression (dirs): {[str(p) for p in candidates.get('dirs', [])]}")
+        print(f"[audit] Candidats suppression (files): {[str(p) for p in candidates.get('files', [])]}")
+    _remove_venv_if_docker_ready(docker_status, root_dir)
+    return docker_status
+
+
 def _ensure_datasets_present(config: Dict) -> None:
     datasets_cfg = config.get("datasets", {})
     cic_path = datasets_cfg.get("cic_ddos2019") or datasets_cfg.get("cic_path")
@@ -122,6 +161,7 @@ def _ensure_datasets_present(config: Dict) -> None:
 
 
 def main() -> None:
+    _preflight_checks()
     _ensure_venv_and_deps()
 
     parser = argparse.ArgumentParser(description="Framework d'évaluation DDoS pour PME")
@@ -132,8 +172,6 @@ def main() -> None:
 
     config = load_config(args.config)
     _set_random_seed(int(config.get("validation", {}).get("random_state", 42)))
-    _ensure_datasets_present(config)
-
     from src.preprocessing import load_and_preprocess
     from src.models import train_and_evaluate_all
     from src.mcdm import run_ahp_topsis, run_sensitivity_analysis

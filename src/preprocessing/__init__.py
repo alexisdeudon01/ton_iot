@@ -7,7 +7,7 @@ from typing import Dict
 
 import pandas as pd
 
-from src.preprocessing.loader import load_datasets
+from src.data.data_loader import DataLoader
 from src.preprocessing.harmonizer import extract_common_features, project_to_common
 from src.preprocessing.transformer import transform
 
@@ -33,18 +33,13 @@ def _stratified_sample(df: pd.DataFrame, label_col: str, frac: float, seed: int)
 
 
 def load_and_preprocess(config: Dict) -> Dict[str, Path]:
-    datasets_cfg = config.get("datasets", {})
-    cic_path = datasets_cfg.get("cic_ddos2019") or datasets_cfg.get("cic_path")
-    ton_path = datasets_cfg.get("ton_iot") or datasets_cfg.get("ton_path")
-    if not cic_path or not ton_path:
-        raise ValueError("datasets.cic_ddos2019 and datasets.ton_iot must be set in config.yaml")
-
-    cic_df, ton_df = load_datasets(cic_path, ton_path)
+    data_cfg = config.get("data", {})
+    auto_use_samples = bool(data_cfg.get("auto_use_samples", False))
+    loader = DataLoader(config=config)
+    cic_df, ton_df = loader.load_datasets(auto_use_samples=auto_use_samples)
 
     sampling_cfg = config.get("sampling", {})
-    frac = sampling_cfg.get("fraction")
-    if frac is None:
-        frac = datasets_cfg.get("sample_fraction", 0.05)
+    frac = sampling_cfg.get("fraction", 0.05)
     frac = float(frac)
     frac = min(frac, 0.05)
     seed = int(sampling_cfg.get("seed", 42))

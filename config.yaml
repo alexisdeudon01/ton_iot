@@ -26,8 +26,20 @@ validation:
 
 # Datasets
 datasets:
-  cic_ddos2019: "data/raw/CIC-DDoS2019/"
-  ton_iot: "data/raw/TON_IoT/"
+  cic_ddos2019: "data/raw/cic_ddos2019"
+  ton_iot: "data/raw/ton_iot"
+
+# Paths for data loader (full + samples)
+paths:
+  raw_cic: "data/raw/cic_ddos2019"
+  raw_ton: "data/raw/ton_iot"
+  sample_cic: "data/sample/cic_ddos2019_sample.csv"
+  sample_ton: "data/sample/ton_iot_sample.csv"
+
+# Data loader behavior
+data:
+  random_state: 42
+  auto_use_samples: false
 
 # Sampling
 sampling:

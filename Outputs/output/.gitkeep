@@ -1,2 +1,0 @@
-# This file ensures the output/ directory is tracked by Git
-# while excluding all generated files (logs, results, etc.)
