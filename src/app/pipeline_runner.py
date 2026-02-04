@@ -60,8 +60,9 @@ class PipelineRunner:
         self.best_config: Optional[Dict[str, Any]] = None
 
         logger.info(f"PipelineRunner initialized (output_dir: {self.results_dir})")
+        logger.debug("PipelineRunner config snapshot: %s", self.config)
 
-    def run(self, phases: Optional[list] = None):
+    def run(self, phases: Optional[list] = None) -> Dict[int, Any]:
         """
         Run pipeline phases sequentially.
 
@@ -74,9 +75,13 @@ class PipelineRunner:
 
         Args:
             phases: List of phase numbers to run (1-5). If None, runs all enabled phases.
+
+        Returns:
+            Mapping of phase number to phase outputs.
         """
         logger.info("[VERBOSE] Starting PipelineRunner.run()")
         logger.info(f"[VERBOSE] Input Configuration: {self.config}")
+        logger.debug("Requested phases argument: %s", phases)
 
         if phases is None:
             phases = []
@@ -90,6 +95,7 @@ class PipelineRunner:
                 phases.append(4)
             if self.config.phase5_enabled:
                 phases.append(5)
+            logger.debug("Resolved phases from config: %s", phases)
 
         logger.info("=" * 70)
         logger.info("IRP RESEARCH PIPELINE - 5 PHASES")
@@ -124,10 +130,12 @@ class PipelineRunner:
                     # Try to load from Phase 1 results
                     import json
                     best_config_file = self.results_dir / 'phase1_config_search' / 'best_config.json'
+                    logger.debug("Looking for best config at: %s", best_config_file)
                     if best_config_file.exists():
                         with open(best_config_file) as f:
                             data = json.load(f)
                             self.best_config = data['config']
+                        logger.debug("Loaded best config from disk.")
                     else:
                         raise ValueError("Phase 2 requires Phase 1 to run first or best_config.json")
 
@@ -136,6 +144,7 @@ class PipelineRunner:
                     phase2 = Phase2ApplyBestConfig(self.config, self.best_config)
                     result2 = phase2.run()
                     self.phase_results[2] = result2
+                    logger.debug("Phase 2 result keys: %s", list(result2.keys()))
                     logger.info(f"[OUTPUT] Phase 2 complete. Processed data saved to {result2.get('output_paths', {}).get('preprocessed_data')}")
                 else:
                     raise ValueError("best_config is still None after attempt to load")
@@ -153,6 +162,7 @@ class PipelineRunner:
                 phase3 = Phase3Evaluation(self.config)
                 result3 = phase3.run()
                 self.phase_results[3] = result3
+                logger.debug("Phase 3 result keys: %s", list(result3.keys()))
                 logger.info(f"[OUTPUT] Phase 3 complete. Metrics and visualizations generated.")
 
         # Phase 4: AHP Preferences
@@ -167,6 +177,7 @@ class PipelineRunner:
                 phase4 = Phase4AHPPreferences(self.config)
                 result4 = phase4.run()
                 self.phase_results[4] = result4
+                logger.debug("Phase 4 result keys: %s", list(result4.keys()))
                 logger.info(f"[OUTPUT] Phase 4 complete. Preference weights calculated.")
 
         # Phase 5: TOPSIS Ranking
@@ -182,6 +193,7 @@ class PipelineRunner:
                 phase5 = Phase5TOPSISRanking(self.config)
                 result5 = phase5.run()
                 self.phase_results[5] = result5
+                logger.debug("Phase 5 result keys: %s", list(result5.keys()))
                 logger.info(f"[OUTPUT] Phase 5 complete. Final model rankings generated.")
 
         logger.info("\n" + "=" * 70)

@@ -22,12 +22,20 @@ class Phase2ApplyBestConfig:
     """Phase 2: Application de la meilleure configuration (stateless preprocessing)"""
 
     def __init__(self, config, best_config: Dict[str, Any]):
+        """
+        Initialize Phase 2 execution context.
+
+        Args:
+            config: Pipeline configuration.
+            best_config: Best preprocessing configuration from Phase 1.
+        """
         self.config = config
         self.best_config = best_config
         self.results_dir = Path(config.output_dir) / "phase2_apply_best_config"
         self.results_dir.mkdir(parents=True, exist_ok=True)
         self.loader = DatasetLoader()
         self.harmonizer = DataHarmonizer()
+        logger.debug("Phase 2 initialized with best_config=%s", self.best_config)
 
     def run(self) -> Dict:
         """
@@ -86,6 +94,12 @@ class Phase2ApplyBestConfig:
     def _load_and_harmonize_datasets(self) -> pd.DataFrame:
         """Load, harmonize, and fuse datasets."""
         logger.info("Loading datasets...")
+        logger.debug(
+            "Phase 2 load params sample_ratio=%s random_state=%s test_mode=%s",
+            self.config.sample_ratio,
+            self.config.random_state,
+            self.config.test_mode,
+        )
 
         df_ton = self.loader.load_ton_iot(
             sample_ratio=self.config.sample_ratio,
@@ -188,6 +202,11 @@ class Phase2ApplyBestConfig:
         # Step 2: Encode features (categorical encoding)
         # Note: encode_features might be stateless if no categorical features
         X_encoded = pipeline.encode_features(X_cleaned)
+        logger.debug(
+            "Stateless preprocessing complete rows=%d cols=%d",
+            X_encoded.shape[0],
+            X_encoded.shape[1],
+        )
 
         # Mark pipeline as "fitted" for encoding (even if stateless)
         # This is needed for consistency, but we won't use fit-dependent steps
