@@ -72,6 +72,7 @@ class Phase1ConfigSearch:
         logger.info("=" * 60)
         logger.info("PHASE 1: Preprocessing Configuration Search")
         logger.info("=" * 60)
+        logger.debug("Phase 1 config count: %d", len(self.configs))
 
         # Load and harmonize datasets
         logger.info("\n1.1 Loading and harmonizing datasets...")
@@ -101,7 +102,9 @@ class Phase1ConfigSearch:
 
         for config_id, preproc_config in enumerate(tqdm(self.configs, desc="Configs")):
             try:
+                logger.debug("Evaluating config_id=%d config=%s", config_id, preproc_config)
                 score = self._evaluate_config(X, y, preproc_config, config_id)
+                logger.debug("Config_id=%d score=%s", config_id, score)
 
                 result = {
                     'config_id': config_id,
@@ -139,20 +142,35 @@ class Phase1ConfigSearch:
     def _load_and_harmonize(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Load and harmonize datasets"""
         # Load datasets
+        logger.debug(
+            "Loading datasets with sample_ratio=%s random_state=%s test_mode=%s",
+            self.config.sample_ratio,
+            self.config.random_state,
+            self.config.test_mode,
+        )
         df_ton = self.loader.load_ton_iot(
             sample_ratio=self.config.sample_ratio,
             random_state=self.config.random_state,
             incremental=False
         )
+        logger.debug("Loaded TON_IoT rows=%d cols=%d", df_ton.shape[0], df_ton.shape[1])
 
         df_cic = self.loader.load_cic_ddos2019(
             sample_ratio=self.config.sample_ratio,
             random_state=self.config.random_state,
             max_files_in_test=10 if self.config.test_mode else self.config.cic_max_files
         )
+        logger.debug("Loaded CIC-DDoS2019 rows=%d cols=%d", df_cic.shape[0], df_cic.shape[1])
 
         # Harmonize
         df_cic_harm, df_ton_harm = self.harmonizer.harmonize_features(df_cic, df_ton)
+        logger.debug(
+            "Harmonized datasets CIC rows=%d cols=%d; TON rows=%d cols=%d",
+            df_cic_harm.shape[0],
+            df_cic_harm.shape[1],
+            df_ton_harm.shape[0],
+            df_ton_harm.shape[1],
+        )
 
         return df_cic_harm, df_ton_harm
 
